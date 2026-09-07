@@ -57,8 +57,19 @@ export function showStageClearModal(game) {
   const btnForge = document.getElementById('btn-open-forge');
   const btnMenu = document.getElementById('btn-stage-menu');
   if (btnNext) btnNext.onclick = () => { close(); game.startStage(Math.min(8, (reward.stageId || 1) + 1)); game.isPaused = false; };
-  if (btnForge) btnForge.onclick = () => { close(); showRuneForgeModal(game); };
-  if (btnMenu) btnMenu.onclick = () => { close(); showStageSelectModal(game); };
+  if (btnForge) btnForge.onclick = () => {
+    close();
+    import('../ui/HomeLobbyUI.js').then(({ homeLobbyUI }) => {
+      homeLobbyUI.switchTab('runes');
+      homeLobbyUI.show();
+    });
+  };
+  if (btnMenu) btnMenu.onclick = () => {
+    close();
+    import('../ui/HomeLobbyUI.js').then(({ homeLobbyUI }) => {
+      homeLobbyUI.show();
+    });
+  };
 }
 
 export function showStageSelectModal(game) {

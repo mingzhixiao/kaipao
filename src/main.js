@@ -3,6 +3,7 @@ import { Game } from './core/Game.js';
 import { runeSystem } from './systems/RuneSystem.js';
 import { installSkillsPetsFeature } from './features/SkillsPetsFeature.js';
 import { installSkillsPetsHud } from './ui/SkillsPetsHud.js';
+import { homeLobbyUI } from './ui/HomeLobbyUI.js';
 
 function wireStageAndRunes(game) {
   game.startStage = function(stageId) {
@@ -101,8 +102,8 @@ window.addEventListener('DOMContentLoaded', () => {
       window.gameInstance = gameInstance;
       initCheatPanel(gameInstance);
       gameInstance.isPaused = true;
-      gameInstance.hud.showStageSelectModal(gameInstance);
-      console.log('[Kaipao] Stage Campaign + Rune Forge + Skills + Pets ready');
+      homeLobbyUI.init(gameInstance);
+      console.log('[Kaipao] Home Lobby + Weapons + Skills + Pets + Runes + Trials ready');
     }, 280);
   });
 });

@@ -208,14 +208,19 @@ export class HUDManager {
     if (this.dom.btnRestart) {
       this.dom.btnRestart.addEventListener('click', () => {
         if (this.dom.gameoverModal) this.dom.gameoverModal.style.display = 'none';
-        this.showStageSelectModal(game);
+        import('./HomeLobbyUI.js').then(({ homeLobbyUI }) => {
+          homeLobbyUI.show();
+        });
       });
     }
     const btnGoForge = document.getElementById('btn-gameover-forge');
     if (btnGoForge) {
       btnGoForge.addEventListener('click', () => {
         if (this.dom.gameoverModal) this.dom.gameoverModal.style.display = 'none';
-        this.showRuneForgeModal(game);
+        import('./HomeLobbyUI.js').then(({ homeLobbyUI }) => {
+          homeLobbyUI.switchTab('runes');
+          homeLobbyUI.show();
+        });
       });
     }
     if (this.dom.btnSpeed) {

@@ -1,0 +1,910 @@
+/* ================= 现代流行 H5 战术塔防首页与管理系统 ================= */
+
+#home-lobby {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  background: radial-gradient(circle at 50% 20%, #0f172a 0%, #060b18 55%, #020617 100%);
+  display: flex;
+  flex-direction: column;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* 顶部指挥官与资产栏 */
+.lobby-header {
+  height: 64px;
+  flex-shrink: 0;
+  background: rgba(10, 16, 30, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+.lobby-commander-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lobby-avatar-wrap {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #38bdf8;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+.lobby-avatar-level {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000;
+  font-weight: 900;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 99px;
+  border: 1px solid #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.lobby-commander-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lobby-commander-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.5px;
+}
+
+.lobby-exp-track {
+  width: 76px;
+  height: 5px;
+  background: #1e293b;
+  border-radius: 99px;
+  overflow: hidden;
+  border: 0.5px solid rgba(255,255,255,0.15);
+}
+
+.lobby-exp-bar {
+  height: 100%;
+  width: 35%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+}
+
+/* 顶部货币胶囊 */
+.lobby-currencies {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lobby-pill {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 99px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.lobby-pill.energy { border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; }
+.lobby-pill.scrap { border-color: rgba(250, 204, 21, 0.4); color: #facc15; }
+.lobby-pill.gems { border-color: rgba(192, 132, 252, 0.4); color: #c084fc; }
+
+/* 内容主体切换区 */
+.lobby-content-container {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 74px; /* 为底部导航栏留出空间 */
+  -webkit-overflow-scrolling: touch;
+}
+
+.lobby-tab-view {
+  display: none;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 14px 14px 20px;
+  animation: tabViewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lobby-tab-view.active {
+  display: block;
+}
+
+@keyframes tabViewFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------- TAB 1: 首页大厅 (Lobby) ------------------- */
+.lobby-power-banner {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.lobby-power-label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.lobby-power-val {
+  font-size: 20px;
+  font-weight: 900;
+  color: #facc15;
+  text-shadow: 0 0 14px rgba(250, 204, 21, 0.6);
+  letter-spacing: 1px;
+}
+
+/* 战场战车与伴飞宠物展示台 */
+.lobby-stage-arena {
+  position: relative;
+  height: 230px;
+  background: radial-gradient(circle at 50% 65%, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.8) 75%), url('assets/bg_highway.jpg') center bottom / cover no-repeat;
+  border-radius: 20px;
+  border: 1.5px solid rgba(56, 189, 248, 0.3);
+  margin-bottom: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lobby-stage-arena-glow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: linear-gradient(to top, #020617, transparent);
+}
+
+/* 装甲战车投影 */
+.lobby-fortress-truck {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 90px;
+  background: url('assets/truck.png') center center / contain no-repeat;
+  filter: drop-shadow(0 15px 25px rgba(0,0,0,0.85));
+  animation: truckIdleBreath 3.5s ease-in-out infinite;
+}
+
+@keyframes truckIdleBreath {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-5px); }
+}
+
+/* 伴飞宠物浮空动效 */
+.lobby-floating-pet {
+  position: absolute;
+  bottom: 75px;
+  left: 72%;
+  width: 58px;
+  height: 58px;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.6));
+  animation: petFloatOrbit 2.8s ease-in-out infinite;
+  cursor: pointer;
+}
+
+.lobby-floating-pet img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@keyframes petFloatOrbit {
+  0%, 100% { transform: translateY(0) rotate(2deg); }
+  50% { transform: translateY(-10px) rotate(-2deg); }
+}
+
+/* 当前关卡卡片 */
+.lobby-current-stage-card {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(2, 6, 23, 0.98));
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.lobby-stage-info-title {
+  font-size: 10px;
+  color: #38bdf8;
+  letter-spacing: 2px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.lobby-stage-info-name {
+  font-size: 17px;
+  font-weight: 900;
+  color: #fff;
+  margin: 3px 0;
+}
+
+.lobby-stage-info-desc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.lobby-stage-change-btn {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.lobby-stage-change-btn:hover {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+/* 巨幅立即出击按钮 (Battle CTA) */
+.lobby-battle-cta-wrap {
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
+.lobby-battle-btn {
+  width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ef4444 0%, #ea580c 45%, #f59e0b 100%);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.6), inset 0 1px 2px rgba(255,255,255,0.4);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.lobby-battle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.8), inset 0 1px 2px rgba(255,255,255,0.5);
+}
+
+.lobby-battle-btn:active {
+  transform: translateY(1px);
+}
+
+.lobby-battle-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transform: translateX(-100%);
+  animation: battleBtnShine 2.5s infinite;
+}
+
+@keyframes battleBtnShine {
+  0% { transform: translateX(-100%); }
+  40%, 100% { transform: translateX(100%); }
+}
+
+/* ------------------- 通用管理页卡片与布局 ------------------- */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* 过滤筛选 Pill 栏 */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  padding-bottom: 2px;
+}
+
+.filter-pill {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 99px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.15s;
+}
+
+.filter-pill.active {
+  background: #0891b2;
+  border-color: #22d3ee;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+}
+
+/* ------------------- TAB 2: 枪械管理 (Weapons) ------------------- */
+.weapons-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.weapon-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1.5px solid rgba(148, 163, 184, 0.25);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  transition: 0.2s;
+}
+
+.weapon-card.equipped {
+  border-color: #38bdf8;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+}
+
+.weapon-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.weapon-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weapon-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.weapon-name-wrap b {
+  font-size: 15px;
+  color: #f8fafc;
+}
+
+.weapon-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  font-weight: 800;
+  display: inline-block;
+  margin-left: 6px;
+}
+
+.weapon-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.weapon-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: rgba(2, 6, 23, 0.5);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.weapon-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weapon-stat-label {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.weapon-stat-val {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.weapon-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.weapon-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: 0.15s;
+}
+
+.weapon-btn.primary {
+  background: #0284c7;
+  color: #fff;
+  border-color: #38bdf8;
+}
+
+.weapon-btn.upgrade {
+  background: #1e293b;
+  color: #facc15;
+  border-color: rgba(250, 204, 21, 0.4);
+}
+
+.weapon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ------------------- TAB 3: 技能管理 (Skills) ------------------- */
+.skills-catalog-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.skill-catalog-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.skill-catalog-img {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.2);
+}
+
+.skill-catalog-info {
+  flex: 1;
+}
+
+.skill-catalog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.skill-catalog-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.skill-catalog-type {
+  font-size: 10px;
+  font-weight: 700;
+  color: #a855f7;
+}
+
+.skill-catalog-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+.skill-catalog-meta {
+  font-size: 10px;
+  color: #38bdf8;
+  display: flex;
+  gap: 12px;
+}
+
+/* 羁绊反应矩阵卡片 */
+.synergy-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.synergy-card img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* ------------------- TAB 4: 宠物乐园 (Pets) ------------------- */
+.pets-showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.pet-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1.5px solid rgba(148, 163, 184, 0.25);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: 0.2s;
+}
+
+.pet-card.deployed {
+  border-color: #22d3ee;
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.25);
+}
+
+.pet-card-top {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.pet-card-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: rgba(2, 6, 23, 0.6);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.pet-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pet-card-details {
+  flex: 1;
+}
+
+.pet-card-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pet-card-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.pet-card-tag {
+  font-size: 10px;
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border-radius: 99px;
+  padding: 2px 8px;
+  font-weight: 800;
+}
+
+.pet-card-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 4px 0 8px;
+}
+
+.pet-stats-box {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  background: rgba(2, 6, 23, 0.5);
+  border-radius: 10px;
+  padding: 8px;
+  text-align: center;
+}
+
+.pet-stat-unit {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.pet-stat-num {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.pet-card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ------------------- TAB 5: 符文秘境 (Runes) ------------------- */
+.runes-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.rune-item-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rune-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rune-item-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #020617;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.rune-item-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.rune-item-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.rune-item-btn {
+  background: #1e293b;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  color: #facc15;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ------------------- TAB 6: 试炼之路 (Trials) ------------------- */
+.stages-flow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stage-flow-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.stage-flow-card:hover {
+  border-color: #38bdf8;
+  transform: translateX(4px);
+}
+
+.stage-flow-card.selected {
+  border-color: #22d3ee;
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.25), rgba(15, 23, 42, 0.95));
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.2);
+}
+
+.stage-flow-card.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stage-flow-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stage-flow-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #020617;
+  border: 1px solid #38bdf8;
+  color: #38bdf8;
+  font-size: 16px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage-flow-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.stage-flow-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.stage-flow-btn {
+  background: #0284c7;
+  border: 1px solid #38bdf8;
+  color: #fff;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ------------------- 底部现代化 6 大导航栏 ------------------- */
+.lobby-bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(10, 16, 30, 0.95);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 4px;
+  z-index: 20;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+}
+
+.nav-tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px 0;
+  transition: all 0.18s ease-out;
+  position: relative;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-tab-icon,
+.nav-tab-label {
+  pointer-events: none;
+}
+
+.nav-tab-icon {
+  font-size: 18px;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-tab-label {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.nav-tab-btn.active {
+  color: #38bdf8;
+}
+
+.nav-tab-btn.active .nav-tab-icon {
+  transform: translateY(-2px) scale(1.15);
+}
+
+.nav-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 16px;
+  height: 3px;
+  background: #38bdf8;
+  border-radius: 99px;
+  box-shadow: 0 0 8px #38bdf8;
+}

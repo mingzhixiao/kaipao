@@ -297,10 +297,14 @@ export function installSkillsPetsFeature(game) {
   game.update = function(dt) { originalUpdate(dt); updateSkills(this, dt); updateCombat(this, dt); if (this.pet) this.pet.update(dt, this); for (const effect of this.feature.petEffects) effect.life -= dt; this.feature.petEffects = this.feature.petEffects.filter(effect => effect.life > 0); const hud = document.getElementById('kp-pet-hud'); if (hud && this.pet) { hud.style.display = 'block'; document.getElementById('kp-pet-name').textContent = `${PET_TYPES[this.pet.type].name} Lv.${this.pet.level}`; document.getElementById('kp-pet-hp').style.width = `${clamp(this.pet.hp / this.pet.maxHp, 0, 1) * 100}%`; document.getElementById('kp-pet-hp-text').textContent = `${Math.ceil(this.pet.hp)} / ${Math.ceil(this.pet.maxHp)}`; } else if (hud) hud.style.display = 'none'; };
   const originalRender = game.renderer.render.bind(game.renderer);
   game.renderer.render = function(g) { originalRender(g); renderFeature(g); };
-  ensureUi(game); addPetHubButton(game); installSkillCards(game);
+  ensureUi(game); installSkillCards(game);
   game.feature.showPetSelect = () => { renderPetSelect(game); document.getElementById('kp-pet-select').style.display = 'flex'; game.isPaused = true; };
   const originalStartStage = game.startStage?.bind(game);
-  if (originalStartStage) game.startStage = function(stageId) { originalStartStage(stageId); this.feature.showPetSelect(); };
-  game.feature.showPetSelect();
+  if (originalStartStage) {
+    game.startStage = function(stageId) {
+      originalStartStage(stageId);
+      this.feature.syncPet();
+    };
+  }
   window.PET_TYPES = PET_TYPES; window.SKILL_CONFIG = SKILL_CONFIG;
 }
