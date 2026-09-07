@@ -6,7 +6,6 @@ import { GAME_CONFIG } from '../core/Config.js';
 export class CombatSystem {
   constructor(game) {
     this.game = game;
-    // 主循环火箭飞行列表 (消除任何嵌套 RAF)
     this.activeRockets = [];
   }
 
@@ -14,21 +13,22 @@ export class CombatSystem {
     this.activeRockets = [];
   }
 
-  // 自动瞄准最近或威胁最大的敌人
+  // 自动瞄准最近或威胁最大的敌人 (曼哈顿距离粗分，避免每帧全量 hypot)
   updateAutoTarget() {
     const hero = this.game.hero;
     let closestEnemy = null;
-    let closestDist = Infinity;
+    let bestScore = Infinity;
+    const h = this.game.height || 800;
 
     for (let i = 0; i < this.game.enemies.length; i++) {
       const e = this.game.enemies[i];
       if (!e.active) continue;
 
-      const dist = Math.hypot(e.x - hero.x, e.y - hero.y);
-      // 优先威胁距离防线更近的敌人
-      const threatScore = dist - (e.y / this.game.height) * 120;
-      if (threatScore < closestDist) {
-        closestDist = threatScore;
+      const dx = e.x - hero.x;
+      const dy = e.y - hero.y;
+      const threatScore = Math.abs(dx) + Math.abs(dy) - (e.y / h) * 140 - (e.isBoss ? 180 : 0);
+      if (threatScore < bestScore) {
+        bestScore = threatScore;
         closestEnemy = e;
       }
     }
@@ -42,7 +42,6 @@ export class CombatSystem {
     }
   }
 
-  // 发射主武器散弹/连发弹道
   shootWeapon() {
     const game = this.game;
     const hero = game.hero;
@@ -78,7 +77,6 @@ export class CombatSystem {
     }
   }
 
-  // 部署温压火箭 (主循环状态驱动)
   launchRocket(targetX, targetY) {
     const game = this.game;
     const startX = game.hero.x + (Math.random() * 40 - 20);
@@ -105,7 +103,6 @@ export class CombatSystem {
     game.feedback.triggerHitStop(0.04);
     sound.playExplosion();
 
-    // 空间 Y 轴粗筛
     for (let i = 0; i < game.enemies.length; i++) {
       const e = game.enemies[i];
       if (!e.active) continue;
@@ -133,7 +130,6 @@ export class CombatSystem {
     });
   }
 
-  // 呼叫装甲重型战车
   launchArmoredTruck() {
     const game = this.game;
     sound.playTruckRumble();
@@ -158,7 +154,6 @@ export class CombatSystem {
     });
   }
 
-  // 极寒射线光锥判定
   applyFreezeRay(dt) {
     const game = this.game;
     const freezeCfg = game.skills.freeze;
@@ -166,7 +161,6 @@ export class CombatSystem {
     const range = freezeCfg.range;
     const heroAngle = game.hero.angle;
 
-    // 射线粒子
     for (let i = 0; i < 3; i++) {
       const randAngle = heroAngle + (Math.random() - 0.5) * cone;
       const dist = Math.random() * range;
@@ -179,7 +173,6 @@ export class CombatSystem {
       const e = game.enemies[i];
       if (!e.active) continue;
 
-      // 距离与角度初筛
       if (Math.abs(e.y - game.hero.y) > range + e.radius) continue;
       const dist = Math.hypot(e.x - game.hero.x, e.y - game.hero.y);
       if (dist <= range) {
@@ -196,12 +189,10 @@ export class CombatSystem {
     }
   }
 
-  // 统一受击与伤害钩子 (Unified onHit Hook)
   onHit(enemy, dmg, isCrit = false, type = 'normal', knockVx = 0, knockVy = 0) {
     if (!enemy.active || enemy.hp <= 0) return;
     const game = this.game;
 
-    // 1. 元素化学协同监测
     if (enemy.freezeTimer > 0) {
       if (type === 'rocket' || type === 'fire' || game.synergies.thermalEngine) {
         game.synergySystem.triggerThermalShock(enemy, enemy.x, enemy.y);
@@ -212,7 +203,6 @@ export class CombatSystem {
       }
     }
 
-    // 2. 暴击反馈与特斯拉电弧
     if (isCrit) {
       sound.playCritHit();
       game.feedback.addTrauma(0.12);
@@ -222,7 +212,6 @@ export class CombatSystem {
       }
     }
 
-    // 3. 受击形变与顿挫
     enemy.hitFlash = 0.16;
     enemy.hitStagger = 0.22;
     enemy.hitStaggerTotal = 0.22;
@@ -230,7 +219,6 @@ export class CombatSystem {
       enemy.hitAngle = Math.atan2(knockVy, knockVx);
     }
 
-    // 4. 浮动伤害数字
     let textColor = '#ffffff';
     if (isCrit) textColor = '#ffaa00';
     else if (type === 'fire' || type === 'rocket') textColor = '#ff7700';
@@ -248,7 +236,6 @@ export class CombatSystem {
     }
   }
 
-  // 统一击杀钩子 (Unified onKill Hook)
   onKill(enemy) {
     if (!enemy.active) return;
     enemy.active = false;
@@ -260,7 +247,6 @@ export class CombatSystem {
       game.feedback.addTrauma(0.8);
       game.feedback.triggerHitStop(0.08);
 
-      // 掉落 8 枚金色核心宝石
       for (let i = 0; i < 8; i++) {
         const g = game.gemPool.get();
         g.active = true;
@@ -298,11 +284,9 @@ export class CombatSystem {
     }
   }
 
-  // 更新所有战斗实体与碰撞
   update(dt) {
     const game = this.game;
 
-    // 1. 更新主循环火箭飞行推进 (彻底替代嵌套 RAF)
     for (let i = 0; i < this.activeRockets.length; i++) {
       const r = this.activeRockets[i];
       if (!r.active) continue;
@@ -321,7 +305,6 @@ export class CombatSystem {
     }
     ObjectPool.compact(this.activeRockets);
 
-    // 2. 更新子弹与敌人碰撞 (Y 轴空间粗筛)
     for (let i = 0; i < game.bullets.length; i++) {
       const b = game.bullets[i];
       if (!b.active) continue;
@@ -340,11 +323,12 @@ export class CombatSystem {
         const e = game.enemies[j];
         if (!e.active) continue;
 
-        // Y 轴粗排初筛：不在同一垂直高度直接跳过
-        if (Math.abs(b.y - e.y) > b.radius + e.radius) continue;
+        const hitR = b.radius + e.radius;
+        if (Math.abs(b.y - e.y) > hitR || Math.abs(b.x - e.x) > hitR) continue;
 
-        const dist = Math.hypot(b.x - e.x, b.y - e.y);
-        if (dist < b.radius + e.radius) {
+        const dx = b.x - e.x;
+        const dy = b.y - e.y;
+        if (dx * dx + dy * dy < hitR * hitR) {
           this.onHit(e, b.damage, b.isCrit, 'normal', b.vx, b.vy);
           game.spawnParticles(b.x, b.y, b.isCrit ? '#ffcc00' : '#00f0ff', 4, 'spark');
 
@@ -359,7 +343,6 @@ export class CombatSystem {
     }
     ObjectPool.compact(game.bullets);
 
-    // 3. 更新碎冰尖刺飞弹 (Y 轴粗筛)
     for (let i = 0; i < game.iceSpikes.length; i++) {
       const spike = game.iceSpikes[i];
       if (!spike.active) continue;
@@ -376,9 +359,12 @@ export class CombatSystem {
       for (let j = 0; j < game.enemies.length; j++) {
         const e = game.enemies[j];
         if (!e.active) continue;
-        if (Math.abs(spike.y - e.y) > e.radius + 12) continue;
+        const hitR = e.radius + 8;
+        if (Math.abs(spike.y - e.y) > hitR + 4 || Math.abs(spike.x - e.x) > hitR + 4) continue;
 
-        if (Math.hypot(e.x - spike.x, e.y - spike.y) < e.radius + 8) {
+        const dx = e.x - spike.x;
+        const dy = e.y - spike.y;
+        if (dx * dx + dy * dy < hitR * hitR) {
           this.onHit(e, spike.damage, false, 'freeze', spike.vx, spike.vy);
           game.spawnParticles(spike.x, spike.y, '#00f0ff', 3, 'spark');
           spike.pierce--;
@@ -391,7 +377,6 @@ export class CombatSystem {
     }
     ObjectPool.compact(game.iceSpikes);
 
-    // 4. 更新灼烧区域
     for (let i = 0; i < game.burnZones.length; i++) {
       const bz = game.burnZones[i];
       if (!bz.active) continue;
@@ -411,9 +396,12 @@ export class CombatSystem {
         for (let j = 0; j < game.enemies.length; j++) {
           const e = game.enemies[j];
           if (!e.active) continue;
-          if (Math.abs(e.y - bz.y) > bz.radius + e.radius) continue;
+          const hitR = bz.radius + e.radius;
+          if (Math.abs(e.y - bz.y) > hitR || Math.abs(e.x - bz.x) > hitR) continue;
 
-          if (Math.hypot(e.x - bz.x, e.y - bz.y) <= bz.radius) {
+          const dx = e.x - bz.x;
+          const dy = e.y - bz.y;
+          if (dx * dx + dy * dy <= bz.radius * bz.radius) {
             this.onHit(e, dpsTick, false, 'fire');
           }
         }
@@ -425,7 +413,6 @@ export class CombatSystem {
     }
     ObjectPool.compact(game.burnZones);
 
-    // 5. 更新装甲战车推进
     for (let i = 0; i < game.activeTrucks.length; i++) {
       const truck = game.activeTrucks[i];
       if (!truck.active) continue;
