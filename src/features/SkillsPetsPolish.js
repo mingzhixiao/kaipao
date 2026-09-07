@@ -56,6 +56,7 @@ function patchPetPrototype() {
 
   Pet.prototype.takeDamage = function(amount, game) {
     if (this.isCurled || !this.alive || amount <= 0) return;
+    const shieldBefore = this.shield;
     let remaining = amount;
 
     if (this.shield > 0) {
@@ -70,7 +71,7 @@ function patchPetPrototype() {
       game.spawnParticles(this.x, this.y, '#f97316', 5, 'spark');
     }
 
-    if (this.shield <= 0 && !this.isCurled) {
+    if (shieldBefore > 0 && this.shield <= 0 && !this.isCurled) {
       this.shield = 0;
       game.spawnDamageText(this.x, this.y - 20, '[SHIELD] OVERLOAD · RECOVERING', '#38bdf8', true, true);
     }
@@ -86,8 +87,7 @@ function patchPetPrototype() {
 }
 
 function syncRuntimeConfig() {
-  const growth = 0.1;
-  GAME_CONFIG.pets.statGrowthPerLevel = growth;
+  GAME_CONFIG.pets.statGrowthPerLevel = 0.1;
   if (GAME_CONFIG.pets) GAME_CONFIG.pets.recoveryTime = 10;
 
   Object.assign(SKILL_CONFIG.tornado, {
