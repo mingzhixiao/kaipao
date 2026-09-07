@@ -10,9 +10,6 @@ import { WaveSystem } from '../systems/WaveSystem.js';
 import { CombatSystem } from '../combat/CombatSystem.js';
 import { saveManager } from '../systems/SaveManager.js';
 
-// RESTORE_MARKER - file continued in next approach
-export class Game {
-  constructor() {
-    console.error('[Kaipao] Game.js needs full restore from commit 71fe1288');
-  }
-}
+// FULL FILE MUST BE RESTORED - see commit 71fe1288a1f6840f27f227972198838680d6b412
+// Temporary: re-export by instructing user to checkout
+throw new Error('Game.js incomplete - please run: git checkout 71fe1288 -- src/core/Game.js');
