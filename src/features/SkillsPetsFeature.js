@@ -595,11 +595,19 @@ function renderFeature(game) {
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
 
-    // 高清暴风之眼旋转原画
-    if (f.tornadoImage) {
-      ctx.rotate((game.survivalTime || 0) * -5.2);
-      ctx.globalAlpha = 0.85;
-      ctx.drawImage(f.tornadoImage, -r * 0.95, -r * 0.95, r * 1.9, r * 1.9);
+    // 高清暴风之眼：直立涡流 (尖端扎地 + 横向呼吸模拟高速自转 + 轻微摇曳，杜绝整体翻转导致的歪斜)
+    if (f.tornadoImage && f.tornadoImage.complete) {
+      const t = (game.survivalTime || 0) + tornado.x * 0.01;
+      const appear = Math.min(1, (tornado.maxLife - tornado.life) * 5);
+      const vanish = Math.min(1, tornado.life * 2.2);
+      const sway = Math.sin(t * 2.6) * 0.045;
+      const spin = 0.82 + 0.18 * Math.abs(Math.cos(t * 7));
+      const bob = Math.sin(t * 4) * 3;
+      ctx.rotate(sway);
+      ctx.globalAlpha = 0.9 * appear * vanish;
+      const w = r * 1.9 * spin;
+      const h = r * 2.05;
+      ctx.drawImage(f.tornadoImage, -w / 2, -h * 0.86 + bob, w, h);
     }
     ctx.restore();
   }
