@@ -548,5 +548,97 @@ export class Game {
       }
     }
     ObjectPool.compact(this.gems);
+
+    for (let i = 0; i < this.teslaArcs.length; i++) {
+      const arc = this.teslaArcs[i];
+      if (!arc.active) continue;
+      arc.life -= dt;
+      if (arc.life <= 0) arc.active = false;
+    }
+    ObjectPool.compact(this.teslaArcs);
+
+    for (let i = 0; i < this.shockwaves.length; i++) {
+      const sw = this.shockwaves[i];
+      if (!sw.active) continue;
+      sw.life -= dt;
+      const t = 1 - sw.life / sw.maxLife;
+      sw.radius = sw.maxRadius * t;
+      if (sw.life <= 0) sw.active = false;
+    }
+    ObjectPool.compact(this.shockwaves);
+
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      if (!p.active) continue;
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (p.type === 'smoke') p.vy -= 20 * dt;
+      if (p.life <= 0) {
+        p.active = false;
+        this.particlePool.release(p);
+      }
+    }
+    ObjectPool.compact(this.particles);
+
+    for (let i = 0; i < this.damageTexts.length; i++) {
+      const t = this.damageTexts[i];
+      if (!t.active) continue;
+      t.life -= dt;
+      t.y += t.vy * dt;
+      t.scale += (t.targetScale - t.scale) * Math.min(1, dt * 12);
+      if (t.life <= 0) {
+        t.active = false;
+        this.textPool.release(t);
+      }
+    }
+    ObjectPool.compact(this.damageTexts);
+
+    for (let i = 0; i < this.hitRings.length; i++) {
+      const hr = this.hitRings[i];
+      if (!hr.active) continue;
+      hr.life -= dt;
+      const t = 1 - hr.life / hr.maxLife;
+      hr.radius = hr.maxRadius * t;
+      if (hr.life <= 0) {
+        hr.active = false;
+        this.hitRingPool.release(hr);
+      }
+    }
+    ObjectPool.compact(this.hitRings);
+
+    this.hud.updateHUD(this);
+  }
+
+  damageFortress(dmg) {
+    this.fortress.shieldRegenTimer = 0;
+    this.fortress.hitFlash = 0.2;
+    this.feedback.addTrauma(0.25);
+
+    if (this.fortress.shield > 0) {
+      this.fortress.shield -= dmg;
+      if (this.fortress.shield < 0) {
+        const overflow = -this.fortress.shield;
+        this.fortress.shield = 0;
+        this.fortress.hp -= overflow;
+        if (this.synergies.fortressEmp) {
+          this.synergySystem.triggerShieldBreakEmp();
+        }
+      }
+    } else {
+      this.fortress.hp -= dmg;
+    }
+
+    if (this.fortress.hp <= 0) {
+      this.fortress.hp = 0;
+      this.isGameOver = true;
+      const result = saveManager.recordRun({
+        wave: this.waveSystem.wave,
+        kills: this.kills,
+        survivalTime: this.survivalTime,
+        synergies: this.synergies
+      });
+      this.hud.showGameOverModal(this);
+    }
   }
 }
