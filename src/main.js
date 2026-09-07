@@ -4,6 +4,7 @@ import { runeSystem } from './systems/RuneSystem.js';
 import { installSkillsPetsFeature } from './features/SkillsPetsFeature.js';
 import { installSkillsPetsHud } from './ui/SkillsPetsHud.js';
 import { installSkillsPetsPolish } from './features/SkillsPetsPolish.js';
+import { installGameUIUX } from './ui/GameUIUX.js';
 import { homeLobbyUI } from './ui/HomeLobbyUI.js';
 import { GAME_CONFIG } from './core/Config.js';
 import { SKILL_CONFIG, PET_TYPES } from './features/SkillsPetsFeature.js';
@@ -102,6 +103,7 @@ function initCheatPanel(game) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  installGameUIUX();
   const loadingBar = document.getElementById('loading-bar-inner');
   const loadingText = document.getElementById('loading-progress-text');
   const loadingScreen = document.getElementById('loading-screen');
@@ -147,6 +149,7 @@ window.addEventListener('DOMContentLoaded', () => {
       installSkillsPetsFeature(gameInstance);
       installSkillsPetsPolish(gameInstance);
       installSkillsPetsHud(gameInstance);
+      installGameUIUX(gameInstance);
       installGameOptimization(gameInstance);
       installBuildIdentity(gameInstance);
       bindFeatureTarget(gameInstance);
@@ -155,7 +158,7 @@ window.addEventListener('DOMContentLoaded', () => {
       initCheatPanel(gameInstance);
       gameInstance.isPaused = true;
       homeLobbyUI.init(gameInstance);
-      console.log('[Kaipao] Gameplay polish + performance optimization + build identity ready');
+      console.log('[Kaipao] UI/UX + gameplay polish + performance optimization + build identity ready');
     }, 280);
   });
 });
