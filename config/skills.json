@@ -1,0 +1,82 @@
+{
+  "skills": {
+    "rocket": {
+      "name": "温压火箭",
+      "element": "fire",
+      "cooldown": 4.5,
+      "damage": 85,
+      "radius": 130,
+      "flightDuration": 0.85,
+      "burnDuration": 3.0,
+      "burnDps": 24,
+      "description": "部署温压重型火箭，定点引发大范围核爆与持续烈焰灼烧区。"
+    },
+    "truck": {
+      "name": "装甲战车",
+      "element": "physical",
+      "cooldown": 7.0,
+      "damage": 120,
+      "knockback": 80,
+      "speed": 620,
+      "width": 84,
+      "height": 130,
+      "description": "呼叫重型突击装甲车，轰鸣冲撞碾压沿途所有敌人。"
+    },
+    "freeze": {
+      "name": "极寒射线",
+      "element": "ice",
+      "cooldown": 6.0,
+      "duration": 2.2,
+      "damagePerTick": 14,
+      "slowRatio": 0.35,
+      "range": 320,
+      "coneAngle": 0.52,
+      "description": "喷射大范围超低温冰雾，快速减速并冰冻前方敌人。"
+    },
+    "laser": {
+      "name": "湮灭射线",
+      "element": "thunder",
+      "cooldown": 3.2,
+      "width": 14,
+      "damage": 1.6,
+      "burnDamage": 0.25,
+      "burnDuration": 2.2,
+      "displayDuration": 0.25,
+      "description": "释放高能贯穿电磁光束，对命中目标造成感电与高频贯通伤害。"
+    },
+    "tornado": {
+      "name": "裂风涡流",
+      "element": "wind",
+      "cooldown": 7.5,
+      "duration": 4.2,
+      "radius": 190,
+      "damagePerSecond": 0.35,
+      "pullStrength": 0.03,
+      "maxPullSpeed": 50,
+      "description": "生成强力风暴涡流，牵引敌人并使附近的火与冰元素发生大范围扩散！"
+    },
+    "bomber": {
+      "name": "轨道轰炸",
+      "element": "fire",
+      "cooldown": 11.0,
+      "radius": 240,
+      "bombCount": 3,
+      "bombInterval": 0.45,
+      "damage": 0.95,
+      "knockback": 90,
+      "maxAimDistance": 300,
+      "description": "红圈预瞄目标区域，呼叫战术巡航机连续投掷 3 发烈火集束重弹。"
+    },
+    "boomerang": {
+      "name": "回旋刃",
+      "element": "physical",
+      "cooldown": 4.8,
+      "speed": 420,
+      "maxRange": 560,
+      "damage": 1.15,
+      "width": 26,
+      "critBonus": 0.35,
+      "description": "高速合金回旋穿透飞刃，往返穿透切割，自带 35% 额外暴击率！"
+    }
+  }
+}

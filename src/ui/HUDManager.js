@@ -162,6 +162,8 @@ export class HUDManager {
   }
 
   renderUpgradeCards(game) {
+    game = game || window.gameInstance;
+    if (!game) return;
     const pool = buildUpgradeCardPool(game);
     const availablePool = pool.filter(card => {
       if (card.id === 'thermal_engine' && game.synergies.thermalEngine) return false;
@@ -179,7 +181,8 @@ export class HUDManager {
     selected.forEach(card => {
       const el = document.createElement('div');
       el.className = `upgrade-card rarity-${card.rarity}`;
-      el.innerHTML = `<img class="card-icon-img" src="${card.img}" alt="${card.name}"><div class="card-info"><div class="card-header-row"><div class="card-name">${card.name}</div><div class="card-tag">${card.rarity}</div></div><div class="card-synergy">${card.synergy}</div><div class="card-desc">${card.desc}</div></div>`;
+      const elemTag = card.element ? `<span class="card-elem-pill elem-${card.element}">${card.element.toUpperCase()}</span>` : '';
+      el.innerHTML = `<img class="card-icon-img" src="${card.img}" alt="${card.name}"><div class="card-info"><div class="card-header-row"><div class="card-name">${card.name}</div><div style="display:flex;gap:4px;align-items:center;">${elemTag}<div class="card-tag">${card.rarity}</div></div></div><div class="card-synergy">${card.synergy}</div><div class="card-desc">${card.desc}</div></div>`;
       el.addEventListener('click', () => {
         card.apply();
         if (this.dom.upgradeModal) this.dom.upgradeModal.style.display = 'none';

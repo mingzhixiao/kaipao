@@ -180,4 +180,134 @@ export class SynergySystem {
 
     game.spawnDamageText(game.hero.x, game.fortress.y - 40, '⚡ EMP 防线过载冲击!', '#00f0ff', true, true);
   }
+
+  // 5. 元素化学反应：雷火超载大爆轰 (Overload Blast: 雷属性激光/电弧 + 火焰灼烧)
+  triggerOverload(enemy, x, y) {
+    SynergySystem.triggerOverload(this.game, enemy, x, y);
+  }
+
+  static triggerOverload(game, enemy, x, y) {
+    const overloadDmg = Math.round(game.weapon.damage * 2.4 + 90);
+    enemy.burnTimer = 0;
+    enemy.hp -= overloadDmg;
+    game.totalDamage += overloadDmg;
+
+    sound.playExplosion();
+    game.feedback.addTrauma(0.42);
+    game.feedback.triggerHitStop(0.04);
+
+    // 爆发紫色与橙红色雷火超载冲击波
+    game.spawnParticles(x, y, '#c084fc', 22, 'spark');
+    game.spawnParticles(x, y, '#ff4400', 20, 'fire');
+    game.spawnHitRing(x, y, '#c084fc', enemy.radius * 2.4);
+
+    game.spawnDamageText(x, y - 28, `💥 超载爆轰! ${overloadDmg}`, '#e879f9', true, true);
+
+    // 超载余波波及周围怪并击退
+    SynergySystem.forEachInRadius(game, x, y, 100, (other) => {
+      if (other === enemy) return;
+      other.hp -= Math.round(overloadDmg * 0.4);
+      other.hitFlash = 0.15;
+      other.y -= 15; // 轻微击退
+      if (other.hp <= 0) game.killEnemy(other);
+    });
+
+    if (enemy.hp <= 0) game.killEnemy(enemy);
+  }
+
+  // 6. 元素扩散机制：风属性旋风扩散 (Wind Swirl / Diffusion: 龙卷风将火/冰状态向四周大范围扩散)
+  triggerWindSwirl(enemy, x, y) {
+    SynergySystem.triggerWindSwirl(this.game, enemy, x, y);
+  }
+
+  static triggerWindSwirl(game, enemy, x, y) {
+    const hasFire = enemy.burnTimer > 0;
+    const hasIce = enemy.freezeTimer > 0;
+    if (!hasFire && !hasIce) return;
+
+    const spreadRadius = 170;
+    let spreadCount = 0;
+
+    if (hasFire) {
+      const spreadDps = enemy.burnDps || (game.weapon.damage * 0.25);
+      SynergySystem.forEachInRadius(game, x, y, spreadRadius, (other) => {
+        if (other === enemy) return;
+        other.burnTimer = Math.max(other.burnTimer || 0, 3.2);
+        other.burnDps = Math.max(other.burnDps || 0, spreadDps);
+        spreadCount++;
+      });
+      game.spawnParticles(x, y, '#ff4400', 16, 'fire');
+      game.spawnDamageText(x, y - 22, '🌪️ 烈焰风暴扩散!', '#ff7700', true, false);
+    }
+
+    if (hasIce) {
+      SynergySystem.forEachInRadius(game, x, y, spreadRadius, (other) => {
+        if (other === enemy) return;
+        other.freezeTimer = Math.max(other.freezeTimer || 0, 2.4);
+        other.freezeFactor = 0.35;
+        spreadCount++;
+      });
+      game.spawnParticles(x, y, '#00f0ff', 16, 'ice');
+      game.spawnDamageText(x, y - 22, '🌪️ 极寒涡流扩散!', '#38bdf8', true, false);
+    }
+
+    if (spreadCount > 0) {
+      game.feedback.addTrauma(0.18);
+    }
+  }
+
+  /**
+   * 统一元素命中与协同判定入口 (统一对接火、雷、风、物理、冰)
+   * @param {object} enemy 目标敌人
+   * @param {'fire'|'thunder'|'wind'|'physical'|'ice'} element 元素属性
+   * @param {number} damage 基础命中伤害
+   * @param {number} x 命中位置 X
+   * @param {number} y 命中位置 Y
+   */
+  registerHit(enemy, element, damage, x = enemy?.x, y = enemy?.y) {
+    if (!enemy || !enemy.active || enemy.hp <= 0) return;
+    const game = this.game;
+
+    switch (element) {
+      case 'fire':
+        // 火击中冰冻单位 ➜ 触发热力殉爆融化
+        if (enemy.freezeTimer > 0) {
+          SynergySystem.triggerThermalShock(game, enemy, x, y);
+          return;
+        }
+        // 施加或刷新灼烧
+        enemy.burnTimer = Math.max(enemy.burnTimer || 0, 2.5);
+        enemy.burnDps = Math.max(enemy.burnDps || 0, Math.max(12, damage * 0.25));
+        break;
+
+      case 'thunder':
+        // 雷击中灼烧单位 ➜ 触发雷火超载大爆轰
+        if (enemy.burnTimer > 0) {
+          SynergySystem.triggerOverload(game, enemy, x, y);
+          return;
+        }
+        // 特斯拉电弧判定
+        if (game.synergies.teslaCoil || Math.random() < 0.3) {
+          SynergySystem.triggerTeslaChain(game, enemy, damage);
+        }
+        break;
+
+      case 'wind':
+        // 风击中带火/冰单位 ➜ 触发大范围元素扩散机制！
+        SynergySystem.triggerWindSwirl(game, enemy, x, y);
+        break;
+
+      case 'ice':
+        // 冰冻减速
+        enemy.freezeTimer = Math.max(enemy.freezeTimer || 0, 2.2);
+        enemy.freezeFactor = 0.35;
+        break;
+
+      case 'physical':
+      default:
+        // 物理纯粹高额撕裂
+        break;
+    }
+  }
 }
+

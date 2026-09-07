@@ -81,6 +81,9 @@ function initCheatPanel(game) {
   if (btnCheatBoss) btnCheatBoss.addEventListener('click', () => game.spawnBoss(180));
 }
 
+import { GAME_CONFIG } from './core/Config.js';
+import { SKILL_CONFIG, PET_TYPES } from './features/SkillsPetsFeature.js';
+
 window.addEventListener('DOMContentLoaded', () => {
   const loadingBar = document.getElementById('loading-bar-inner');
   const loadingText = document.getElementById('loading-progress-text');
@@ -89,9 +92,32 @@ window.addEventListener('DOMContentLoaded', () => {
     const percent = Math.round((loaded / total) * 100);
     if (loadingBar) loadingBar.style.width = `${percent}%`;
     if (loadingText) loadingText.textContent = `LOADING ASSETS [${loaded}/${total}]: ${key} (${percent}%)`;
-  }).then(() => {
+  }).then(async () => {
     if (loadingBar) loadingBar.style.width = '100%';
     if (loadingText) loadingText.textContent = 'SYSTEM READY · LAUNCHING... 100%';
+
+    // 运行时异步热更配置 (Runtime JSON Hot-Reload)
+    try {
+      const [skillsJson, petsJson] = await Promise.all([
+        assets.loadJSON('config/skills.json'),
+        assets.loadJSON('config/pets.json')
+      ]);
+
+      if (skillsJson?.skills) {
+        Object.assign(GAME_CONFIG.skills, skillsJson.skills);
+        Object.assign(SKILL_CONFIG, skillsJson.skills);
+        console.log('[Config] Hot-reloaded skills.json successfully');
+      }
+      if (petsJson?.types) {
+        Object.assign(GAME_CONFIG.pets.types, petsJson.types);
+        Object.assign(PET_TYPES, petsJson.types);
+        if (petsJson.growthRate) GAME_CONFIG.pets.statGrowthPerLevel = petsJson.growthRate;
+        console.log('[Config] Hot-reloaded pets.json successfully');
+      }
+    } catch (cfgErr) {
+      console.warn('[Config] JSON hot-reload skipped, using default config:', cfgErr);
+    }
+
     setTimeout(() => {
       if (loadingScreen) loadingScreen.classList.add('fade-out');
       const gameInstance = new Game();

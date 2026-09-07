@@ -87,6 +87,17 @@ export class AssetManager {
     });
   }
 
+  async loadJSON(url) {
+    try {
+      const res = await fetch(`${url}?t=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP error status: ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn(`[AssetManager] loadJSON warning for ${url}:`, err);
+      return null;
+    }
+  }
+
   loadAll(onProgress = null) {
     const entries = Object.entries(this.manifest);
     const total = entries.length;
@@ -100,7 +111,7 @@ export class AssetManager {
       if (!img) console.warn(`[AssetManager] final fail: ${src}, using procedural fallback`);
     });
 
-    return Promise.all(promises).then(() => {
+    return Promise.all(promises).then(async () => {
       this.loaded = true;
       console.log('[AssetManager] All HD RogueGen assets loaded successfully!');
     });

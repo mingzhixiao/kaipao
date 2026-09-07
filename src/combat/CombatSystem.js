@@ -192,9 +192,20 @@ export class CombatSystem {
   onHit(enemy, dmg, isCrit = false, type = 'normal', knockVx = 0, knockVy = 0) {
     if (!enemy.active || enemy.hp <= 0) return;
     const game = this.game;
+    // 统一元素协同与反应调用
+    let elem = null;
+    if (type === 'laser' || type === 'thunder') elem = 'thunder';
+    else if (type === 'tornado' || type === 'wind') elem = 'wind';
+    else if (type === 'bomber' || type === 'fire' || type === 'rocket' || type === 'pet-fire') elem = 'fire';
+    else if (type === 'freeze' || type === 'ice') elem = 'ice';
+    else if (type === 'boomerang' || type === 'truck') elem = 'physical';
+
+    if (elem) {
+      game.synergySystem.registerHit(enemy, elem, dmg, enemy.x, enemy.y);
+    }
 
     if (enemy.freezeTimer > 0) {
-      if (type === 'rocket' || type === 'fire' || game.synergies.thermalEngine) {
+      if ((type === 'rocket' || type === 'fire' || type === 'bomber' || game.synergies.thermalEngine) && elem !== 'ice') {
         game.synergySystem.triggerThermalShock(enemy, enemy.x, enemy.y);
         return;
       }
@@ -221,8 +232,11 @@ export class CombatSystem {
 
     let textColor = '#ffffff';
     if (isCrit) textColor = '#ffaa00';
-    else if (type === 'fire' || type === 'rocket') textColor = '#ff7700';
-    else if (type === 'freeze') textColor = '#38bdf8';
+    else if (type === 'fire' || type === 'rocket' || type === 'bomber' || type === 'pet-fire') textColor = '#ff7700';
+    else if (type === 'freeze' || type === 'ice') textColor = '#38bdf8';
+    else if (type === 'laser' || type === 'thunder') textColor = '#c084fc';
+    else if (type === 'tornado' || type === 'wind') textColor = '#34d399';
+    else if (type === 'boomerang') textColor = '#facc15';
     else if (type === 'truck') textColor = '#e11d48';
     else if (type === 'emp') textColor = '#00f0ff';
 

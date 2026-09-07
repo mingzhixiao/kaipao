@@ -715,8 +715,8 @@ export class HomeLobbyUI {
     container.innerHTML = Object.entries(GAME_CONFIG.pets.types).map(([id, cfg]) => {
       const saved = petData.pets[id] || { unlocked: false, level: 1 };
       const isDeployed = selected === id;
-      const shardCost = 2 + (saved.level - 1);
-      const scrapCost = 50 + (saved.level - 1) * 35;
+      const shardCost = 2 + Math.floor((saved.level - 1) / 2) + (saved.level >= 5 ? 2 : 0);
+      const scrapCost = 50 + (saved.level - 1) * 50 + (saved.level >= 5 ? (saved.level - 4) * 60 : 0);
       const unlockCost = cfg.unlockCost || 200;
 
       const shardItem = GAME_CONFIG.items[cfg.materialId] || { name: '基因碎片', icon: '🧬' };
@@ -725,9 +725,12 @@ export class HomeLobbyUI {
       const canAffordScrap = saveManager.getScrap() >= scrapCost;
       const canUpgrade = saved.unlocked && canAffordShards && canAffordScrap;
 
+      const tierTitle = saved.level >= 10 ? '三阶·终极霸者' : (saved.level >= 5 ? '二阶·觉醒进阶' : '一阶·幼生形态');
+      const tierBadgeColor = saved.level >= 10 ? '#f59e0b' : (saved.level >= 5 ? '#a855f7' : '#38bdf8');
+
       const stats = {
-        hp: Math.round(cfg.baseStats.hp * (1 + (saved.level - 1) * 0.1)),
-        atk: Math.round(cfg.baseStats.attack * (1 + (saved.level - 1) * 0.1)),
+        hp: Math.round(cfg.baseStats.hp * (1 + (saved.level - 1) * 0.25)),
+        atk: Math.round(cfg.baseStats.attack * (1 + (saved.level - 1) * 0.25)),
         speed: cfg.baseStats.attackSpeed,
         range: cfg.baseStats.range
       };
@@ -741,16 +744,16 @@ export class HomeLobbyUI {
             <div class="pet-card-details">
               <div class="pet-card-name-row">
                 <span class="pet-card-name">${cfg.name}</span>
-                <span class="pet-card-tag">${cfg.tag}</span>
+                <span class="pet-card-tag" style="background:${tierBadgeColor}22;color:${tierBadgeColor};border:1px solid ${tierBadgeColor}55;">${tierTitle}</span>
               </div>
-              <div style="font-size:11px;color:#facc15;font-weight:800;margin:2px 0;">成长等级: Lv.${saved.level}</div>
+              <div style="font-size:11px;color:#facc15;font-weight:800;margin:2px 0;">成长等级: Lv.${saved.level} (每级全属性 +25%)</div>
               <div class="pet-card-desc">${cfg.description}</div>
             </div>
           </div>
 
           <div class="pet-stats-box">
-            <div><div class="pet-stat-unit">生命</div><div class="pet-stat-num">${stats.hp}</div></div>
-            <div><div class="pet-stat-unit">攻击</div><div class="pet-stat-num">${stats.atk}</div></div>
+            <div><div class="pet-stat-unit">护盾/生命</div><div class="pet-stat-num" style="color:#22c55e;">${stats.hp}</div></div>
+            <div><div class="pet-stat-unit">攻击力</div><div class="pet-stat-num" style="color:#f59e0b;">${stats.atk}</div></div>
             <div><div class="pet-stat-unit">攻速</div><div class="pet-stat-num">${stats.speed}</div></div>
             <div><div class="pet-stat-unit">射程</div><div class="pet-stat-num">${stats.range}</div></div>
           </div>
@@ -918,6 +921,9 @@ export class HomeLobbyUI {
 
     // 应用关卡与开战
     this.game.startStage(stageId);
+    if (this.game.feature?.syncPet) {
+      this.game.feature.syncPet();
+    }
     this.game.isPaused = false;
   }
 }

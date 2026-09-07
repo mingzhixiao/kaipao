@@ -35,50 +35,64 @@ export const GAME_CONFIG = {
   },
 
   skills: {
-    rocket: { cooldown: 5.5, minCooldown: 2.8, damage: 280, radius: 120, burnDuration: 4.5, burnDps: 45, flightDuration: 0.52 },
-    truck: { cooldown: 8.0, minCooldown: 3.8, damage: 350, knockback: 180, speed: 480, width: 75, height: 105 },
-    freeze: { cooldown: 7.0, minCooldown: 3.5, duration: 1.2, damagePerTick: 18, slowRatio: 0.2, range: 350, coneAngle: Math.PI * 0.45 },
-    tornado: { cooldown: 8, duration: 4, radius: 200, damagePerSecond: 0.3, pullStrength: 0.05, particleCount: 30 },
-    boomerang: { cooldown: 5, speed: 400, maxRange: 600, damage: 1.0, width: 20, height: 20 },
-    laser: { cooldown: 3, width: 10, damage: 1.5, burnDamage: 0.2, burnDuration: 2, displayDuration: 0.2 },
-    bomber: { cooldown: 12, radius: 250, bombCount: 3, bombInterval: 0.5, damage: 0.8, knockback: 100 }
+    rocket: { element: 'fire', cooldown: 5.5, minCooldown: 2.8, damage: 280, radius: 120, burnDuration: 4.5, burnDps: 45, flightDuration: 0.52 },
+    truck: { element: 'physical', cooldown: 8.0, minCooldown: 3.8, damage: 350, knockback: 180, speed: 480, width: 75, height: 105 },
+    freeze: { element: 'ice', cooldown: 7.0, minCooldown: 3.5, duration: 1.2, damagePerTick: 18, slowRatio: 0.2, range: 350, coneAngle: Math.PI * 0.45 },
+    tornado: { element: 'wind', cooldown: 8, duration: 4, radius: 200, damagePerSecond: 0.3, pullStrength: 0.03, particleCount: 30, maxPullSpeed: 50 },
+    boomerang: { element: 'physical', cooldown: 5, speed: 400, maxRange: 600, damage: 1.0, width: 20, height: 20, critBonus: 0.35 },
+    laser: { element: 'thunder', cooldown: 3, width: 10, damage: 1.5, burnDamage: 0.2, burnDuration: 2, displayDuration: 0.2 },
+    bomber: { element: 'fire', cooldown: 12, radius: 250, bombCount: 3, bombInterval: 0.5, damage: 0.8, knockback: 100, maxAimDistance: 300 }
   },
 
   skillCatalog: [
-    { id: 'rocket', name: '温压火箭', asset: 'assets/icon_rocket.jpg', rarity: 'legendary', type: '范围爆破', desc: '部署温压重型火箭，定点引发大范围爆轰核爆与持续烈火灼烧区。', cooldown: 5.5, materialId: 'chip_rocket' },
-    { id: 'truck', name: '装甲战车', asset: 'assets/icon_truck.jpg', rarity: 'legendary', type: '直线碾压', desc: '呼叫突击重型装甲车，自防线冲撞碾压沿途所有敌人并造成高额击退！', cooldown: 8.0, materialId: 'chip_truck' },
-    { id: 'freeze', name: '极寒射线', asset: 'assets/icon_frost.jpg', rarity: 'rare', type: '控场霜冻', desc: '向前喷射大范围超低温冰雾，附带霜冻伤害并极速削减敌人移速。', cooldown: 7.0, materialId: 'chip_freeze' },
-    { id: 'tornado', name: '裂风涡流', asset: 'assets/skills/tornado.png', rarity: 'epic', type: '牵引聚怪', desc: '生成持续 4 秒的风暴漩涡，强力牵引并持续绞杀范围内所有敌人。', cooldown: 8.0, materialId: 'chip_tornado' },
-    { id: 'boomerang', name: '回旋刃', asset: 'assets/skills/boomerang.png', rarity: 'rare', type: '往返贯穿', desc: '高速发射高周波穿透飞刃，飞出后盘旋返回，往返各可命中一次。', cooldown: 5.0, materialId: 'chip_boomerang' },
-    { id: 'laser', name: '湮灭射线', asset: 'assets/skills/laser.png', rarity: 'legendary', type: '全屏贯通', desc: '释放贯穿全屏的高能射线，并在命中轨迹上施加致命灼烧。', cooldown: 3.0, materialId: 'chip_laser' },
-    { id: 'bomber', name: '轨道轰炸', asset: 'assets/skills/bomber.png', rarity: 'epic', type: '集群轰炸', desc: '呼叫轨道连续投下 3 枚重磅航弹，对范围敌人造成巨额伤害并震退。', cooldown: 12.0, materialId: 'chip_bomber' }
+    { id: 'rocket', name: '温压火箭', element: 'fire', asset: 'assets/icon_rocket.jpg', rarity: 'legendary', type: '火系 · 范围爆破', desc: '部署温压重型火箭，定点引发大范围爆轰核爆与持续烈火灼烧区。', cooldown: 5.5, materialId: 'chip_rocket' },
+    { id: 'truck', name: '装甲战车', element: 'physical', asset: 'assets/icon_truck.jpg', rarity: 'legendary', type: '物理 · 直线碾压', desc: '呼叫突击重型装甲车，自防线冲撞碾压沿途所有敌人并造成高额击退！', cooldown: 8.0, materialId: 'chip_truck' },
+    { id: 'freeze', name: '极寒射线', element: 'ice', asset: 'assets/icon_frost.jpg', rarity: 'rare', type: '冰系 · 控场霜冻', desc: '向前喷射大范围超低温冰雾，附带霜冻伤害并极速削减敌人移速。', cooldown: 7.0, materialId: 'chip_freeze' },
+    { id: 'tornado', name: '裂风涡流', element: 'wind', asset: 'assets/skills/tornado.png', rarity: 'epic', type: '风系 · 元素扩散', desc: '生成持续 4 秒的风暴漩涡，平滑阻尼牵引敌人并使火与冰状态向外大范围扩散！', cooldown: 8.0, materialId: 'chip_tornado' },
+    { id: 'boomerang', name: '回旋刃', element: 'physical', asset: 'assets/skills/boomerang.png', rarity: 'rare', type: '物理 · 往返高暴', desc: '高速发射合金穿透飞刃，往返切割穿透，自带 35% 额外暴击率！', cooldown: 5.0, materialId: 'chip_boomerang' },
+    { id: 'laser', name: '湮灭射线', element: 'thunder', asset: 'assets/skills/laser.png', rarity: 'legendary', type: '雷系 · 感电超载', desc: '释放贯穿全屏的高能雷电射线，对直线目标造成感电，并能引燃超载大爆轰！', cooldown: 3.0, materialId: 'chip_laser' },
+    { id: 'bomber', name: '轨道轰炸', element: 'fire', asset: 'assets/skills/bomber.png', rarity: 'epic', type: '火系 · 集群轰炸', desc: '战术红圈预瞄战区，呼叫轨道轰炸机连投 3 发烈火集束重弹！', cooldown: 12.0, materialId: 'chip_bomber' }
   ],
 
   synergyCatalog: [
     { name: '热力冲击引擎', synergy: '元素反应 · 殉爆', desc: '火箭或烈焰击中冰冻目标时，引发 220% 威力温差热力殉爆与破甲蒸汽！', icon: 'assets/icon_thermal.jpg', rarity: 'legendary' },
     { name: '电磁超导弹头', synergy: '电磁连锁', desc: '主武器暴击时释放高压电弧，自动弹射连锁跳跃至附近 2 个敌方目标！', icon: 'assets/icon_tesla.jpg', rarity: 'epic' },
+    { name: '雷火超载爆轰', synergy: '元素反应 · 超载', desc: '雷电属性攻击击中已灼烧的敌人时，触发剧烈超载大爆炸并击退周围群怪！', icon: 'assets/skills/laser.png', rarity: 'legendary' },
+    { name: '裂风元素扩散', synergy: '元素反应 · 扩散', desc: '风暴涡流吸附敌人时，将其身上的燃烧或冰冻状态瞬间向周围所有怪物扩散！', icon: 'assets/skills/tornado.png', rarity: 'epic' },
     { name: '防线 EMP 脉冲环', synergy: '绝对防御', desc: '护盾破裂时爆发超强 EMP 冲击波，眩晕全屏所有普通感染者 1.5 秒！', icon: 'assets/icon_emp.jpg', rarity: 'epic' },
     { name: '战车热能喷射器', synergy: '火焰战车', desc: '装甲战车行进尾迹遗留持续燃烧的高温火径，持续焚烧踩踏的敌人。', icon: 'assets/icon_inferno.png', rarity: 'legendary' },
     { name: '极低温裂碎', synergy: '冰爆碎冰', desc: '击杀处于霜冻状态的敌人时发生冰爆，造成范围伤害并冻结周围目标。', icon: 'assets/icon_shatter.png', rarity: 'legendary' }
   ],
 
   pets: {
-    statGrowthPerLevel: 0.1,
+    statGrowthPerLevel: 0.25,
     followDistance: 100,
+    recoveryTime: 10.0,
+    teleportThreshold: 300,
     types: {
       fluffy: {
         id: 'fluffy', name: '小毛球', asset: 'assets/pets/fluffy.png',
-        tag: '弹幕伙伴', materialId: 'fluffy_shard',
-        description: '发射高能量三连弹幕打击敌方集群',
-        baseStats: { hp: 50, attack: 10, attackSpeed: 1.0, moveSpeed: 200, range: 300 },
-        skill: 'BULLET_SPRAY', skillParams: { bulletCount: 3, spread: 0.30 }
+        tag: '速射护盾', materialId: 'fluffy_shard',
+        description: '发射高能量连发弹幕打击敌方，并用护盾抵挡怪群冲击',
+        baseStats: { hp: 70, attack: 14, attackSpeed: 1.1, moveSpeed: 210, range: 320, shield: 70 },
+        skill: 'BULLET_SPRAY', skillParams: { bulletCount: 3, spread: 0.32 },
+        evolutions: [
+          { level: 1, title: '一阶·幼生毛球', bulletCount: 3, desc: '发射 3 连速射高能弹幕' },
+          { level: 5, title: '二阶·觉醒爆裂球', bulletCount: 5, desc: '发射 5 连贯穿弹幕，附带减速' },
+          { level: 10, title: '三阶·终极机甲神球', bulletCount: 7, desc: '发射 7 连爆轰弹幕，护盾强化' }
+        ]
       },
       dragon: {
-        id: 'dragon', name: '幼龙', asset: 'assets/pets/dragon.png',
-        tag: '灼烧伙伴', materialId: 'dragon_shard',
-        description: '扇形范围喷吐高热烈焰并持续灼烧敌人',
-        baseStats: { hp: 80, attack: 15, attackSpeed: 0.8, moveSpeed: 150, range: 250 },
-        skill: 'FIRE_BREATH', skillParams: { duration: 1, angle: Math.PI / 3 }
+        id: 'dragon', name: '烈焰幼龙', asset: 'assets/pets/dragon.png',
+        tag: '炽烈灼烧', materialId: 'dragon_shard',
+        description: '扇形喷吐高热烈焰吐息，造成范围伤害并持续引燃战场',
+        baseStats: { hp: 100, attack: 22, attackSpeed: 0.85, moveSpeed: 160, range: 260, shield: 100 },
+        skill: 'FIRE_BREATH', skillParams: { duration: 1.0, angle: Math.PI / 3 },
+        evolutions: [
+          { level: 1, title: '一阶·幼龙烈火', angle: Math.PI / 3, desc: '喷吐 60° 扇形高温龙炎' },
+          { level: 5, title: '二阶·狂炎巨龙', angle: Math.PI / 2, desc: '喷吐 90° 超大范围龙炎并留下火地' },
+          { level: 10, title: '三阶·灭世熔岩龙', angle: Math.PI * 0.65, desc: '灭世扇面龙炎，附加爆裂熔岩' }
+        ]
       }
     }
   },
