@@ -1,21 +1,54 @@
 import { assets } from './systems/AssetManager.js';
 import { Game } from './core/Game.js';
+import { runeSystem } from './systems/RuneSystem.js';
+
+function wireStageAndRunes(game) {
+  // 关卡切换
+  game.startStage = function(stageId) {
+    this.waveSystem.setStage(stageId);
+    this.resetGame();
+  };
+
+  // 在 reset 基准属性之后叠永久符文
+  const origReset = game.resetGame.bind(game);
+  game.resetGame = function() {
+    origReset();
+    this.expMultiplier = 1;
+    runeSystem.reload();
+    runeSystem.applyAll(this);
+    // 符文可能改了 maxHp/shield，同步满状态
+    this.fortress.hp = this.fortress.maxHp;
+    this.fortress.shield = this.fortress.maxShield;
+    this.hud.updateHUD(this);
+  };
+
+  // 经验加成
+  const origGain = game.gainExp.bind(game);
+  game.gainExp = function(amount) {
+    amount = Math.round(amount * (this.expMultiplier || 1));
+    origGain(amount);
+  };
+
+  // 初始关卡
+  game.stageId = 1;
+  game.stageName = '';
+  game.expMultiplier = 1;
+  game.lastStageReward = null;
+  game.waveSystem.setStage(1);
+}
 
 function initCheatPanel(game) {
   const params = new URLSearchParams(location.search);
   const debug = params.get('debug') === '1' || params.get('cheat') === '1';
   const toggleBtn = document.getElementById('cheat-panel-toggle');
   const panel = document.getElementById('cheat-panel');
-
   if (!debug) {
     if (toggleBtn) toggleBtn.style.display = 'none';
     if (panel) panel.style.display = 'none';
     return;
   }
-
   if (toggleBtn) toggleBtn.style.display = '';
   if (panel) panel.style.display = '';
-
   if (toggleBtn && panel) {
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -23,10 +56,8 @@ function initCheatPanel(game) {
       toggleBtn.textContent = panel.classList.contains('open') ? '✖️ 关闭' : '🛠️ 调试';
     });
   }
-
   const btnCheatLvl = document.getElementById('cheat-lvl');
   if (btnCheatLvl) btnCheatLvl.addEventListener('click', () => game.triggerLevelUp());
-
   const btnCheatHeal = document.getElementById('cheat-heal');
   if (btnCheatHeal) {
     btnCheatHeal.addEventListener('click', () => {
@@ -36,7 +67,6 @@ function initCheatPanel(game) {
       game.hud.updateHUD(game);
     });
   }
-
   const btnCheatSkills = document.getElementById('cheat-skills');
   if (btnCheatSkills) {
     btnCheatSkills.addEventListener('click', () => {
@@ -44,14 +74,10 @@ function initCheatPanel(game) {
       game.skills.truck.level = Math.max(1, game.skills.truck.level + 1);
       game.skills.freeze.level = Math.max(1, game.skills.freeze.level + 1);
       game.hud.updateSkillHUD(game);
-      game.spawnDamageText(game.hero.x, game.hero.y - 50, 'SKILLS UPGRADE!', '#ffcc00', true);
     });
   }
-
   const btnCheatBoss = document.getElementById('cheat-boss');
-  if (btnCheatBoss) {
-    btnCheatBoss.addEventListener('click', () => game.spawnBoss(180));
-  }
+  if (btnCheatBoss) btnCheatBoss.addEventListener('click', () => game.spawnBoss(180));
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -66,15 +92,15 @@ window.addEventListener('DOMContentLoaded', () => {
   }).then(() => {
     if (loadingBar) loadingBar.style.width = '100%';
     if (loadingText) loadingText.textContent = 'SYSTEM READY · LAUNCHING... 100%';
-
     setTimeout(() => {
       if (loadingScreen) loadingScreen.classList.add('fade-out');
       const gameInstance = new Game();
+      wireStageAndRunes(gameInstance);
       window.gameInstance = gameInstance;
       initCheatPanel(gameInstance);
       gameInstance.isPaused = true;
       gameInstance.hud.showStageSelectModal(gameInstance);
-      console.log('[Kaipao Roguelike] Modular Engine + Stage/Rune System Ready!');
+      console.log('[Kaipao] Stage Campaign + Rune Forge ready');
     }, 280);
   });
 });
