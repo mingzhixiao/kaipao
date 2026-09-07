@@ -73,7 +73,7 @@ function patchPetPrototype() {
 
     if (shieldBefore > 0 && this.shield <= 0 && !this.isCurled) {
       this.shield = 0;
-      game.spawnDamageText(this.x, this.y - 20, '[SHIELD] OVERLOAD · RECOVERING', '#38bdf8', true, true);
+      game.spawnDamageText(this.x, this.y - 20, '[SHIELD] BREAK', '#38bdf8', true, true);
     }
 
     if (this.hp <= 0) {
