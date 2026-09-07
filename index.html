@@ -1,0 +1,854 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>末日塔防 Roguelike H5 - 高清美术重制版</title>
+  <style>
+    :root {
+      --bg-dark: #070a12;
+      --panel-bg: rgba(13, 20, 32, 0.9);
+      --panel-border: rgba(0, 240, 255, 0.35);
+      --neon-cyan: #00f0ff;
+      --neon-orange: #ff7700;
+      --neon-green: #39ff14;
+      --neon-red: #ff2a5f;
+      --neon-gold: #ffcc00;
+      --neon-purple: #b34bfd;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #030508;
+      font-family: var(--font-family);
+      color: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* 模拟器外壳 (PC端居中竖屏，移动端全屏) */
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 500px;
+      max-height: 900px;
+      background: #0b0f19;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.95), 0 0 25px rgba(0, 240, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 540px) {
+      #game-container {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+      }
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    /* 顶部战况 HUD */
+    #top-hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 14px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: linear-gradient(to bottom, rgba(5, 8, 16, 0.95) 0%, rgba(5, 8, 16, 0.5) 75%, transparent 100%);
+      z-index: 10;
+    }
+
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    .badge-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hud-badge {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+    }
+
+    .hud-badge .val {
+      color: #fff;
+      font-size: 13px;
+      font-family: monospace;
+    }
+
+    .hud-badge.level .val { color: var(--neon-gold); }
+    .hud-badge.wave .val { color: var(--neon-cyan); }
+    .hud-badge.kills .val { color: var(--neon-red); }
+
+    .hud-buttons {
+      display: flex;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .icon-btn {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .icon-btn:hover, .icon-btn:active {
+      background: rgba(0, 240, 255, 0.25);
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      transform: scale(1.05);
+    }
+
+    /* 经验进度条 */
+    .exp-bar-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 4px;
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,0.8);
+    }
+
+    .exp-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #00f0ff, #3b82f6);
+      box-shadow: 0 0 12px #00f0ff;
+      transition: width 0.15s ease-out;
+    }
+
+    /* 底部阵地与技能状态栏 */
+    #bottom-hud {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 12px 12px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: linear-gradient(to top, rgba(5, 8, 16, 0.98) 0%, rgba(5, 8, 16, 0.7) 70%, transparent 100%);
+      z-index: 10;
+    }
+
+    .fortress-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #94a3b8;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+    .bar-outer {
+      flex: 1;
+      height: 8px;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-hp {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      box-shadow: 0 0 8px #10b981;
+      transition: width 0.15s ease-out;
+    }
+
+    .bar-shield {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #00f0ff, #0284c7);
+      box-shadow: 0 0 8px #00f0ff;
+      transition: width 0.15s ease-out;
+    }
+
+    /* 技能栏 (使用高清原画图标) */
+    .skills-hud {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 4px;
+      pointer-events: auto;
+    }
+
+    .skill-slot {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      background-size: cover;
+      background-position: center;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+      filter: grayscale(0.85) brightness(0.6);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .skill-slot.unlocked {
+      filter: grayscale(0) brightness(1);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.35);
+    }
+
+    .skill-slot#slot-skill-a { background-image: url('assets/icon_rocket.jpg'); }
+    .skill-slot#slot-skill-b { background-image: url('assets/icon_truck.jpg'); }
+    .skill-slot#slot-skill-c { background-image: url('assets/icon_frost.jpg'); }
+
+    .skill-slot .skill-cd-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.72);
+      height: 0%;
+      transition: height 0.05s linear;
+    }
+
+    .skill-slot .skill-lvl {
+      position: absolute;
+      bottom: 2px;
+      right: 3px;
+      font-size: 10px;
+      font-weight: 900;
+      color: var(--neon-gold);
+      background: rgba(0,0,0,0.85);
+      border: 1px solid rgba(255, 204, 0, 0.4);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* 升级 3 选 1 弹窗 */
+    #upgrade-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 7, 14, 0.94);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-title-box {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-subtitle {
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
+    }
+
+    .cards-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 390px;
+    }
+
+    .upgrade-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    }
+
+    .upgrade-card:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 25px rgba(0, 240, 255, 0.3);
+    }
+
+    .upgrade-card:active {
+      transform: scale(0.98);
+    }
+
+    .upgrade-card.rarity-common {
+      border-color: rgba(59, 130, 246, 0.6);
+    }
+    .upgrade-card.rarity-rare {
+      border-color: rgba(168, 85, 247, 0.8);
+      background: linear-gradient(135deg, rgba(46, 26, 71, 0.95) 0%, rgba(20, 15, 38, 0.98) 100%);
+    }
+    .upgrade-card.rarity-legendary {
+      border-color: rgba(245, 158, 11, 0.9);
+      background: linear-gradient(135deg, rgba(69, 44, 15, 0.95) 0%, rgba(26, 18, 9, 0.98) 100%);
+      box-shadow: 0 4px 22px rgba(245, 158, 11, 0.35);
+    }
+
+    .card-icon-img {
+      width: 54px;
+      height: 54px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      flex-shrink: 0;
+    }
+
+    .card-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .card-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+    }
+
+    .rarity-common .card-tag { color: #60a5fa; background: rgba(59, 130, 246, 0.25); }
+    .rarity-rare .card-tag { color: #c084fc; background: rgba(168, 85, 247, 0.25); }
+    .rarity-epic .card-tag { color: #f472b6; background: rgba(236, 72, 153, 0.3); }
+    .rarity-legendary .card-tag { color: #fbbf24; background: rgba(245, 158, 11, 0.3); }
+
+    .upgrade-card.rarity-epic {
+      border-color: rgba(236, 72, 153, 0.85);
+      background: linear-gradient(135deg, rgba(58, 20, 48, 0.95) 0%, rgba(26, 12, 28, 0.98) 100%);
+      box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
+    }
+
+    .card-synergy {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 800;
+      color: #00f0ff;
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      border-radius: 3px;
+      padding: 1px 5px;
+      margin-top: 3px;
+      width: fit-content;
+      letter-spacing: 0.5px;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+
+    .modal-footer {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      max-width: 390px;
+    }
+
+    .reroll-btn {
+      background: rgba(30, 41, 59, 0.92);
+      border: 1.5px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 12px rgba(0, 240, 255, 0.25);
+      transition: all 0.2s;
+    }
+
+    .reroll-btn:hover {
+      background: rgba(0, 240, 255, 0.25);
+      transform: scale(1.03);
+      box-shadow: 0 4px 18px rgba(0, 240, 255, 0.45);
+    }
+
+    .reroll-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #64748b;
+      color: #94a3b8;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* 顶部 Boss 霸气专属血条 HUD */
+    #boss-hud {
+      width: 100%;
+      background: rgba(26, 12, 18, 0.94);
+      border: 1.5px solid var(--neon-red);
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: 0 0 20px rgba(255, 42, 95, 0.4), inset 0 0 10px rgba(255, 42, 95, 0.2);
+      animation: bossGlow 2s infinite alternate;
+      pointer-events: auto;
+    }
+
+    @keyframes bossGlow {
+      from { box-shadow: 0 0 10px rgba(255, 42, 95, 0.3); border-color: rgba(255, 42, 95, 0.7); }
+      to { box-shadow: 0 0 24px rgba(255, 42, 95, 0.85); border-color: #ff2a5f; }
+    }
+
+    .boss-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 900;
+      color: #ff4d79;
+      letter-spacing: 1px;
+    }
+
+    .boss-bar-outer {
+      width: 100%;
+      height: 10px;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .boss-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff2a5f, #ff7700);
+      box-shadow: 0 0 12px #ff2a5f;
+      transition: width 0.1s ease-out;
+    }
+
+    /* 低血量全屏警报暗角脉动 */
+    #emergency-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 35;
+      opacity: 0;
+      box-shadow: inset 0 0 80px rgba(255, 42, 95, 0.85);
+      transition: opacity 0.3s ease;
+    }
+
+    #emergency-overlay.active {
+      animation: emergencyPulse 1.2s infinite ease-in-out;
+    }
+
+    @keyframes emergencyPulse {
+      0% { opacity: 0.15; }
+      50% { opacity: 0.85; }
+      100% { opacity: 0.15; }
+    }
+
+    /* 游戏结束结算面板 */
+    #gameover-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 8, 16, 0.95);
+      z-index: 120;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .report-card {
+      width: 100%;
+      max-width: 380px;
+      background: rgba(17, 24, 39, 0.95);
+      border: 1.5px solid var(--neon-red);
+      border-radius: 14px;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 0 40px rgba(255, 42, 95, 0.3);
+    }
+
+    .report-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--neon-red);
+      letter-spacing: 2px;
+      text-shadow: 0 0 12px rgba(255, 42, 95, 0.6);
+    }
+
+    .stats-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 8px 0;
+    }
+
+    .stat-item {
+      background: rgba(30, 41, 59, 0.7);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      font-family: monospace;
+    }
+
+    .primary-btn {
+      width: 100%;
+      background: linear-gradient(90deg, #ff2a5f, #ff7700);
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 42, 95, 0.4);
+      transition: all 0.2s;
+    }
+
+    .primary-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 20px rgba(255, 42, 95, 0.6);
+    }
+
+    /* 波次提示 Banner */
+    #wave-banner {
+      position: absolute;
+      top: 25%;
+      left: 0;
+      right: 0;
+      text-align: center;
+      pointer-events: none;
+      z-index: 50;
+      display: none;
+      animation: bannerPop 2s ease-in-out forwards;
+    }
+
+    @keyframes bannerPop {
+      0% { opacity: 0; transform: scale(0.6) translateY(-20px); }
+      15% { opacity: 1; transform: scale(1.05) translateY(0); }
+      30% { transform: scale(1); }
+      80% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.1) translateY(-20px); }
+    }
+
+    .banner-text {
+      display: inline-block;
+      padding: 8px 30px;
+      background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.95), transparent);
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 15px var(--neon-cyan);
+      letter-spacing: 2px;
+    }
+
+    .banner-subtext {
+      font-size: 12px;
+      color: #f1f5f9;
+      letter-spacing: 4px;
+      margin-top: 4px;
+    }
+
+    /* 测试辅助面板 (右上角折叠) */
+    #cheat-panel {
+      position: absolute;
+      bottom: 95px;
+      left: 10px;
+      z-index: 80;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      opacity: 0.85;
+    }
+
+    .cheat-btn {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #cbd5e1;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+
+    .cheat-btn:hover {
+      background: rgba(0, 240, 255, 0.25);
+      border-color: var(--neon-cyan);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- 顶部战斗 HUD -->
+    <div id="top-hud">
+      <div class="hud-row">
+        <div class="badge-group">
+          <div class="hud-badge level">LV <span class="val" id="hud-level">1</span></div>
+          <div class="hud-badge wave">WAVE <span class="val" id="hud-wave">1</span></div>
+          <div class="hud-badge kills">💀 <span class="val" id="hud-kills">0</span></div>
+        </div>
+        <div class="hud-buttons">
+          <button class="icon-btn" id="btn-speed" title="倍速">1x</button>
+          <button class="icon-btn" id="btn-sound" title="声音">🔊</button>
+          <button class="icon-btn" id="btn-pause" title="暂停">⏸️</button>
+        </div>
+      </div>
+      <!-- 经验进度条 -->
+      <div class="exp-bar-container">
+        <div class="exp-bar-fill" id="exp-fill"></div>
+      </div>
+
+      <!-- Boss 状态专属血条 HUD (首领波次激活) -->
+      <div id="boss-hud" style="display: none;">
+        <div class="boss-info">
+          <span class="boss-title">⚠️ 变异暴君领主 · TITAN OVERLORD</span>
+          <span class="boss-hp-text" id="boss-hp-val">100%</span>
+        </div>
+        <div class="boss-bar-outer">
+          <div class="boss-bar-fill" id="boss-hp-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 低血量全屏警报遮罩 -->
+    <div id="emergency-overlay"></div>
+
+    <!-- 主游戏画布 -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- 波次通知 Banner -->
+    <div id="wave-banner">
+      <div class="banner-text" id="banner-wave-text">WAVE 1</div>
+      <div class="banner-subtext" id="banner-wave-sub">感染者大群正在接近！</div>
+    </div>
+
+    <!-- 底部状态与技能 CD 显示 -->
+    <div id="bottom-hud">
+      <div class="fortress-bars">
+        <div class="bar-wrap">
+          <span>HP</span>
+          <div class="bar-outer">
+            <div class="bar-hp" id="hp-bar-fill"></div>
+          </div>
+          <span id="hp-val">1000/1000</span>
+        </div>
+        <div class="bar-wrap">
+          <span>SHD</span>
+          <div class="bar-outer">
+            <div class="bar-shield" id="shield-bar-fill"></div>
+          </div>
+          <span id="shield-val">300/300</span>
+        </div>
+      </div>
+
+      <!-- 核心三大技能状态栏 (高清生成图标) -->
+      <div class="skills-hud">
+        <div class="skill-slot" id="slot-skill-a" title="技能A: 温压火箭">
+          <div class="skill-cd-mask" id="mask-skill-a"></div>
+          <div class="skill-lvl" id="lvl-skill-a">Lv.0</div>
+        </div>
+        <div class="skill-slot" id="slot-skill-b" title="技能B: 装甲战车">
+          <div class="skill-cd-mask" id="mask-skill-b"></div>
+          <div class="skill-lvl" id="lvl-skill-b">Lv.0</div>
+        </div>
+        <div class="skill-slot" id="slot-skill-c" title="技能C: 极寒射线">
+          <div class="skill-cd-mask" id="mask-skill-c"></div>
+          <div class="skill-lvl" id="lvl-skill-c">Lv.0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 快速调试面板 (便于验证技能与升级) -->
+    <div id="cheat-panel">
+      <button class="cheat-btn" id="cheat-lvl">+ 升级</button>
+      <button class="cheat-btn" id="cheat-heal">+ 修复防线</button>
+      <button class="cheat-btn" id="cheat-skills">+ 解锁全技能</button>
+      <button class="cheat-btn" id="cheat-boss">⚠️ 召唤Boss</button>
+    </div>
+
+    <!-- Roguelike 3选1 强化卡片弹窗 -->
+    <div id="upgrade-modal">
+      <div class="modal-title-box">
+        <div class="modal-subtitle">TACTICAL UPGRADE</div>
+        <div class="modal-title">战略强化选择</div>
+      </div>
+      <div class="cards-container" id="cards-container">
+        <!-- 动态生成 3 张卡片 -->
+      </div>
+      <div class="modal-footer">
+        <button class="reroll-btn" id="btn-reroll">🎲 战术重抽 (剩余 <span id="reroll-count">1</span> 次)</button>
+      </div>
+    </div>
+
+    <!-- 游戏结束战报弹窗 -->
+    <div id="gameover-modal">
+      <div class="report-card">
+        <div class="report-title">防线失守</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label">抵御波次</div>
+            <div class="stat-value" id="res-wave">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">击杀感染者</div>
+            <div class="stat-value" id="res-kills">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">存活时间</div>
+            <div class="stat-value" id="res-time">00:00</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">指挥官等级</div>
+            <div class="stat-value" id="res-level">1</div>
+          </div>
+        </div>
+        <button class="primary-btn" id="btn-restart">重新构筑防线</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 寮曞叆鐜颁唬妯″潡鍖栧紩鎿庤剼鏈?(ES Modules: 褰诲簳瑙ｈ€﹀姛鑳芥ā鍧椾笌鎻愬崌鎬ц兘) -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
