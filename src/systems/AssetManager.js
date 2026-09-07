@@ -27,7 +27,7 @@ export class AssetManager {
       // 高清超音速等离子光矛与穿甲曳光弹头图素
       bullet_normal: 'assets/bullet_normal.png',
       bullet_crit: 'assets/bullet_crit.png',
-      // 技能与战略强化专属高清徽章 (优先小体积 JPG)
+      // 技能与战略强化专属高清徽章
       icon_rocket: 'assets/icon_rocket.jpg',
       icon_truck: 'assets/icon_truck.jpg',
       icon_frost: 'assets/icon_frost.jpg',
@@ -41,7 +41,14 @@ export class AssetManager {
       icon_firerate: 'assets/icon_firerate.jpg',
       icon_crit: 'assets/icon_crit.jpg',
       icon_inferno: 'assets/icon_inferno.jpg',
-      icon_shatter: 'assets/icon_shatter.jpg'
+      icon_shatter: 'assets/icon_shatter.jpg',
+      // 新增战术技能与宠物矢量素材
+      skill_tornado: 'assets/skills/tornado.svg',
+      skill_boomerang: 'assets/skills/boomerang.svg',
+      skill_laser: 'assets/skills/laser.svg',
+      skill_bomber: 'assets/skills/bomber.svg',
+      pet_fluffy: 'assets/pets/fluffy.svg',
+      pet_dragon: 'assets/pets/dragon.svg'
     };
   }
 
@@ -81,7 +88,7 @@ export class AssetManager {
             resolve(null);
           }
         };
-        img.src = `${src}?v=11&t=${Date.now()}`;
+        img.src = `${src}?v=12&t=${Date.now()}`;
       };
       tryLoad();
     });
@@ -128,7 +135,6 @@ export class AssetManager {
     return this.images[baseKey] || this.images['runner'] || null;
   }
 
-  // 获取高清重型装甲车运动帧
   getTruck(frameIdx) {
     const idx = Math.abs(Math.floor(frameIdx)) % 2;
     return this.images[`truck_${idx}`] || this.images['truck'] || null;
