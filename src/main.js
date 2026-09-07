@@ -4,38 +4,48 @@ import { runeSystem } from './systems/RuneSystem.js';
 import { installSkillsPetsFeature } from './features/SkillsPetsFeature.js';
 
 function wireStageAndRunes(game) {
-  // 关卡切换
   game.startStage = function(stageId) {
     this.waveSystem.setStage(stageId);
     this.resetGame();
   };
 
-  // 在 reset 基准属性之后叠永久符文
   const origReset = game.resetGame.bind(game);
   game.resetGame = function() {
     origReset();
     this.expMultiplier = 1;
     runeSystem.reload();
     runeSystem.applyAll(this);
-    // 符文可能改了 maxHp/shield，同步满状态
     this.fortress.hp = this.fortress.maxHp;
     this.fortress.shield = this.fortress.maxShield;
     this.hud.updateHUD(this);
   };
 
-  // 经验加成
   const origGain = game.gainExp.bind(game);
   game.gainExp = function(amount) {
     amount = Math.round(amount * (this.expMultiplier || 1));
     origGain(amount);
   };
 
-  // 初始关卡
   game.stageId = 1;
   game.stageName = '';
   game.expMultiplier = 1;
   game.lastStageReward = null;
   game.waveSystem.setStage(1);
+}
+
+function bindFeatureTarget(game) {
+  if (!game.feature || game.feature.targetBound) return;
+  game.feature.targetBound = true;
+  const updateTarget = (e) => {
+    const rect = game.canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    game.feature.target.x = clientX - rect.left;
+    game.feature.target.y = clientY - rect.top;
+  };
+  game.canvas.addEventListener('mousemove', updateTarget, { passive: true });
+  game.canvas.addEventListener('touchmove', updateTarget, { passive: true });
+  game.canvas.addEventListener('touchstart', updateTarget, { passive: true });
 }
 
 function initCheatPanel(game) {
@@ -99,6 +109,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const gameInstance = new Game();
       wireStageAndRunes(gameInstance);
       installSkillsPetsFeature(gameInstance);
+      bindFeatureTarget(gameInstance);
       window.gameInstance = gameInstance;
       initCheatPanel(gameInstance);
       gameInstance.isPaused = true;
