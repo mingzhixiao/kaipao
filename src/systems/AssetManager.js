@@ -7,11 +7,19 @@ export class AssetManager {
       bg_highway: 'assets/bg_highway.jpg',
       fortress_wall: 'assets/fortress_wall.jpg',
       hero: 'assets/hero.png',
-      // 废土突变原画高清怪兽图素 (2.5D 俯视统一视角，精细透明无噪点)
+      // 废土突变原画高清怪兽图素及双足/四足生物动力学动作帧
       runner: 'assets/runner.png',
+      runner_0: 'assets/runner_0.png',
+      runner_1: 'assets/runner_1.png',
       charger: 'assets/charger.png',
+      charger_0: 'assets/charger_0.png',
+      charger_1: 'assets/charger_1.png',
       behemoth: 'assets/behemoth.png',
+      behemoth_0: 'assets/behemoth_0.png',
+      behemoth_1: 'assets/behemoth_1.png',
       boss_overlord: 'assets/boss_overlord.png',
+      boss_overlord_0: 'assets/boss_overlord_0.png',
+      boss_overlord_1: 'assets/boss_overlord_1.png',
       // 高清末日重型突击装甲战车动力学帧
       truck_0: 'assets/truck_frame_0.png',
       truck_1: 'assets/truck_frame_1.png',
@@ -58,7 +66,7 @@ export class AssetManager {
           if (onProgress) onProgress(loadedCount, total, key);
           resolve();
         };
-        img.src = `${src}?v=6`;
+        img.src = `${src}?v=7`;
       });
     });
 
@@ -68,12 +76,15 @@ export class AssetManager {
     });
   }
 
-  // 获取角色对应步频动作图片
+  // 获取角色对应步频动作图片 (支持多帧步态切换)
   getFrame(type, frameIdx) {
-    if (type === 'mutant_overlord' || type === 'boss_overlord') {
-      return this.images['boss_overlord'] || null;
+    const baseKey = (type === 'mutant_overlord' || type === 'boss_overlord') ? 'boss_overlord' : type;
+    if (frameIdx !== undefined && frameIdx !== null) {
+      const idx = Math.abs(Math.floor(frameIdx)) % 2;
+      const frameKey = `${baseKey}_${idx}`;
+      if (this.images[frameKey]) return this.images[frameKey];
     }
-    return this.images[type] || this.images['runner'] || null;
+    return this.images[baseKey] || this.images['runner'] || null;
   }
 
   // 获取高清重型装甲车运动帧

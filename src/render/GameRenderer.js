@@ -200,31 +200,40 @@ export class GameRenderer {
       const isMoving = e.y < targetY;
 
       let bobY = 0;
+      let swayX = 0;
       let tiltAngle = 0;
       let scaleX = 1;
       let scaleY = 1;
+      const phase = e.walkPhase !== undefined ? e.walkPhase : ((e.walkTime || 0) * 8);
+      const stepCycle = phase % Math.PI;
+      const stepSqueeze = Math.sin(stepCycle);
 
       if (isMoving) {
-        const wt = e.walkTime || 0;
-        const stepFreq = e.type === 'charger' ? 14 : (e.type === 'behemoth' ? 6 : 9);
-        const phase = wt * stepFreq;
+        // 垂直脚掌踏地顿挫 (落地屈膝蓄力，蹬地腾空向前)
+        bobY = stepSqueeze * (e.isBoss ? 5.2 : (e.type === 'behemoth' ? 4.5 : (e.type === 'charger' ? 6.2 : 3.8)));
 
-        // 垂直脚掌踏地顿挫：提膝蓄力微升，踏地瞬间下沉并微压扁
-        const stepCycle = phase % Math.PI;
-        const stepSqueeze = Math.sin(stepCycle);
-        bobY = stepSqueeze * (e.isBoss ? 4.2 : (e.type === 'behemoth' ? 3.5 : 2.6));
+        // 左右跨步肩部微倾与重心摆动 (幅度显著，摆脱平面冰面平移)
+        tiltAngle = Math.sin(phase) * (e.type === 'behemoth' ? 0.16 : (e.type === 'charger' ? 0.08 : 0.13));
 
-        // 左右跨步肩部微倾与重心摆动 (真实奔跑躯干微转，绝非平面钟摆平移)
-        tiltAngle = Math.sin(phase) * (e.type === 'charger' ? 0.03 : 0.045);
+        // 侧向重心转移 (巨兽四足/猩猩步态大幅晃动，疾行者狂暴左右变向)
+        swayX = Math.sin(phase) * (e.type === 'behemoth' ? (e.radius * 0.22) : (e.radius * 0.11));
 
         // 踏地受力横向挤压与蹬地纵向拉伸
-        scaleX = 1 + (1 - stepSqueeze) * 0.07;
-        scaleY = 1 - (1 - stepSqueeze) * 0.06;
+        if (e.type === 'charger') {
+          scaleX = 1.14 - stepSqueeze * 0.24;
+          scaleY = 0.84 + stepSqueeze * 0.32;
+        } else if (e.type === 'behemoth') {
+          scaleX = 1.0 + (1 - stepSqueeze) * 0.14;
+          scaleY = 1.0 - (1 - stepSqueeze) * 0.12;
+        } else {
+          scaleX = 1.0 + (1 - stepSqueeze) * 0.10;
+          scaleY = 1.0 - (1 - stepSqueeze) * 0.08;
+        }
       } else {
         const attackPhase = e.attackTimer / e.attackCooldown;
-        const lunge = Math.sin(attackPhase * Math.PI) * 10;
+        const lunge = Math.sin(attackPhase * Math.PI) * 12;
         bobY = lunge;
-        scaleY = 1 + Math.sin(attackPhase * Math.PI) * 0.2;
+        scaleY = 1 + Math.sin(attackPhase * Math.PI) * 0.24;
       }
 
       // 2. 受击顿挫物理震荡
@@ -248,7 +257,7 @@ export class GameRenderer {
         hitAngleTilt = Math.sin(ratio * Math.PI * 2) * 0.12;
       }
 
-      ctx.translate(e.x + knockX + hitJitterX, e.y + bobY + knockY + hitJitterY);
+      ctx.translate(e.x + swayX + knockX + hitJitterX, e.y + bobY + knockY + hitJitterY);
       ctx.rotate(tiltAngle + hitAngleTilt);
       ctx.scale(scaleX * (1 + hitSquash), scaleY * (1 - hitSquash));
 
@@ -256,23 +265,24 @@ export class GameRenderer {
       const depthProgress = Math.max(0, Math.min(1, (e.y + 40) / (targetY + 40)));
       const depthScale = 0.92 + depthProgress * 0.12;
 
-      // 3. 柏油路面自然接触投影 (随步伐呼吸，无杂乱色块)
-      const shadowW = e.radius * 1.15 * depthScale * scaleX;
+      // 3. 柏油路面自然接触投影 (随左右脚落点动态位移与呼吸伸缩)
+      const shadowFootShift = isMoving ? Math.sin(phase) * (e.radius * 0.28) : 0;
+      const shadowW = e.radius * (1.15 + (1 - stepSqueeze) * 0.24) * depthScale * scaleX;
       const shadowH = e.radius * 0.42 * depthScale;
       const shadowAlpha = 0.45 + (bobY / 5.0) * 0.2;
 
       ctx.save();
-      const shadowGrad = ctx.createRadialGradient(0, e.radius * 0.68 * depthScale, 0, 0, e.radius * 0.68 * depthScale, shadowW);
+      const shadowGrad = ctx.createRadialGradient(shadowFootShift, e.radius * 0.68 * depthScale, 0, shadowFootShift, e.radius * 0.68 * depthScale, shadowW);
       shadowGrad.addColorStop(0, `rgba(5, 8, 16, ${shadowAlpha})`);
       shadowGrad.addColorStop(0.65, `rgba(5, 8, 16, ${shadowAlpha * 0.4})`);
       shadowGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = shadowGrad;
       ctx.beginPath();
-      ctx.ellipse(0, e.radius * 0.68 * depthScale, shadowW, shadowH, 0, 0, Math.PI * 2);
+      ctx.ellipse(shadowFootShift, e.radius * 0.68 * depthScale, shadowW, shadowH, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
-      // Boss 霸气暗红辐射火圈
+      // 4. Boss 霸气暗红辐射火圈与肩部排气喷烟
       if (e.isBoss) {
         const pulse = Math.sin((e.walkTime || 0) * 5) * 4;
         const auraRadius = (e.radius + 18 + pulse) * depthScale;
@@ -294,14 +304,18 @@ export class GameRenderer {
         ctx.fill();
       }
 
-      // 4. 高精怪兽原画 Sprite 渲染
-      const sprite = assets.getFrame(e.type);
+      // 5. 高精怪兽原画 Sprite 渲染 (支持基于步态周期的多动作帧切换)
+      const frameIdx = isMoving ? Math.floor(phase / Math.PI) : 0;
+      const sprite = assets.getFrame(e.type, frameIdx);
+      const mult = e.isBoss ? 2.8 : (e.type === 'behemoth' ? 2.4 : (e.type === 'charger' ? 3.0 : 3.2));
+      const size = e.radius * mult * depthScale;
+
+      // Boss 背后配件：双肩高耸排气管与柴油炽烈废气喷焰
+      if (e.isBoss) {
+        this.renderBossExhaust(ctx, size, phase);
+      }
 
       if (sprite) {
-        // 尺寸比例适配：各怪兽按体态精准缩放，杜绝遮天蔽日或细小如蚁
-        const mult = e.isBoss ? 2.8 : (e.type === 'behemoth' ? 2.4 : (e.type === 'charger' ? 3.0 : 3.2));
-        const size = e.radius * mult * depthScale;
-
         // 受击与状态滤镜
         if (e.hitFlash > 0.05) {
           ctx.filter = 'brightness(1.5) contrast(1.3) saturate(1.3)';
@@ -310,7 +324,6 @@ export class GameRenderer {
         } else if (e.freezeTimer > 0) {
           ctx.filter = 'hue-rotate(160deg) saturate(1.8) brightness(1.2)';
         } else {
-          // 清晰鲜活滤镜：保持暗部清晰与彩色发光部位艳丽
           ctx.filter = 'contrast(1.12) saturate(1.18) brightness(1.04)';
         }
 
@@ -324,7 +337,17 @@ export class GameRenderer {
         ctx.fill();
       }
 
-      // 5. 极简科技血条
+      // 6. 前景骨骼动力学配件渲染 (摆臂武器、猩猩重拳触地、狂暴利爪)
+      if (e.isBoss) {
+        const attackPhase = (!isMoving && e.attackCooldown) ? (e.attackTimer / e.attackCooldown) : 0;
+        this.renderBossWeapons(ctx, size, phase, isMoving, attackPhase);
+      } else if (e.type === 'behemoth') {
+        this.renderBehemothKnuckles(ctx, size, phase, isMoving);
+      } else if (e.type === 'runner') {
+        this.renderRunnerClaws(ctx, size, phase, isMoving);
+      }
+
+      // 7. 极简科技血条
       const barW = (e.isBoss ? e.radius * 2.5 : e.radius * 1.9) * depthScale;
       const barH = e.isBoss ? 6 : 4;
       const barY = (-e.radius - (e.isBoss ? 16 : 10)) * depthScale;
@@ -351,6 +374,145 @@ export class GameRenderer {
 
       ctx.restore();
     }
+  }
+
+  // 突变暴君双肩排气管喷烟与火舌
+  renderBossExhaust(ctx, size, phase) {
+    const puff = 0.5 + 0.5 * Math.abs(Math.sin(phase * 2));
+    const pipes = [-size * 0.28, size * 0.28];
+    for (let i = 0; i < pipes.length; i++) {
+      const x = pipes[i];
+      // 排气口
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x - 4, -size * 0.36, 8, 14);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x - 3, -size * 0.38, 6, 4);
+      // 炽热排气火焰
+      const flameGrad = ctx.createRadialGradient(x, -size * 0.40, 1, x, -size * 0.42, 10 * puff);
+      flameGrad.addColorStop(0, 'rgba(255, 220, 80, 0.9)');
+      flameGrad.addColorStop(0.4, 'rgba(249, 115, 22, 0.7)');
+      flameGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = flameGrad;
+      ctx.beginPath();
+      ctx.arc(x, -size * 0.42, 10 * puff, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 突变暴君左右武器摆臂动力学 (右手熔岩战斧 + 左手碎骨链锤)
+  renderBossWeapons(ctx, size, phase, isMoving, attackPhase) {
+    const axeAngle = isMoving ? (0.35 + Math.sin(phase) * 0.45) : (0.2 + Math.sin(attackPhase * Math.PI) * 0.8);
+    const maceAngle = isMoving ? (-0.35 - Math.sin(phase) * 0.45) : (-0.2 - Math.sin(attackPhase * Math.PI) * 0.8);
+
+    // 1. 右手熔岩重斩斧
+    ctx.save();
+    ctx.translate(size * 0.34, size * 0.08);
+    ctx.rotate(axeAngle);
+    // 斧柄
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.16);
+    ctx.lineTo(0, size * 0.24);
+    ctx.stroke();
+    // 熔岩锯齿刃
+    ctx.fillStyle = '#ea580c';
+    ctx.shadowColor = '#ff3b00';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.14);
+    ctx.lineTo(size * 0.22, -size * 0.07);
+    ctx.lineTo(size * 0.25, size * 0.06);
+    ctx.lineTo(size * 0.15, size * 0.12);
+    ctx.lineTo(0, size * 0.04);
+    ctx.closePath();
+    ctx.fill();
+    // 刃心金芒
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.moveTo(2, -size * 0.09);
+    ctx.lineTo(size * 0.14, -size * 0.03);
+    ctx.lineTo(size * 0.15, size * 0.04);
+    ctx.lineTo(2, size * 0.02);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // 2. 左手重型突刺狼牙锤
+    ctx.save();
+    ctx.translate(-size * 0.34, size * 0.08);
+    ctx.rotate(maceAngle);
+    // 锤柄
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.16);
+    ctx.lineTo(0, size * 0.22);
+    ctx.stroke();
+    // 狼牙锤头
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(0, size * 0.18, size * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+    // 锤头突刺
+    ctx.fillStyle = '#dc2626';
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 6;
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+      const sx = Math.cos(a) * (size * 0.09);
+      const sy = size * 0.18 + Math.sin(a) * (size * 0.09);
+      const tipX = Math.cos(a) * (size * 0.14);
+      const tipY = size * 0.18 + Math.sin(a) * (size * 0.14);
+      ctx.beginPath();
+      ctx.moveTo(sx - 2, sy);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(sx + 2, sy);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // 变异巨兽大猩猩拳掌触地
+  renderBehemothKnuckles(ctx, size, phase, isMoving) {
+    if (!isMoving) return;
+    const lOff = Math.sin(phase) * 6;
+    const rOff = -Math.sin(phase) * 6;
+    ctx.fillStyle = '#3b0764';
+    ctx.strokeStyle = '#a855f7';
+    ctx.lineWidth = 2.5;
+    // 左拳
+    ctx.beginPath();
+    ctx.arc(-size * 0.35, size * 0.22 + lOff, size * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // 右拳
+    ctx.beginPath();
+    ctx.arc(size * 0.35, size * 0.22 + rOff, size * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // 疾行感染者狂暴爪刺
+  renderRunnerClaws(ctx, size, phase, isMoving) {
+    if (!isMoving) return;
+    const lOff = Math.sin(phase) * 7;
+    const rOff = -Math.sin(phase) * 7;
+    ctx.fillStyle = '#14532d';
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = 2;
+    // 左爪
+    ctx.beginPath();
+    ctx.arc(-size * 0.32, size * 0.18 + lOff, size * 0.065, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // 右爪
+    ctx.beginPath();
+    ctx.arc(size * 0.32, size * 0.18 + rOff, size * 0.065, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
   }
 
   renderTrucks(ctx, game) {

@@ -590,11 +590,43 @@ export class Game {
       const targetY = this.fortress.y - e.radius + 12;
 
       if (e.y < targetY) {
-        const stepRate = e.type === 'charger' ? 12 : (e.type === 'behemoth' ? 5 : 8);
-        const stridePulse = 1.0 + Math.sin((e.walkTime || 0) * stepRate) * (e.type === 'charger' ? 0.38 : 0.26);
-        e.y += speed * dt * Math.max(0.15, stridePulse);
-        e.walkTime = (e.walkTime || 0) + dt * (speed / 14);
-        e.stepTimer = (e.stepTimer || 0) + dt;
+        // 生物力学步伐频率与步态周期 (充电兽为高频四足奔袭，暴君为沉稳重踏)
+        const stepRate = e.isBoss ? 3.8 : (e.type === 'charger' ? 9.6 : (e.type === 'behemoth' ? 4.4 : 7.2));
+        const speedRatio = speed / Math.max(1, e.speed);
+        const prevPhase = e.walkPhase || 0;
+        e.walkPhase = prevPhase + dt * stepRate * Math.max(0.2, speedRatio);
+        e.walkTime = (e.walkTime || 0) + dt;
+
+        // 真实奔跑蹬地冲量脉冲 (起步蹬地爆发向前，踏地缓冲速度微降，彻底杜绝匀速平移滑冰感)
+        const surgeIntensity = e.type === 'charger' ? 0.65 : (e.isBoss ? 0.38 : 0.48);
+        const stridePulse = 1.0 + Math.sin(e.walkPhase) * surgeIntensity;
+        e.y += speed * dt * Math.max(0.12, stridePulse);
+
+        // 左右交替踏步判定 (每半个周期 π 一次脚掌/巨拳触地)
+        const prevStepIdx = Math.floor(prevPhase / Math.PI);
+        const curStepIdx = Math.floor(e.walkPhase / Math.PI);
+
+        if (curStepIdx > prevStepIdx) {
+          e.leftFoot = (curStepIdx % 2 === 1);
+          const footOffsetX = (e.leftFoot ? -1 : 1) * (e.radius * 0.45);
+          const footY = e.y + e.radius * 0.75;
+
+          if (e.isBoss) {
+            // 暴君重踏：扬起浓黑/火星尘雾并产生柏油路面微震
+            this.spawnParticles(e.x + footOffsetX, footY, 'rgba(249, 115, 22, 0.6)', 3, 'smoke');
+            this.spawnParticles(e.x + footOffsetX, footY, 'rgba(15, 23, 42, 0.75)', 2, 'smoke');
+            this.feedback.addTrauma(0.035);
+          } else if (e.type === 'behemoth') {
+            // 巨兽拳掌着地重击
+            this.spawnParticles(e.x + footOffsetX, footY, 'rgba(148, 163, 184, 0.55)', 2, 'smoke');
+          } else if (e.type === 'charger') {
+            // 冲锋兽利爪蹬地火星
+            this.spawnParticles(e.x + footOffsetX, footY, 'rgba(251, 146, 60, 0.5)', 2, 'spark');
+          } else {
+            // 普通感染者疾跑尘土
+            this.spawnParticles(e.x + footOffsetX, footY, 'rgba(148, 163, 184, 0.38)', 1, 'smoke');
+          }
+        }
 
         const road = this.getRoadBounds(e.y);
         const targetX = road.left + road.roadWidth * (e.laneRatio || 0.5);
@@ -603,14 +635,6 @@ export class Game {
         const margin = e.radius * 0.75 + 4;
         if (e.x < road.left + margin) e.x = road.left + margin;
         if (e.x > road.right - margin) e.x = road.right - margin;
-
-        const stepInterval = e.type === 'charger' ? 0.18 : (e.type === 'behemoth' ? 0.38 : 0.24);
-        if (e.stepTimer >= stepInterval) {
-          e.stepTimer = 0;
-          e.leftFoot = !e.leftFoot;
-          const footOffsetX = (e.leftFoot ? -1 : 1) * (e.radius * 0.45);
-          this.spawnParticles(e.x + footOffsetX, e.y + e.radius * 0.8, 'rgba(148, 163, 184, 0.4)', 1, 'smoke');
-        }
       } else {
         e.y = targetY;
         e.attackTimer += dt;
