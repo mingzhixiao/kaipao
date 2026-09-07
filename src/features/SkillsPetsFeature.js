@@ -9,22 +9,22 @@ const SKILL_CONFIG = {
 
 const PET_TYPES = {
   fluffy: {
-    id: 'fluffy', name: '小毛球', asset: 'assets/pets/fluffy.svg', description: '发射三连弹幕攻击敌人',
+    id: 'fluffy', name: '小毛球', asset: 'assets/pets/fluffy.png', description: '发射三连弹幕攻击敌人',
     baseStats: { hp: 50, attack: 10, attackSpeed: 1.0, moveSpeed: 200, range: 300 },
     skill: 'BULLET_SPRAY', skillParams: { bulletCount: 3, spread: Math.PI / 6 }
   },
   dragon: {
-    id: 'dragon', name: '幼龙', asset: 'assets/pets/dragon.svg', description: '喷吐扇形火焰攻击敌人',
+    id: 'dragon', name: '幼龙', asset: 'assets/pets/dragon.png', description: '喷吐扇形火焰攻击敌人',
     baseStats: { hp: 80, attack: 15, attackSpeed: 0.8, moveSpeed: 150, range: 250 },
     skill: 'FIRE_BREATH', skillParams: { duration: 1, angle: Math.PI / 3 }
   }
 };
 
 const SKILL_CARDS = [
-  { id: 'tornado', name: '裂风涡流', desc: '生成持续 4 秒的风暴，牵引并持续伤害范围内敌人。', asset: 'assets/skills/tornado.svg', rarity: 'epic' },
-  { id: 'boomerang', name: '回旋刃', desc: '高速穿透飞刃，飞出后返回，往返各可命中一次。', asset: 'assets/skills/boomerang.svg', rarity: 'rare' },
-  { id: 'laser', name: '湮灭射线', desc: '释放贯穿全屏的高能射线，并施加持续灼烧。', asset: 'assets/skills/laser.svg', rarity: 'legendary' },
-  { id: 'bomber', name: '轨道轰炸', desc: '连续投下 3 枚炸弹，对范围敌人造成伤害并击退。', asset: 'assets/skills/bomber.svg', rarity: 'epic' }
+  { id: 'tornado', name: '裂风涡流', desc: '生成持续 4 秒的风暴，牵引并持续伤害范围内敌人。', asset: 'assets/skills/tornado.png', rarity: 'epic' },
+  { id: 'boomerang', name: '回旋刃', desc: '高速穿透飞刃，飞出后返回，往返各可命中一次。', asset: 'assets/skills/boomerang.png', rarity: 'rare' },
+  { id: 'laser', name: '湮灭射线', desc: '释放贯穿全屏的高能射线，并施加持续灼烧。', asset: 'assets/skills/laser.png', rarity: 'legendary' },
+  { id: 'bomber', name: '轨道轰炸', desc: '连续投下 3 枚炸弹，对范围敌人造成伤害并击退。', asset: 'assets/skills/bomber.png', rarity: 'epic' }
 ];
 
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -288,7 +288,7 @@ function asset(src) { const image = new Image(); image.src = src; return image; 
 
 export function installSkillsPetsFeature(game) {
   if (game.feature) return;
-  game.feature = { skills: Object.fromEntries(Object.entries(SKILL_CONFIG).map(([id, cfg]) => [id, { level: 0, cooldown: cfg.cooldown, timer: cfg.cooldown }])), tornadoes: [], boomerangs: [], lasers: [], bombs: [], bomber: null, petBullets: [], petEffects: [], target: { x: game.hero.x, y: game.hero.y - 250 }, boomerangImage: asset('assets/skills/boomerang.svg'), bombImage: asset('assets/skills/bomber.svg'), petBulletImage: asset('assets/skills/pet-bullet.svg'), breathImage: asset('assets/skills/breath.svg') };
+  game.feature = { skills: Object.fromEntries(Object.entries(SKILL_CONFIG).map(([id, cfg]) => [id, { level: 0, cooldown: cfg.cooldown, timer: cfg.cooldown }])), tornadoes: [], boomerangs: [], lasers: [], bombs: [], bomber: null, petBullets: [], petEffects: [], target: { x: game.hero.x, y: game.hero.y - 250 }, boomerangImage: asset('assets/skills/boomerang.png'), bombImage: asset('assets/skills/bomber.png'), petBulletImage: asset('assets/skills/pet-bullet.png'), breathImage: asset('assets/skills/breath.png') };
   game.pet = null;
   game.feature.syncPet = () => { const id = getPetData().selected; if (!id) { game.pet = null; return; } const saved = getPetData().pets[id]; if (!saved?.unlocked) { game.pet = null; return; } game.pet = new Pet(id, saved.level); game.pet.x = game.hero.x - 70; game.pet.y = game.hero.y + 35; game.pet.image = asset(PET_TYPES[id].asset); };
   const originalReset = game.resetGame.bind(game);

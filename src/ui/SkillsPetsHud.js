@@ -1,8 +1,8 @@
 const SKILL_META = {
-  tornado: { name: '裂风涡流', asset: 'assets/skills/tornado.svg' },
-  boomerang: { name: '回旋刃', asset: 'assets/skills/boomerang.svg' },
-  laser: { name: '湮灭射线', asset: 'assets/skills/laser.svg' },
-  bomber: { name: '轨道轰炸', asset: 'assets/skills/bomber.svg' }
+  tornado: { name: '裂风涡流', asset: 'assets/skills/tornado.png' },
+  boomerang: { name: '回旋刃', asset: 'assets/skills/boomerang.png' },
+  laser: { name: '湮灭射线', asset: 'assets/skills/laser.png' },
+  bomber: { name: '轨道轰炸', asset: 'assets/skills/bomber.png' }
 };
 
 function ensureStyle() {
