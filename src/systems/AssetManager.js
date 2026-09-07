@@ -45,29 +45,59 @@ export class AssetManager {
     };
   }
 
+  _loadImage(src, retries = 2, timeoutMs = 12000) {
+    return new Promise((resolve) => {
+      let attempt = 0;
+      const tryLoad = () => {
+        attempt++;
+        const img = new Image();
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          img.onload = img.onerror = null;
+          img.src = '';
+          if (attempt <= retries) {
+            console.warn(`[AssetManager] timeout ${src}, retry ${attempt}/${retries}`);
+            tryLoad();
+          } else {
+            resolve(null);
+          }
+        }, timeoutMs);
+        img.onload = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(img);
+        };
+        img.onerror = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (attempt <= retries) {
+            console.warn(`[AssetManager] fail ${src}, retry ${attempt}/${retries}`);
+            setTimeout(tryLoad, 200 * attempt);
+          } else {
+            resolve(null);
+          }
+        };
+        img.src = `${src}?v=11&t=${Date.now()}`;
+      };
+      tryLoad();
+    });
+  }
+
   loadAll(onProgress = null) {
     const entries = Object.entries(this.manifest);
     const total = entries.length;
     let loadedCount = 0;
 
-    const promises = entries.map(([key, src]) => {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          this.images[key] = img;
-          loadedCount++;
-          if (onProgress) onProgress(loadedCount, total, key);
-          resolve();
-        };
-        img.onerror = () => {
-          console.warn(`[AssetManager] Failed to load image: ${src}, falling back to procedural vector`);
-          this.images[key] = null;
-          loadedCount++;
-          if (onProgress) onProgress(loadedCount, total, key);
-          resolve();
-        };
-        img.src = `${src}?v=10`;
-      });
+    const promises = entries.map(async ([key, src]) => {
+      const img = await this._loadImage(src);
+      this.images[key] = img;
+      loadedCount++;
+      if (onProgress) onProgress(loadedCount, total, key);
+      if (!img) console.warn(`[AssetManager] final fail: ${src}, using procedural fallback`);
     });
 
     return Promise.all(promises).then(() => {
