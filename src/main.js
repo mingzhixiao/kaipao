@@ -7,11 +7,15 @@ import { installSkillsPetsPolish } from './features/SkillsPetsPolish.js';
 import { homeLobbyUI } from './ui/HomeLobbyUI.js';
 import { GAME_CONFIG } from './core/Config.js';
 import { SKILL_CONFIG, PET_TYPES } from './features/SkillsPetsFeature.js';
+import { installGameOptimization } from './systems/GameOptimization.js';
+import { installBuildIdentity } from './systems/BuildIdentitySystem.js';
+import { gameEvents } from './systems/EventBus.js';
 
 function wireStageAndRunes(game) {
   game.startStage = function(stageId) {
     this.waveSystem.setStage(stageId);
     this.resetGame();
+    gameEvents.emit('stage:start', { game: this, stageId });
   };
 
   const origReset = game.resetGame.bind(game);
@@ -23,12 +27,14 @@ function wireStageAndRunes(game) {
     this.fortress.hp = this.fortress.maxHp;
     this.fortress.shield = this.fortress.maxShield;
     this.hud.updateHUD(this);
+    gameEvents.emit('game:reset', { game: this });
   };
 
   const origGain = game.gainExp.bind(game);
   game.gainExp = function(amount) {
     amount = Math.round(amount * (this.expMultiplier || 1));
     origGain(amount);
+    gameEvents.emit('exp:gain', { game: this, amount });
   };
 
   game.stageId = 1;
@@ -128,7 +134,6 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log('[Config] Hot-reloaded pets.json successfully');
       }
 
-      // 在实例化宠物之前修正成长、护盾与运行时平衡；避免配置与运行时逻辑漂移。
       installSkillsPetsPolish();
     } catch (cfgErr) {
       console.warn('[Config] JSON hot-reload skipped, using default config:', cfgErr);
@@ -142,12 +147,15 @@ window.addEventListener('DOMContentLoaded', () => {
       installSkillsPetsFeature(gameInstance);
       installSkillsPetsPolish(gameInstance);
       installSkillsPetsHud(gameInstance);
+      installGameOptimization(gameInstance);
+      installBuildIdentity(gameInstance);
       bindFeatureTarget(gameInstance);
       window.gameInstance = gameInstance;
+      window.gameEvents = gameEvents;
       initCheatPanel(gameInstance);
       gameInstance.isPaused = true;
       homeLobbyUI.init(gameInstance);
-      console.log('[Kaipao] Mobile HUD + Vector Pet Art + Skills + Pets + Runes ready');
+      console.log('[Kaipao] Gameplay polish + performance optimization + build identity ready');
     }, 280);
   });
 });
