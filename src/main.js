@@ -1,6 +1,7 @@
 import { assets } from './systems/AssetManager.js';
 import { Game } from './core/Game.js';
 import { runeSystem } from './systems/RuneSystem.js';
+import { installSkillsPetsFeature } from './features/SkillsPetsFeature.js';
 
 function wireStageAndRunes(game) {
   // 关卡切换
@@ -73,6 +74,7 @@ function initCheatPanel(game) {
       game.skills.rocket.level = Math.max(1, game.skills.rocket.level + 1);
       game.skills.truck.level = Math.max(1, game.skills.truck.level + 1);
       game.skills.freeze.level = Math.max(1, game.skills.freeze.level + 1);
+      if (game.feature) Object.keys(game.feature.skills).forEach(k => { game.feature.skills[k].level = Math.max(1, game.feature.skills[k].level); });
       game.hud.updateSkillHUD(game);
     });
   }
@@ -96,11 +98,12 @@ window.addEventListener('DOMContentLoaded', () => {
       if (loadingScreen) loadingScreen.classList.add('fade-out');
       const gameInstance = new Game();
       wireStageAndRunes(gameInstance);
+      installSkillsPetsFeature(gameInstance);
       window.gameInstance = gameInstance;
       initCheatPanel(gameInstance);
       gameInstance.isPaused = true;
       gameInstance.hud.showStageSelectModal(gameInstance);
-      console.log('[Kaipao] Stage Campaign + Rune Forge ready');
+      console.log('[Kaipao] Stage Campaign + Rune Forge + Skills + Pets ready');
     }, 280);
   });
 });
