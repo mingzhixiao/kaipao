@@ -5,6 +5,14 @@ import { assets } from '../systems/AssetManager.js';
 export class GameRenderer {
   constructor(ctx) {
     this.ctx = ctx;
+    this.bgCanvas = document.createElement('canvas');
+    this.bgCtx = this.bgCanvas.getContext('2d');
+    this.bgDirty = true;
+  }
+
+  // 标记背景需要重绘 (例如屏幕尺寸改变时)
+  invalidateBackground() {
+    this.bgDirty = true;
   }
 
   render(game) {
@@ -22,7 +30,7 @@ export class GameRenderer {
 
     ctx.clearRect(0, 0, game.width, game.height);
 
-    // 1. 废土公路原画背景
+    // 1. 废土公路原画背景 (离屏 Canvas 预缓存)
     this.renderBattlefield(ctx, game);
 
     // 2. 全屏冲击波 / EMP 光环
@@ -70,38 +78,57 @@ export class GameRenderer {
     ctx.restore();
   }
 
-  renderBattlefield(ctx, game) {
+  // 预渲染离屏背景层 (仅在 resize 或资源加载时执行一次，主循环每帧 0ms 贴图)
+  updateOffscreenBackground(width, height) {
+    const w = Math.max(1, Math.floor(width));
+    const h = Math.max(1, Math.floor(height));
+    this.bgCanvas.width = w;
+    this.bgCanvas.height = h;
+    const bctx = this.bgCtx;
+
     const bgImg = assets.get('bg_highway');
     if (bgImg) {
-      ctx.save();
-      // 保持公路清晰质感与沥青纹理，适度压暗以衬托前景角色
-      ctx.filter = 'brightness(0.84) contrast(0.98) saturate(0.88)';
-      ctx.drawImage(bgImg, 0, 0, game.width, game.height);
-      ctx.restore();
+      bctx.save();
+      bctx.filter = 'brightness(0.84) contrast(0.98) saturate(0.88)';
+      bctx.drawImage(bgImg, 0, 0, w, h);
+      bctx.restore();
     } else {
-      ctx.fillStyle = '#0b0f19';
-      ctx.fillRect(0, 0, game.width, game.height);
+      bctx.fillStyle = '#0b0f19';
+      bctx.fillRect(0, 0, w, h);
     }
 
     // 废土远景灰霾层 (破桥远处纵深空气透视)
-    const skyHaze = ctx.createLinearGradient(0, 0, 0, 180);
+    const skyHaze = bctx.createLinearGradient(0, 0, 0, 180);
     skyHaze.addColorStop(0, 'rgba(15, 23, 42, 0.55)');
     skyHaze.addColorStop(0.7, 'rgba(20, 30, 48, 0.15)');
     skyHaze.addColorStop(1, 'transparent');
-    ctx.fillStyle = skyHaze;
-    ctx.fillRect(0, 0, game.width, 180);
+    bctx.fillStyle = skyHaze;
+    bctx.fillRect(0, 0, w, 180);
 
     // 电影级暗角 Vignette (聚焦中央公路与战斗核心区)
-    const vig = ctx.createRadialGradient(
-      game.width / 2, game.height / 2, game.width * 0.42,
-      game.width / 2, game.height / 2, game.width * 0.92
+    const vig = bctx.createRadialGradient(
+      w / 2, h / 2, w * 0.42,
+      w / 2, h / 2, w * 0.92
     );
     vig.addColorStop(0, 'transparent');
     vig.addColorStop(1, 'rgba(4, 7, 14, 0.55)');
-    ctx.fillStyle = vig;
-    ctx.fillRect(0, 0, game.width, game.height);
+    bctx.fillStyle = vig;
+    bctx.fillRect(0, 0, w, h);
 
-    // 防线前沿警戒警戒线
+    this.bgDirty = false;
+  }
+
+  renderBattlefield(ctx, game) {
+    const w = Math.floor(game.width);
+    const h = Math.floor(game.height);
+
+    if (this.bgDirty || this.bgCanvas.width !== w || this.bgCanvas.height !== h) {
+      this.updateOffscreenBackground(w, h);
+    }
+
+    ctx.drawImage(this.bgCanvas, 0, 0);
+
+    // 防线前沿警戒线
     ctx.fillStyle = 'rgba(255, 42, 95, 0.12)';
     ctx.fillRect(0, game.fortress.y - 20, game.width, 20);
   }
@@ -131,11 +158,20 @@ export class GameRenderer {
       const r = 5.5 + pulse;
       const gemColor = g.color || '#00f0ff';
 
-      ctx.shadowColor = gemColor;
-      ctx.shadowBlur = 10;
+      // 1. 外层晶莹能量晕轮 (零 shadowBlur，手机端极速渲染)
       ctx.fillStyle = gemColor;
+      ctx.globalAlpha = 0.32;
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 1.8);
+      ctx.lineTo(r * 1.4, 0);
+      ctx.lineTo(0, r * 1.8);
+      ctx.lineTo(-r * 1.4, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
 
-      // 科技感菱形晶核
+      // 2. 科技感菱形晶核实体
+      ctx.fillStyle = gemColor;
       ctx.beginPath();
       ctx.moveTo(0, -r * 1.3);
       ctx.lineTo(r * 0.9, 0);
@@ -144,7 +180,7 @@ export class GameRenderer {
       ctx.closePath();
       ctx.fill();
 
-      // 核心高亮白芒
+      // 3. 核心高亮白芒
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);

@@ -1,9 +1,19 @@
-import { assets } from './systems/AssetManager.js';
-import { Game } from './core/Game.js';
+import { assets } from './systems/AssetManager.js?v=2';
+import { Game } from './core/Game.js?v=2';
 
 // ---------------- 游戏启动引导与测试入口 (Game Bootstrap) ----------------
 
 function initCheatPanel(game) {
+  const toggleBtn = document.getElementById('cheat-panel-toggle');
+  const panel = document.getElementById('cheat-panel');
+  if (toggleBtn && panel) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.toggle('open');
+      toggleBtn.textContent = panel.classList.contains('open') ? '✖️ 关闭' : '🛠️ 调试';
+    });
+  }
+
   const btnCheatLvl = document.getElementById('cheat-lvl');
   if (btnCheatLvl) {
     btnCheatLvl.addEventListener('click', () => game.triggerLevelUp());
@@ -40,10 +50,27 @@ function initCheatPanel(game) {
 
 // 页面与图片预加载完成后启动
 window.addEventListener('DOMContentLoaded', () => {
-  assets.loadAll().then(() => {
-    const gameInstance = new Game();
-    window.gameInstance = gameInstance;
-    initCheatPanel(gameInstance);
-    console.log('[Kaipao Roguelike] Modular Engine Initialized Successfully!');
+  const loadingBar = document.getElementById('loading-bar-inner');
+  const loadingText = document.getElementById('loading-progress-text');
+  const loadingScreen = document.getElementById('loading-screen');
+
+  assets.loadAll((loaded, total, key) => {
+    const percent = Math.round((loaded / total) * 100);
+    if (loadingBar) loadingBar.style.width = `${percent}%`;
+    if (loadingText) loadingText.textContent = `LOADING ASSETS [${loaded}/${total}]: ${key} (${percent}%)`;
+  }).then(() => {
+    if (loadingBar) loadingBar.style.width = '100%';
+    if (loadingText) loadingText.textContent = 'SYSTEM READY · LAUNCHING... 100%';
+
+    setTimeout(() => {
+      if (loadingScreen) {
+        loadingScreen.classList.add('fade-out');
+      }
+      const gameInstance = new Game();
+      window.gameInstance = gameInstance;
+      initCheatPanel(gameInstance);
+      console.log('[Kaipao Roguelike] Modular Engine Initialized Successfully!');
+    }, 280);
   });
 });
+

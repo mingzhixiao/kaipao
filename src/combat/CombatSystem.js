@@ -1,0 +1,476 @@
+// ---------------- 战斗与弹道判定系统 (Combat, Projectiles & Spatial Pruning) ----------------
+import { sound } from '../systems/SoundEngine.js';
+import { ObjectPool } from '../systems/ObjectPool.js';
+import { GAME_CONFIG } from '../core/Config.js';
+
+export class CombatSystem {
+  constructor(game) {
+    this.game = game;
+    // 主循环火箭飞行列表 (消除任何嵌套 RAF)
+    this.activeRockets = [];
+  }
+
+  reset() {
+    this.activeRockets = [];
+  }
+
+  // 自动瞄准最近或威胁最大的敌人
+  updateAutoTarget() {
+    const hero = this.game.hero;
+    let closestEnemy = null;
+    let closestDist = Infinity;
+
+    for (let i = 0; i < this.game.enemies.length; i++) {
+      const e = this.game.enemies[i];
+      if (!e.active) continue;
+
+      const dist = Math.hypot(e.x - hero.x, e.y - hero.y);
+      // 优先威胁距离防线更近的敌人
+      const threatScore = dist - (e.y / this.game.height) * 120;
+      if (threatScore < closestDist) {
+        closestDist = threatScore;
+        closestEnemy = e;
+      }
+    }
+
+    if (closestEnemy) {
+      const targetAngle = Math.atan2(closestEnemy.y - hero.y, closestEnemy.x - hero.x);
+      let diff = targetAngle - hero.angle;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      hero.angle += diff * 0.22;
+    }
+  }
+
+  // 发射主武器散弹/连发弹道
+  shootWeapon() {
+    const game = this.game;
+    const hero = game.hero;
+    const weapon = game.weapon;
+
+    sound.playShoot();
+    game.muzzleFlash = 0.06;
+    hero.recoil = 5;
+
+    const count = weapon.multishot;
+    const spread = weapon.spreadAngle;
+    const baseAngle = hero.angle;
+
+    for (let i = 0; i < count; i++) {
+      const angle = baseAngle + (i - (count - 1) / 2) * spread;
+      const b = game.bulletPool.get();
+      b.active = true;
+
+      const muzzleOffset = 26;
+      b.x = hero.x + Math.cos(baseAngle) * muzzleOffset;
+      b.y = hero.y + Math.sin(baseAngle) * muzzleOffset;
+      b.vx = Math.cos(angle) * weapon.bulletSpeed;
+      b.vy = Math.sin(angle) * weapon.bulletSpeed;
+
+      const isCrit = Math.random() < weapon.critChance;
+      b.damage = Math.round(weapon.damage * (isCrit ? weapon.critMult : 1.0));
+      b.isCrit = isCrit;
+      b.pierceLeft = weapon.pierceCount;
+      b.radius = weapon.bulletRadius || 4;
+      b.life = weapon.bulletLife || 2.0;
+
+      game.bullets.push(b);
+    }
+  }
+
+  // 部署温压火箭 (主循环状态驱动)
+  launchRocket(targetX, targetY) {
+    const game = this.game;
+    const startX = game.hero.x + (Math.random() * 40 - 20);
+    const startY = game.hero.y;
+
+    this.activeRockets.push({
+      active: true,
+      sx: startX,
+      sy: startY,
+      tx: targetX,
+      ty: targetY,
+      progress: 0,
+      duration: GAME_CONFIG.skills.rocket.flightDuration
+    });
+  }
+
+  detonateRocket(x, y) {
+    const game = this.game;
+    const rocketCfg = game.skills.rocket;
+    const rad = rocketCfg.radius * (1 + (rocketCfg.level - 1) * 0.2);
+    const dmg = rocketCfg.damage * (1 + (rocketCfg.level - 1) * 0.35);
+
+    game.feedback.addTrauma(0.55);
+    game.feedback.triggerHitStop(0.04);
+    sound.playExplosion();
+
+    // 空间 Y 轴粗筛
+    for (let i = 0; i < game.enemies.length; i++) {
+      const e = game.enemies[i];
+      if (!e.active) continue;
+      if (Math.abs(e.y - y) > rad + e.radius) continue;
+
+      const d = Math.hypot(e.x - x, e.y - y);
+      if (d <= rad) {
+        const falloff = 1 - (d / rad) * 0.4;
+        const finalDmg = Math.round(dmg * falloff);
+        this.onHit(e, finalDmg, true, 'rocket', e.x - x, e.y - y);
+      }
+    }
+
+    game.spawnParticles(x, y, '#ff4400', 45, 'fire');
+    game.spawnParticles(x, y, '#ffcc00', 35, 'spark');
+
+    game.burnZones.push({
+      active: true,
+      x: x,
+      y: y,
+      radius: rad * 0.85,
+      life: rocketCfg.burnDuration,
+      maxLife: rocketCfg.burnDuration,
+      tickTimer: 0
+    });
+  }
+
+  // 呼叫装甲重型战车
+  launchArmoredTruck() {
+    const game = this.game;
+    sound.playTruckRumble();
+    game.feedback.addTrauma(0.38);
+
+    const road = game.getRoadBounds(game.fortress.y);
+    const laneRatio = 0.15 + Math.random() * 0.70;
+    const startX = road.left + road.roadWidth * laneRatio;
+    const truckCfg = game.skills.truck;
+
+    game.activeTrucks.push({
+      active: true,
+      x: startX,
+      laneRatio: laneRatio,
+      y: game.fortress.y + 20,
+      width: truckCfg.width,
+      height: truckCfg.height,
+      speed: truckCfg.speed,
+      damage: truckCfg.damage * (1 + (truckCfg.level - 1) * 0.4),
+      hitEnemies: new Set(),
+      infernoTimer: 0
+    });
+  }
+
+  // 极寒射线光锥判定
+  applyFreezeRay(dt) {
+    const game = this.game;
+    const freezeCfg = game.skills.freeze;
+    const cone = freezeCfg.coneAngle;
+    const range = freezeCfg.range;
+    const heroAngle = game.hero.angle;
+
+    // 射线粒子
+    for (let i = 0; i < 3; i++) {
+      const randAngle = heroAngle + (Math.random() - 0.5) * cone;
+      const dist = Math.random() * range;
+      const px = game.hero.x + Math.cos(randAngle) * dist;
+      const py = game.hero.y + Math.sin(randAngle) * dist;
+      game.spawnParticles(px, py, '#00f0ff', 1, 'ice');
+    }
+
+    for (let i = 0; i < game.enemies.length; i++) {
+      const e = game.enemies[i];
+      if (!e.active) continue;
+
+      // 距离与角度初筛
+      if (Math.abs(e.y - game.hero.y) > range + e.radius) continue;
+      const dist = Math.hypot(e.x - game.hero.x, e.y - game.hero.y);
+      if (dist <= range) {
+        const angleToEnemy = Math.atan2(e.y - game.hero.y, e.x - game.hero.x);
+        let diff = Math.abs(angleToEnemy - heroAngle);
+        while (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+        if (diff <= cone / 2) {
+          e.freezeTimer = 2.2;
+          e.freezeFactor = freezeCfg.slowRatio;
+          this.onHit(e, freezeCfg.damagePerTick * dt * 25, false, 'freeze');
+        }
+      }
+    }
+  }
+
+  // 统一受击与伤害钩子 (Unified onHit Hook)
+  onHit(enemy, dmg, isCrit = false, type = 'normal', knockVx = 0, knockVy = 0) {
+    if (!enemy.active || enemy.hp <= 0) return;
+    const game = this.game;
+
+    // 1. 元素化学协同监测
+    if (enemy.freezeTimer > 0) {
+      if (type === 'rocket' || type === 'fire' || game.synergies.thermalEngine) {
+        game.synergySystem.triggerThermalShock(enemy, enemy.x, enemy.y);
+        return;
+      }
+      if (type === 'truck' && game.synergies.cryoShatter) {
+        game.synergySystem.triggerIceShatter(enemy, enemy.x, enemy.y);
+      }
+    }
+
+    // 2. 暴击反馈与特斯拉电弧
+    if (isCrit) {
+      sound.playCritHit();
+      game.feedback.addTrauma(0.12);
+      game.feedback.triggerHitStop(0.025);
+      if (game.synergies.teslaCoil) {
+        game.synergySystem.triggerTeslaChain(enemy, dmg);
+      }
+    }
+
+    // 3. 受击形变与顿挫
+    enemy.hitFlash = 0.16;
+    enemy.hitStagger = 0.22;
+    enemy.hitStaggerTotal = 0.22;
+    if (knockVx !== 0 || knockVy !== 0) {
+      enemy.hitAngle = Math.atan2(knockVy, knockVx);
+    }
+
+    // 4. 浮动伤害数字
+    let textColor = '#ffffff';
+    if (isCrit) textColor = '#ffaa00';
+    else if (type === 'fire' || type === 'rocket') textColor = '#ff7700';
+    else if (type === 'freeze') textColor = '#38bdf8';
+    else if (type === 'truck') textColor = '#e11d48';
+    else if (type === 'emp') textColor = '#00f0ff';
+
+    game.spawnDamageText(enemy.x, enemy.y - enemy.radius - 8, dmg, textColor, isCrit);
+
+    enemy.hp -= dmg;
+    game.totalDamage += dmg;
+
+    if (enemy.hp <= 0) {
+      this.onKill(enemy);
+    }
+  }
+
+  // 统一击杀钩子 (Unified onKill Hook)
+  onKill(enemy) {
+    if (!enemy.active) return;
+    enemy.active = false;
+    const game = this.game;
+    game.kills++;
+
+    if (enemy.isBoss) {
+      sound.playExplosion();
+      game.feedback.addTrauma(0.8);
+      game.feedback.triggerHitStop(0.08);
+
+      // 掉落 8 枚金色核心宝石
+      for (let i = 0; i < 8; i++) {
+        const g = game.gemPool.get();
+        g.active = true;
+        g.x = enemy.x;
+        g.y = enemy.y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 120 + Math.random() * 160;
+        g.vx = Math.cos(angle) * speed;
+        g.vy = Math.sin(angle) * speed;
+        g.val = Math.round(enemy.expVal / 8);
+        g.timer = 0;
+        g.color = '#ffaa00';
+        game.gems.push(g);
+      }
+
+      game.spawnParticles(enemy.x, enemy.y, '#ff0055', 45, 'fire');
+      game.spawnParticles(enemy.x, enemy.y, '#ffaa00', 35, 'spark');
+      game.spawnDamageText(enemy.x, enemy.y - 30, '👑 首领击破!!', '#ffaa00', true, true);
+      game.activeBoss = null;
+    } else {
+      const g = game.gemPool.get();
+      g.active = true;
+      g.x = enemy.x;
+      g.y = enemy.y;
+      const angle = (Math.random() - 0.5) * Math.PI;
+      const speed = 60 + Math.random() * 80;
+      g.vx = Math.cos(angle) * speed;
+      g.vy = Math.sin(angle) * speed;
+      g.val = enemy.expVal || 5;
+      g.timer = 0;
+      g.color = enemy.type === 'behemoth' ? '#ffaa00' : (enemy.type === 'charger' ? '#f59e0b' : '#00f0ff');
+      game.gems.push(g);
+
+      game.spawnParticles(enemy.x, enemy.y, enemy.color || '#ff2a5f', 8, 'spark');
+    }
+  }
+
+  // 更新所有战斗实体与碰撞
+  update(dt) {
+    const game = this.game;
+
+    // 1. 更新主循环火箭飞行推进 (彻底替代嵌套 RAF)
+    for (let i = 0; i < this.activeRockets.length; i++) {
+      const r = this.activeRockets[i];
+      if (!r.active) continue;
+
+      r.progress += dt / r.duration;
+      const t = Math.min(1, r.progress);
+      const cx = r.sx + (r.tx - r.sx) * t;
+      const cy = r.sy + (r.ty - r.sy) * t - Math.sin(t * Math.PI) * 80;
+
+      game.spawnParticles(cx, cy, '#ff7700', 2, 'fire');
+
+      if (t >= 1) {
+        r.active = false;
+        this.detonateRocket(r.tx, r.ty);
+      }
+    }
+    ObjectPool.compact(this.activeRockets);
+
+    // 2. 更新子弹与敌人碰撞 (Y 轴空间粗筛)
+    for (let i = 0; i < game.bullets.length; i++) {
+      const b = game.bullets[i];
+      if (!b.active) continue;
+
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.life -= dt;
+
+      if (b.x < 0 || b.x > game.width || b.y < 0 || b.y > game.height || b.life <= 0) {
+        b.active = false;
+        game.bulletPool.release(b);
+        continue;
+      }
+
+      for (let j = 0; j < game.enemies.length; j++) {
+        const e = game.enemies[j];
+        if (!e.active) continue;
+
+        // Y 轴粗排初筛：不在同一垂直高度直接跳过
+        if (Math.abs(b.y - e.y) > b.radius + e.radius) continue;
+
+        const dist = Math.hypot(b.x - e.x, b.y - e.y);
+        if (dist < b.radius + e.radius) {
+          this.onHit(e, b.damage, b.isCrit, 'normal', b.vx, b.vy);
+          game.spawnParticles(b.x, b.y, b.isCrit ? '#ffcc00' : '#00f0ff', 4, 'spark');
+
+          b.pierceLeft--;
+          if (b.pierceLeft <= 0) {
+            b.active = false;
+            game.bulletPool.release(b);
+            break;
+          }
+        }
+      }
+    }
+    ObjectPool.compact(game.bullets);
+
+    // 3. 更新碎冰尖刺飞弹 (Y 轴粗筛)
+    for (let i = 0; i < game.iceSpikes.length; i++) {
+      const spike = game.iceSpikes[i];
+      if (!spike.active) continue;
+
+      spike.x += spike.vx * dt;
+      spike.y += spike.vy * dt;
+      spike.life -= dt;
+
+      if (spike.life <= 0 || spike.y < -50 || spike.x < 0 || spike.x > game.width) {
+        spike.active = false;
+        continue;
+      }
+
+      for (let j = 0; j < game.enemies.length; j++) {
+        const e = game.enemies[j];
+        if (!e.active) continue;
+        if (Math.abs(spike.y - e.y) > e.radius + 12) continue;
+
+        if (Math.hypot(e.x - spike.x, e.y - spike.y) < e.radius + 8) {
+          this.onHit(e, spike.damage, false, 'freeze', spike.vx, spike.vy);
+          game.spawnParticles(spike.x, spike.y, '#00f0ff', 3, 'spark');
+          spike.pierce--;
+          if (spike.pierce <= 0) {
+            spike.active = false;
+            break;
+          }
+        }
+      }
+    }
+    ObjectPool.compact(game.iceSpikes);
+
+    // 4. 更新灼烧区域
+    for (let i = 0; i < game.burnZones.length; i++) {
+      const bz = game.burnZones[i];
+      if (!bz.active) continue;
+
+      bz.life -= dt;
+      bz.tickTimer += dt;
+
+      if (Math.random() < 0.35) {
+        const pAngle = Math.random() * Math.PI * 2;
+        const pDist = Math.random() * bz.radius;
+        game.spawnParticles(bz.x + Math.cos(pAngle) * pDist, bz.y + Math.sin(pAngle) * pDist, '#ff5722', 1, 'fire');
+      }
+
+      if (bz.tickTimer >= 0.3) {
+        bz.tickTimer = 0;
+        const dpsTick = game.skills.rocket.burnDps * 0.3;
+        for (let j = 0; j < game.enemies.length; j++) {
+          const e = game.enemies[j];
+          if (!e.active) continue;
+          if (Math.abs(e.y - bz.y) > bz.radius + e.radius) continue;
+
+          if (Math.hypot(e.x - bz.x, e.y - bz.y) <= bz.radius) {
+            this.onHit(e, dpsTick, false, 'fire');
+          }
+        }
+      }
+
+      if (bz.life <= 0) {
+        bz.active = false;
+      }
+    }
+    ObjectPool.compact(game.burnZones);
+
+    // 5. 更新装甲战车推进
+    for (let i = 0; i < game.activeTrucks.length; i++) {
+      const truck = game.activeTrucks[i];
+      if (!truck.active) continue;
+
+      truck.y -= truck.speed * dt;
+
+      if (game.synergies.truckInferno) {
+        truck.infernoTimer = (truck.infernoTimer || 0) + dt;
+        if (truck.infernoTimer >= 0.16) {
+          truck.infernoTimer = 0;
+          game.burnZones.push({
+            active: true,
+            x: truck.x + (Math.random() * 20 - 10),
+            y: truck.y + 45,
+            radius: 40,
+            life: 2.8,
+            maxLife: 2.8,
+            tickTimer: 0
+          });
+        }
+      }
+
+      const tRoad = game.getRoadBounds(truck.y);
+      const targetTruckX = tRoad.left + tRoad.roadWidth * (truck.laneRatio || 0.5);
+      truck.x += (targetTruckX - truck.x) * Math.min(1, dt * 4.5);
+
+      game.spawnParticles(truck.x + (Math.random() * 30 - 15), truck.y + 40, '#94a3b8', 2, 'smoke');
+
+      for (let j = 0; j < game.enemies.length; j++) {
+        const e = game.enemies[j];
+        if (!e.active || truck.hitEnemies.has(e)) continue;
+
+        if (Math.abs(e.y - truck.y) < (truck.height / 2 + e.radius) &&
+            Math.abs(e.x - truck.x) < (truck.width / 2 + e.radius)) {
+          truck.hitEnemies.add(e);
+          e.y -= game.skills.truck.knockback;
+          this.onHit(e, truck.damage, true, 'truck');
+          game.spawnParticles(e.x, e.y, '#e11d48', 10, 'spark');
+        }
+      }
+
+      if (truck.y < -150) {
+        truck.active = false;
+      }
+    }
+    ObjectPool.compact(game.activeTrucks);
+  }
+}

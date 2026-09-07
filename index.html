@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -381,14 +381,25 @@
     }
 
     .card-icon-img {
-      width: 54px;
-      height: 54px;
-      border-radius: 10px;
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
       object-fit: cover;
       border: 1.5px solid rgba(255, 255, 255, 0.25);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75);
       flex-shrink: 0;
+      background: rgba(10, 15, 26, 0.88);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
+
+    .upgrade-card:hover .card-icon-img {
+      transform: scale(1.05);
+    }
+
+    .rarity-common .card-icon-img { border-color: rgba(96, 165, 250, 0.6); box-shadow: 0 0 10px rgba(59, 130, 246, 0.25); }
+    .rarity-rare .card-icon-img { border-color: rgba(192, 132, 252, 0.7); box-shadow: 0 0 12px rgba(168, 85, 247, 0.35); }
+    .rarity-epic .card-icon-img { border-color: rgba(244, 114, 182, 0.8); box-shadow: 0 0 15px rgba(236, 72, 153, 0.45); }
+    .rarity-legendary .card-icon-img { border-color: rgba(251, 191, 36, 0.9); box-shadow: 0 0 18px rgba(245, 158, 11, 0.5); }
 
     .card-info {
       flex: 1;
@@ -686,20 +697,124 @@
       margin-top: 4px;
     }
 
-    /* 测试辅助面板 (右上角折叠) */
-    #cheat-panel {
+    /* 低血量全屏警报遮罩 */
+    #emergency-overlay {
       position: absolute;
-      bottom: 95px;
-      left: 10px;
-      z-index: 80;
+      inset: 0;
+      pointer-events: none;
+      z-index: 25;
+      box-shadow: inset 0 0 60px rgba(255, 42, 95, 0.85), inset 0 0 120px rgba(255, 42, 95, 0.5);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    #emergency-overlay.active {
+      animation: emergencyPulse 1.1s infinite ease-in-out;
+    }
+    @keyframes emergencyPulse {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.85; }
+    }
+
+    /* 赛博 Loading 加载界面 */
+    #loading-screen {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
+      z-index: 200;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #loading-screen.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loading-logo {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--neon-cyan);
+      letter-spacing: 3px;
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+      margin-bottom: 8px;
+    }
+    .loading-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .loading-bar-outer {
+      width: 240px;
+      height: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 240, 255, 0.25);
+      position: relative;
+    }
+    .loading-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00b4d8, #00f0ff, #38ef7d);
+      border-radius: 999px;
+      transition: width 0.12s ease-out;
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+    .loading-text {
+      margin-top: 14px;
+      font-size: 11px;
+      font-family: monospace;
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+    .loading-hint {
+      margin-top: 22px;
+      font-size: 11px;
+      color: #64748b;
+      letter-spacing: 1px;
+    }
+
+    /* 测试辅助面板 (左下角折叠收起) */
+    #cheat-panel-toggle {
+      position: absolute;
+      bottom: 96px;
+      left: 8px;
+      z-index: 85;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      color: #94a3b8;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s ease;
+    }
+    #cheat-panel-toggle:hover {
+      color: #fff;
+      border-color: var(--neon-cyan);
+    }
+    #cheat-panel {
+      position: absolute;
+      bottom: 126px;
+      left: 8px;
+      z-index: 80;
+      display: none;
+      flex-direction: column;
       gap: 5px;
-      opacity: 0.85;
+    }
+    #cheat-panel.open {
+      display: flex;
     }
 
     .cheat-btn {
-      background: rgba(15, 23, 42, 0.88);
+      background: rgba(15, 23, 42, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.25);
       color: #cbd5e1;
       padding: 4px 8px;
@@ -799,11 +914,23 @@
     </div>
 
     <!-- 快速调试面板 (便于验证技能与升级) -->
+    <button id="cheat-panel-toggle" title="展开/收起调试菜单">🛠️ 调试</button>
     <div id="cheat-panel">
       <button class="cheat-btn" id="cheat-lvl">+ 升级</button>
       <button class="cheat-btn" id="cheat-heal">+ 修复防线</button>
       <button class="cheat-btn" id="cheat-skills">+ 解锁全技能</button>
       <button class="cheat-btn" id="cheat-boss">⚠️ 召唤Boss</button>
+    </div>
+
+    <!-- 赛博 Loading 启动加载界面 -->
+    <div id="loading-screen">
+      <div class="loading-logo">⚡ KAIPAO: DOOMSDAY</div>
+      <div class="loading-sub">TACTICAL DEFENSE SYSTEM</div>
+      <div class="loading-bar-outer">
+        <div class="loading-bar-inner" id="loading-bar-inner"></div>
+      </div>
+      <div class="loading-text" id="loading-progress-text">INITIALIZING TACTICAL ASSETS... 0%</div>
+      <div class="loading-hint">提示：滑动或点击屏幕即可调整射击仰角，坚守最后防线！</div>
     </div>
 
     <!-- Roguelike 3选1 强化卡片弹窗 -->
@@ -841,6 +968,10 @@
             <div class="stat-label">指挥官等级</div>
             <div class="stat-value" id="res-level">1</div>
           </div>
+          <div class="stat-item" style="grid-column: span 2; border-top: 1px solid rgba(0, 240, 255, 0.2); padding-top: 6px;">
+            <div class="stat-label">历史最高纪录</div>
+            <div class="stat-value" id="res-best" style="color: var(--neon-gold); font-size: 14px;">WAVE 1 (最高 0 击杀)</div>
+          </div>
         </div>
         <button class="primary-btn" id="btn-restart">重新构筑防线</button>
       </div>
@@ -848,7 +979,7 @@
 
   </div>
 
-  <!-- 寮曞叆鐜颁唬妯″潡鍖栧紩鎿庤剼鏈?(ES Modules: 褰诲簳瑙ｈ€﹀姛鑳芥ā鍧椾笌鎻愬崌鎬ц兘) -->
-  <script type="module" src="src/main.js"></script>
+  <!-- 引入现代模块化引擎脚本 (ES Modules) -->
+  <script type="module" src="src/main.js?v=9_fresh"></script>
 </body>
 </html>

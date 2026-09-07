@@ -1,5 +1,6 @@
 import { buildUpgradeCardPool } from '../combat/SkillDeck.js';
 import { sound } from '../systems/SoundEngine.js';
+import { saveManager } from '../systems/SaveManager.js';
 
 // ---------------- 高性能 Dirty-Checked HUD 与 UI 管理器 ----------------
 // 为什么不使用虚拟 DOM (React / Vue)？
@@ -33,6 +34,7 @@ export class HUDManager {
       resKills: document.getElementById('res-kills'),
       resTime: document.getElementById('res-time'),
       resLevel: document.getElementById('res-level'),
+      resBest: document.getElementById('res-best'),
       btnRestart: document.getElementById('btn-restart'),
       btnSpeed: document.getElementById('btn-speed'),
       btnSound: document.getElementById('btn-sound'),
@@ -291,6 +293,11 @@ export class HUDManager {
     const secs = Math.floor(game.survivalTime % 60).toString().padStart(2, '0');
     if (this.dom.resTime) this.dom.resTime.textContent = `${mins}:${secs}`;
     if (this.dom.resLevel) this.dom.resLevel.textContent = game.hero.level;
+
+    const stats = saveManager.getStats();
+    if (this.dom.resBest) {
+      this.dom.resBest.textContent = `WAVE ${stats.highWave || 1} (最高 ${stats.maxKills || 0} 击杀 · 局数 ${stats.totalRuns || 1})`;
+    }
 
     if (this.dom.gameoverModal) this.dom.gameoverModal.style.display = 'flex';
   }
