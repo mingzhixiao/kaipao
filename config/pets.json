@@ -1,5 +1,5 @@
 {
-  "growthRate": 0.25,
+  "growthRate": 0.1,
   "recoveryTime": 10.0,
   "teleportThreshold": 300,
   "types": {
@@ -7,7 +7,7 @@
       "id": "fluffy",
       "name": "小毛球",
       "tag": "速射突击 · 屏障防护",
-      "asset": "assets/pets/fluffy.png",
+      "asset": "assets/pets/fluffy.svg",
       "description": "发射多重连发能量弹幕，并用护盾抵挡前线敌人冲击。",
       "baseStats": {
         "hp": 70,
@@ -27,7 +27,7 @@
       "id": "dragon",
       "name": "烈焰幼龙",
       "tag": "火系吐息 · 范围灼烧",
-      "asset": "assets/pets/dragon.png",
+      "asset": "assets/pets/dragon.svg",
       "description": "喷吐扇形炽烈龙炎，造成持续火焰灼烧并引燃战场。",
       "baseStats": {
         "hp": 100,
