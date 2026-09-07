@@ -578,47 +578,120 @@ function renderFeature(game) {
     ctx.restore();
   }
 
-  // 2. 龙卷风渲染
+  // 2. 龙卷风渲染 (高清风暴漩涡图素 + 逆时针双层涡流粒子)
   for (const tornado of f.tornadoes) {
+    const r = SKILL_CONFIG.tornado.radius;
     ctx.save();
-    ctx.globalAlpha = 0.28;
-    ctx.strokeStyle = '#34d399';
-    ctx.lineWidth = 5;
+    ctx.translate(tornado.x, tornado.y);
+
+    // 外层青翠风压气浪圈
+    const windGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, r);
+    windGrad.addColorStop(0, 'rgba(52, 211, 153, 0.45)');
+    windGrad.addColorStop(0.5, 'rgba(16, 185, 129, 0.25)');
+    windGrad.addColorStop(0.9, 'rgba(5, 150, 105, 0.1)');
+    windGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = windGrad;
     ctx.beginPath();
-    ctx.arc(tornado.x, tornado.y, SKILL_CONFIG.tornado.radius, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 高清暴风之眼旋转原画
+    if (f.tornadoImage) {
+      ctx.rotate((game.survivalTime || 0) * -5.2);
+      ctx.globalAlpha = 0.85;
+      ctx.drawImage(f.tornadoImage, -r * 0.95, -r * 0.95, r * 1.9, r * 1.9);
+    }
     ctx.restore();
   }
 
-  // 3. 回旋刃渲染
+  // 3. 回旋刃渲染 (高清合金等离子飞刃 + 高速旋转流光拖尾)
   for (const b of f.boomerangs) {
     ctx.save();
     ctx.translate(b.x, b.y);
-    ctx.rotate((game.survivalTime || 0) * 12);
-    ctx.drawImage(f.boomerangImage, -14, -14, 28, 28);
+
+    // 旋转风刃能量光环
+    const auraGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
+    auraGrad.addColorStop(0, 'rgba(34, 211, 238, 0.8)');
+    auraGrad.addColorStop(0.6, 'rgba(250, 204, 21, 0.4)');
+    auraGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = auraGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, 26, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 高速旋转飞刃原画
+    ctx.rotate((game.survivalTime || 0) * 18);
+    if (f.boomerangImage) {
+      ctx.drawImage(f.boomerangImage, -20, -20, 40, 40);
+    }
     ctx.restore();
   }
 
-  // 4. 激光渲染 (雷属性紫色高亮)
+  // 4. 激光渲染 (三层高能贯通电磁等离子光束：紫色外晕 + 亮粉聚焦 + 纯白激光核心)
   for (const laser of f.lasers) {
     const x2 = laser.x + Math.cos(laser.angle) * Math.max(game.width, game.height) * 2;
     const y2 = laser.y + Math.sin(laser.angle) * Math.max(game.width, game.height) * 2;
+    const alpha = laser.life / laser.maxLife;
+
     ctx.save();
-    ctx.globalAlpha = laser.life / laser.maxLife;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#c084fc';
-    ctx.strokeStyle = '#c084fc';
-    ctx.lineWidth = SKILL_CONFIG.laser.width;
+    ctx.globalAlpha = alpha;
+
+    // 1. 宽幅超导外晕
+    ctx.strokeStyle = 'rgba(192, 132, 252, 0.35)';
+    ctx.lineWidth = SKILL_CONFIG.laser.width * 2.6;
     ctx.beginPath();
     ctx.moveTo(laser.x, laser.y);
     ctx.lineTo(x2, y2);
     ctx.stroke();
+
+    // 2. 高压电离中层光束
+    ctx.strokeStyle = '#d946ef';
+    ctx.lineWidth = SKILL_CONFIG.laser.width * 1.2;
+    ctx.beginPath();
+    ctx.moveTo(laser.x, laser.y);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // 3. 极亮纯白贯穿激光核心
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(3, SKILL_CONFIG.laser.width * 0.4);
+    ctx.beginPath();
+    ctx.moveTo(laser.x, laser.y);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
     ctx.restore();
   }
 
-  // 5. 航弹下落渲染
+  // 5. 轨道轰炸战术战机与航弹
+  if (f.bomber) {
+    // 掠过战场的隐身轰炸巡航机
+    ctx.save();
+    ctx.translate(f.bomber.x, f.bomber.y - 120 + f.bomber.timer * 60);
+    if (f.bombImage) {
+      ctx.drawImage(f.bombImage, -32, -32, 64, 64);
+    }
+    // 尾部喷气橙光
+    ctx.fillStyle = '#ff7700';
+    ctx.beginPath();
+    ctx.arc(0, 24, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   for (const bomb of f.bombs) {
-    ctx.drawImage(f.bombImage, bomb.x - 12, bomb.y - 12, 24, 24);
+    ctx.save();
+    ctx.translate(bomb.x, bomb.y);
+    // 航弹下落尾焰
+    ctx.fillStyle = 'rgba(255, 120, 0, 0.7)';
+    ctx.beginPath();
+    ctx.arc(0, -8, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (f.bombImage) {
+      ctx.drawImage(f.bombImage, -16, -16, 32, 32);
+    }
+    ctx.restore();
   }
 
   // 6. 宠物本体与蜷缩/护盾渲染
@@ -694,6 +767,7 @@ export function installSkillsPetsFeature(game) {
     petBullets: [],
     petEffects: [],
     target: { x: game.hero.x, y: game.hero.y - 250 },
+    tornadoImage: asset('assets/skills/tornado.png'),
     boomerangImage: asset('assets/skills/boomerang.png'),
     bombImage: asset('assets/skills/bomber.png'),
     petBulletImage: asset('assets/skills/pet-bullet.png'),

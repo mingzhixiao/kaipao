@@ -217,13 +217,20 @@ export class Game {
   }
 
   spawnDamageText(x, y, text, color = '#ffffff', isCrit = false, isSpecial = false) {
+    if (this.damageTexts.length > 22 && !isSpecial && !isCrit) return;
     const t = this.textPool.get();
-    t.active = true; t.x = x + (Math.random() * 16 - 8); t.y = y; t.vy = -55;
+    t.active = true;
+    t.x = x + (Math.random() * 14 - 7);
+    t.y = y;
+    t.vy = -38;
     t.text = typeof text === 'number' ? Math.round(text).toString() : text;
-    t.color = color; t.isCrit = isCrit; t.isSpecial = isSpecial;
-    t.fontSize = isSpecial ? 20 : (isCrit ? 18 : 14);
-    t.scale = isSpecial ? 1.5 : (isCrit ? 1.35 : 1.15);
-    t.targetScale = 1.0; t.life = t.maxLife = isSpecial ? 0.9 : 0.65;
+    t.color = color;
+    t.isCrit = isCrit;
+    t.isSpecial = isSpecial;
+    t.fontSize = isSpecial ? 14 : (isCrit ? 14 : 12);
+    t.scale = isSpecial ? 1.2 : (isCrit ? 1.15 : 1.0);
+    t.targetScale = 1.0;
+    t.life = t.maxLife = isSpecial ? 0.7 : 0.5;
     this.damageTexts.push(t);
   }
 

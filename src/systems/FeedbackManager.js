@@ -4,33 +4,28 @@ export class FeedbackManager {
     this.sound = soundEngine;
     this.trauma = 0;             // 创伤指数 (0.0 ~ 1.0)
     this.traumaDecay = 1.45;     // 创伤每秒衰减速率
-    this.maxShakeOffset = 24;    // 最大震屏位移像素
-    this.maxShakeAngle = 0.055;  // 最大旋转晃动弧度
+    this.maxShakeOffset = 0;     // 彻底关闭全屏剧烈晃动，保持画面稳定
+    this.maxShakeAngle = 0;      // 关闭画面倾斜旋转
     this.hitStopTimer = 0;       // 微顿帧 (HitStop) 时钟
   }
 
   addTrauma(amount) {
-    this.trauma = Math.min(1.0, this.trauma + amount);
+    // 仅保留适度受击顿挫与音频联动，不再震动整个屏幕
+    this.trauma = Math.min(0.5, this.trauma + amount * 0.5);
   }
 
-  triggerHitStop(duration = 0.035) {
+  triggerHitStop(duration = 0.025) {
     this.hitStopTimer = Math.max(this.hitStopTimer, duration);
   }
 
   update(dt) {
     if (this.trauma > 0) {
-      this.trauma = Math.max(0, this.trauma - dt * this.traumaDecay);
+      this.trauma = Math.max(0, this.trauma - dt * 2.5);
     }
   }
 
   getShake() {
-    if (this.trauma <= 0) return { x: 0, y: 0, angle: 0 };
-    // 平方衰减创伤模型 (Quadratic Trauma Decay): 震幅 = trauma^2 * maxShake
-    const s = this.trauma * this.trauma;
-    return {
-      x: (Math.random() * 2 - 1) * this.maxShakeOffset * s,
-      y: (Math.random() * 2 - 1) * this.maxShakeOffset * s,
-      angle: (Math.random() * 2 - 1) * this.maxShakeAngle * s
-    };
+    // 零晃动，防止爆炸时整个视口/界面移位露出黑边
+    return { x: 0, y: 0, angle: 0 };
   }
 }

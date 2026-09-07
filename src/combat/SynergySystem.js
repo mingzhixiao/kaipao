@@ -197,11 +197,11 @@ export class SynergySystem {
     game.feedback.triggerHitStop(0.04);
 
     // 爆发紫色与橙红色雷火超载冲击波
-    game.spawnParticles(x, y, '#c084fc', 22, 'spark');
-    game.spawnParticles(x, y, '#ff4400', 20, 'fire');
-    game.spawnHitRing(x, y, '#c084fc', enemy.radius * 2.4);
+    game.spawnParticles(x, y, '#c084fc', 18, 'spark');
+    game.spawnParticles(x, y, '#ff4400', 16, 'fire');
+    game.spawnHitRing(x, y, '#c084fc', enemy.radius * 2.2);
 
-    game.spawnDamageText(x, y - 28, `💥 超载爆轰! ${overloadDmg}`, '#e879f9', true, true);
+    game.spawnDamageText(x, y - 24, `⚡ 超载 ${overloadDmg}`, '#e879f9', true, true);
 
     // 超载余波波及周围怪并击退
     SynergySystem.forEachInRadius(game, x, y, 100, (other) => {
@@ -236,8 +236,12 @@ export class SynergySystem {
         other.burnDps = Math.max(other.burnDps || 0, spreadDps);
         spreadCount++;
       });
-      game.spawnParticles(x, y, '#ff4400', 16, 'fire');
-      game.spawnDamageText(x, y - 22, '🌪️ 烈焰风暴扩散!', '#ff7700', true, false);
+      game.spawnParticles(x, y, '#ff4400', 14, 'fire');
+      const now = game.survivalTime || 0;
+      if (now - (game._lastSwirlText || 0) > 0.65) {
+        game._lastSwirlText = now;
+        game.spawnDamageText(x, y - 20, '🌪️ 火扩散', '#ff7700', false, true);
+      }
     }
 
     if (hasIce) {
@@ -247,12 +251,16 @@ export class SynergySystem {
         other.freezeFactor = 0.35;
         spreadCount++;
       });
-      game.spawnParticles(x, y, '#00f0ff', 16, 'ice');
-      game.spawnDamageText(x, y - 22, '🌪️ 极寒涡流扩散!', '#38bdf8', true, false);
+      game.spawnParticles(x, y, '#00f0ff', 14, 'ice');
+      const now = game.survivalTime || 0;
+      if (now - (game._lastSwirlText || 0) > 0.65) {
+        game._lastSwirlText = now;
+        game.spawnDamageText(x, y - 20, '🌪️ 冰扩散', '#38bdf8', false, true);
+      }
     }
 
     if (spreadCount > 0) {
-      game.feedback.addTrauma(0.18);
+      game.feedback.triggerHitStop(0.015);
     }
   }
 

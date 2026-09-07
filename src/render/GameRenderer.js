@@ -17,17 +17,7 @@ export class GameRenderer {
 
   render(game) {
     const ctx = this.ctx;
-    ctx.save();
-
-    // 创伤旋转震屏 (Trauma-based screen shake with rotational kick)
-    const shake = game.feedback.getShake();
-    if (shake.x !== 0 || shake.y !== 0 || shake.angle !== 0) {
-      ctx.translate(game.width / 2, game.height / 2);
-      ctx.translate(shake.x, shake.y);
-      ctx.rotate(shake.angle);
-      ctx.translate(-game.width / 2, -game.height / 2);
-    }
-
+    // 保证画面视口绝对稳定，爆炸时不再产生视口晃动与倾斜黑边
     ctx.clearRect(0, 0, game.width, game.height);
 
     // 1. 废土公路原画背景 (离屏 Canvas 预缓存)
@@ -337,14 +327,10 @@ export class GameRenderer {
         ctx.fill();
       }
 
-      // 6. 前景骨骼动力学配件渲染 (摆臂武器、猩猩重拳触地、狂暴利爪)
+      // 6. Boss专属重装武器动力学
       if (e.isBoss) {
         const attackPhase = (!isMoving && e.attackCooldown) ? (e.attackTimer / e.attackCooldown) : 0;
         this.renderBossWeapons(ctx, size, phase, isMoving, attackPhase);
-      } else if (e.type === 'behemoth') {
-        this.renderBehemothKnuckles(ctx, size, phase, isMoving);
-      } else if (e.type === 'runner') {
-        this.renderRunnerClaws(ctx, size, phase, isMoving);
       }
 
       // 7. 极简科技血条
@@ -891,11 +877,17 @@ export class GameRenderer {
       ctx.translate(t.x, t.y);
       const sc = t.scale || 1.0;
       ctx.scale(sc, sc);
-      ctx.font = `bold ${t.fontSize || 16}px 'Rajdhani', monospace, sans-serif`;
-      ctx.fillStyle = t.color;
+
+      ctx.font = `900 ${t.fontSize || 12}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       ctx.textAlign = 'center';
-      ctx.shadowColor = '#000';
-      ctx.shadowBlur = 6;
+      ctx.textBaseline = 'middle';
+
+      // 纯黑清晰描边，使数字在任何背景与火光中极其锐利易读
+      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = 'rgba(5, 8, 16, 0.88)';
+      ctx.strokeText(t.text, 0, 0);
+
+      ctx.fillStyle = t.color;
       ctx.fillText(t.text, 0, 0);
       ctx.restore();
     }
