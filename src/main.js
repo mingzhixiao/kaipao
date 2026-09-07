@@ -2,6 +2,7 @@ import { assets } from './systems/AssetManager.js';
 import { Game } from './core/Game.js';
 import { runeSystem } from './systems/RuneSystem.js';
 import { installSkillsPetsFeature } from './features/SkillsPetsFeature.js';
+import { installSkillsPetsHud } from './ui/SkillsPetsHud.js';
 
 function wireStageAndRunes(game) {
   game.startStage = function(stageId) {
@@ -38,8 +39,10 @@ function bindFeatureTarget(game) {
   game.feature.targetBound = true;
   const updateTarget = (e) => {
     const rect = game.canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const touch = e.touches && e.touches.length ? e.touches[0] : null;
+    const clientX = touch ? touch.clientX : e.clientX;
+    const clientY = touch ? touch.clientY : e.clientY;
+    if (typeof clientX !== 'number' || typeof clientY !== 'number') return;
     game.feature.target.x = clientX - rect.left;
     game.feature.target.y = clientY - rect.top;
   };
@@ -64,30 +67,15 @@ function initCheatPanel(game) {
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       panel.classList.toggle('open');
-      toggleBtn.textContent = panel.classList.contains('open') ? '✖️ 关闭' : '🛠️ 调试';
+      toggleBtn.textContent = panel.classList.contains('open') ? '关闭调试' : '调试';
     });
   }
   const btnCheatLvl = document.getElementById('cheat-lvl');
   if (btnCheatLvl) btnCheatLvl.addEventListener('click', () => game.triggerLevelUp());
   const btnCheatHeal = document.getElementById('cheat-heal');
-  if (btnCheatHeal) {
-    btnCheatHeal.addEventListener('click', () => {
-      game.fortress.hp = game.fortress.maxHp;
-      game.fortress.shield = game.fortress.maxShield;
-      game.spawnDamageText(game.hero.x, game.hero.y - 30, 'REPAIRED!', '#39ff14', true);
-      game.hud.updateHUD(game);
-    });
-  }
+  if (btnCheatHeal) btnCheatHeal.addEventListener('click', () => { game.fortress.hp = game.fortress.maxHp; game.fortress.shield = game.fortress.maxShield; game.spawnDamageText(game.hero.x, game.hero.y - 30, 'REPAIRED!', '#39ff14', true); game.hud.updateHUD(game); });
   const btnCheatSkills = document.getElementById('cheat-skills');
-  if (btnCheatSkills) {
-    btnCheatSkills.addEventListener('click', () => {
-      game.skills.rocket.level = Math.max(1, game.skills.rocket.level + 1);
-      game.skills.truck.level = Math.max(1, game.skills.truck.level + 1);
-      game.skills.freeze.level = Math.max(1, game.skills.freeze.level + 1);
-      if (game.feature) Object.keys(game.feature.skills).forEach(k => { game.feature.skills[k].level = Math.max(1, game.feature.skills[k].level); });
-      game.hud.updateSkillHUD(game);
-    });
-  }
+  if (btnCheatSkills) btnCheatSkills.addEventListener('click', () => { game.skills.rocket.level = Math.max(1, game.skills.rocket.level + 1); game.skills.truck.level = Math.max(1, game.skills.truck.level + 1); game.skills.freeze.level = Math.max(1, game.skills.freeze.level + 1); if (game.feature) Object.keys(game.feature.skills).forEach(k => { game.feature.skills[k].level = Math.max(1, game.feature.skills[k].level); }); game.hud.updateSkillHUD(game); });
   const btnCheatBoss = document.getElementById('cheat-boss');
   if (btnCheatBoss) btnCheatBoss.addEventListener('click', () => game.spawnBoss(180));
 }
@@ -96,7 +84,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const loadingBar = document.getElementById('loading-bar-inner');
   const loadingText = document.getElementById('loading-progress-text');
   const loadingScreen = document.getElementById('loading-screen');
-
   assets.loadAll((loaded, total, key) => {
     const percent = Math.round((loaded / total) * 100);
     if (loadingBar) loadingBar.style.width = `${percent}%`;
@@ -109,6 +96,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const gameInstance = new Game();
       wireStageAndRunes(gameInstance);
       installSkillsPetsFeature(gameInstance);
+      installSkillsPetsHud(gameInstance);
       bindFeatureTarget(gameInstance);
       window.gameInstance = gameInstance;
       initCheatPanel(gameInstance);
