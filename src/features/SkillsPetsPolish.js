@@ -108,6 +108,9 @@ function syncRuntimeConfig() {
     if (!cfg) continue;
     Object.assign(PET_TYPES[id], cfg);
   }
+
+  if (PET_TYPES.fluffy) PET_TYPES.fluffy.asset = 'assets/pets/fluffy.svg';
+  if (PET_TYPES.dragon) PET_TYPES.dragon.asset = 'assets/pets/dragon.svg';
 }
 
 function installTextSanitizer(game) {
