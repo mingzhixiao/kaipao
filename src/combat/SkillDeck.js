@@ -14,7 +14,7 @@ export function buildUpgradeCardPool(game) {
       id: 'rocket',
       name: game.skills.rocket.level === 0 ? '温压火箭 (解锁)' : '温压火箭 (强化)',
       desc: game.skills.rocket.level === 0 ? '部署温压重型火箭，定点引发大范围爆轰核爆与火焰灼烧区。' : '爆炸伤害+35%，爆破范围+20%，冷却-0.5s。',
-      img: 'assets/icon_rocket.jpg',
+      img: 'assets/cards/icon_rocket.png',
       rarity: game.skills.rocket.level === 0 ? 'legendary' : 'rare',
       element: 'fire',
       synergy: '[火系 · 重装火力]',
@@ -27,7 +27,7 @@ export function buildUpgradeCardPool(game) {
       id: 'truck',
       name: game.skills.truck.level === 0 ? '装甲战车 (解锁)' : '装甲战车 (强化)',
       desc: game.skills.truck.level === 0 ? '呼叫重型突击装甲车，自防线轰鸣冲撞碾压沿途所有敌人！' : '战车碾压伤害+40%，击退距离+50px，冷却-1.0s。',
-      img: 'assets/icon_truck.jpg',
+      img: 'assets/cards/icon_truck.png',
       rarity: game.skills.truck.level === 0 ? 'legendary' : 'rare',
       element: 'physical',
       synergy: '[物理 · 重装碾压]',
@@ -40,7 +40,7 @@ export function buildUpgradeCardPool(game) {
       id: 'freeze',
       name: game.skills.freeze.level === 0 ? '极寒射线 (解锁)' : '极寒射线 (强化)',
       desc: game.skills.freeze.level === 0 ? '周期性向前喷射大范围超低温冰雾，极速减速与冰冻敌人。' : '持续时间+0.5s，减速效果更强，每秒附带霜冻伤害+30%。',
-      img: 'assets/icon_frost.jpg',
+      img: 'assets/cards/icon_frost.png',
       rarity: game.skills.freeze.level === 0 ? 'rare' : 'rare',
       element: 'ice',
       synergy: '[冰系 · 控场减速]',
@@ -113,7 +113,7 @@ export function buildUpgradeCardPool(game) {
       id: 'thermal_engine',
       name: '热力冲击引擎',
       desc: '【化学反应】火箭或烈焰击中冰冻目标时，触发 220% 威力温差热力殉爆与破甲蒸汽震荡！',
-      img: 'assets/icon_thermal.jpg',
+      img: 'assets/cards/icon_thermal.png',
       rarity: 'legendary',
       element: 'fire',
       synergy: '[元素反应 · 殉爆]',
@@ -125,7 +125,7 @@ export function buildUpgradeCardPool(game) {
       id: 'tesla_coil',
       name: '电磁超导弹头',
       desc: '【弹道协同】武器暴击或雷电命中时释放高压电弧，连锁弹射跳跃至附近 2 个敌方目标！',
-      img: 'assets/icon_tesla.jpg',
+      img: 'assets/cards/icon_tesla.png',
       rarity: 'epic',
       element: 'thunder',
       synergy: '[电磁连锁]',
@@ -137,7 +137,7 @@ export function buildUpgradeCardPool(game) {
       id: 'fortress_emp',
       name: '紧急防线过载',
       desc: '【战术防御】当防御盾被击碎瞬间，触发全场高能 EMP 电磁冲击波，冻结并击退周围敌群！',
-      img: 'assets/icon_emp.jpg',
+      img: 'assets/cards/icon_emp.png',
       rarity: 'epic',
       element: 'thunder',
       synergy: '[防线过载]',
@@ -149,7 +149,7 @@ export function buildUpgradeCardPool(game) {
       id: 'truck_inferno',
       name: '重装喷火战车',
       desc: '【战车改装】重型装甲车加装后置火箭推力喷火器，飞驰沿途留下一整条炽热灼烧带！',
-      img: 'assets/icon_inferno.png',
+      img: 'assets/cards/icon_inferno.png',
       rarity: 'epic',
       element: 'fire',
       synergy: '[战车协同]',
@@ -161,7 +161,7 @@ export function buildUpgradeCardPool(game) {
       id: 'cryo_shatter',
       name: '极寒深冻碎裂',
       desc: '【战车协同】装甲战车碾压冰冻敌人时将其彻底粉碎，并向全场前方爆射 5 枚穿透冰晶刺！',
-      img: 'assets/icon_shatter.png',
+      img: 'assets/cards/icon_shatter.png',
       rarity: 'rare',
       element: 'ice',
       synergy: '[冰霜碎裂]',
@@ -173,7 +173,7 @@ export function buildUpgradeCardPool(game) {
       id: 'multishot',
       name: '多重弹道模组',
       desc: '主角主武器每次射击额外增加 1 枚散射弹道，火力覆盖倍增。',
-      img: 'assets/icon_multishot.png',
+      img: 'assets/cards/icon_multishot.png',
       rarity: 'legendary',
       element: 'physical',
       synergy: '[枪械弹道]',
@@ -186,7 +186,7 @@ export function buildUpgradeCardPool(game) {
       id: 'firerate',
       name: '超频连发机匣',
       desc: '主武器射速提升 25%，极速倾泻火力压制狂暴尸潮。',
-      img: 'assets/icon_firerate.png',
+      img: 'assets/cards/icon_firerate.png',
       rarity: 'common',
       element: 'physical',
       synergy: '[射速提升]',
@@ -198,7 +198,7 @@ export function buildUpgradeCardPool(game) {
       id: 'piercing',
       name: '贫铀穿甲弹头',
       desc: '子弹穿透次数 +1，直线射击可洞穿前后多个目标。',
-      img: 'assets/icon_pierce.jpg',
+      img: 'assets/cards/icon_pierce.png',
       rarity: 'rare',
       element: 'physical',
       synergy: '[穿甲贯通]',
@@ -210,7 +210,7 @@ export function buildUpgradeCardPool(game) {
       id: 'crit',
       name: '战术弱点瞄准仪',
       desc: '暴击率提升 15%，暴击伤害额外提升 50%。',
-      img: 'assets/icon_crit.png',
+      img: 'assets/cards/icon_crit.png',
       rarity: 'rare',
       element: 'physical',
       synergy: '[致命弱点]',
@@ -223,7 +223,7 @@ export function buildUpgradeCardPool(game) {
       id: 'shield',
       name: '纳米修复与能量盾',
       desc: '立即修复防线 40% 生命值，并提高护盾上限与自动充能速度。',
-      img: 'assets/icon_shield.jpg',
+      img: 'assets/cards/icon_shield.png',
       rarity: 'common',
       element: 'shield',
       synergy: '[防线稳固]',
@@ -238,7 +238,7 @@ export function buildUpgradeCardPool(game) {
       id: 'magnet',
       name: '高能磁吸力场',
       desc: '大幅提升掉落晶核的吸取范围 +80%，拾取更加轻松高效。',
-      img: 'assets/icon_gem.jpg',
+      img: 'assets/cards/icon_gem.png',
       rarity: 'common',
       element: 'utility',
       synergy: '[资源效率]',
@@ -248,8 +248,30 @@ export function buildUpgradeCardPool(game) {
     }
   ];
 
-  // 过滤已选满的唯一协同被动
+  // 当前已激活的主动战术技能列表（上限最多 4 个）
+  const activeSkillIds = ['rocket', 'truck', 'freeze', 'laser', 'tornado', 'boomerang', 'bomber'];
+  const equippedSkills = [];
+  if (game.skills?.rocket?.level > 0) equippedSkills.push('rocket');
+  if (game.skills?.truck?.level > 0) equippedSkills.push('truck');
+  if (game.skills?.freeze?.level > 0) equippedSkills.push('freeze');
+  if (game.feature?.skills) {
+    for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
+      if (game.feature.skills[id]?.level > 0) equippedSkills.push(id);
+    }
+  }
+
+  const isSlotFull = equippedSkills.length >= 4;
+
+  // 过滤卡池：
+  // 1. 若技能槽已满 4 个，绝不再出现未携带的技能卡！
+  // 2. 过滤已激活的唯一协同反应卡及上限属性卡
   return pool.filter(card => {
+    if (activeSkillIds.includes(card.id)) {
+      const isEquipped = equippedSkills.includes(card.id);
+      if (isSlotFull && !isEquipped) {
+        return false; // 槽位已满 4 个，未装备的技能不再出现！
+      }
+    }
     if (card.id === 'thermal_engine' && game.synergies.thermalEngine) return false;
     if (card.id === 'tesla_coil' && game.synergies.teslaCoil) return false;
     if (card.id === 'fortress_emp' && game.synergies.fortressEmp) return false;

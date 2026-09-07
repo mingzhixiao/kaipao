@@ -235,7 +235,19 @@
     .rune-choice-card:hover { border-color: var(--neon-purple); }
     .rune-choice-card.selected { border-color: var(--neon-green); box-shadow: 0 0 12px rgba(57, 255, 20, 0.35); }
     .rune-choice-card.disabled { opacity: 0.4; pointer-events: none; }
-    .rune-icon { font-size: 28px; flex-shrink: 0; }
+    .rune-icon, .rune-forge-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: radial-gradient(circle at 50% 30%, #1e293b, #030712);
+      border: 1.5px solid rgba(148, 163, 184, 0.3);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; position: relative; overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    }
+    .rune-icon.cat-gun, .rune-forge-icon.cat-gun { border-color: rgba(249, 115, 22, 0.6); box-shadow: 0 2px 10px rgba(249, 115, 22, 0.25); }
+    .rune-icon.cat-defense, .rune-forge-icon.cat-defense { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25); }
+    .rune-icon.cat-skill, .rune-forge-icon.cat-skill { border-color: rgba(168, 85, 247, 0.6); box-shadow: 0 2px 10px rgba(168, 85, 247, 0.25); }
+    .rune-icon.cat-util, .rune-forge-icon.cat-util { border-color: rgba(6, 182, 212, 0.6); box-shadow: 0 2px 10px rgba(6, 182, 212, 0.25); }
+    .rune-icon-img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
     .rune-choice-name { font-weight: 800; font-size: 14px; color: #f8fafc; }
     .rune-choice-lv { font-size: 11px; color: var(--neon-cyan); }
     .rune-choice-desc { font-size: 11px; color: #94a3b8; margin-top: 2px; }
@@ -251,7 +263,6 @@
       border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 10px; padding: 8px 10px;
     }
     .rune-forge-row.maxed { opacity: 0.55; }
-    .rune-forge-icon { font-size: 22px; }
     .rune-forge-info { flex: 1; min-width: 0; }
     .rune-forge-name { font-size: 13px; font-weight: 800; color: #f1f5f9; }
     .rune-lv { color: var(--neon-cyan); font-weight: 600; font-size: 11px; }

@@ -822,9 +822,12 @@ export class HomeLobbyUI {
       const canAfford = saveManager.getScrap() >= cost && !isMax;
 
       return `
-        <div class="rune-item-card">
+        <div class="rune-item-card cat-${rune.category}">
           <div class="rune-item-left">
-            <div class="rune-item-icon">${rune.icon}</div>
+            <div class="rune-item-icon cat-${rune.category}">
+              <img class="rune-icon-img" src="${rune.asset || `assets/runes/rune_${rune.id}.png`}" alt="${rune.name}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">
+              <span class="rune-icon-fallback" style="display:none;">${rune.icon}</span>
+            </div>
             <div>
               <div class="rune-item-name">${rune.name} <span style="font-size:11px;color:#38bdf8;">Lv.${level}/${rune.maxLevel}</span></div>
               <div class="rune-item-desc">${rune.desc}</div>

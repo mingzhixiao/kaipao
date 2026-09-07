@@ -182,7 +182,7 @@
 .lobby-stage-arena {
   position: relative;
   height: 230px;
-  background: radial-gradient(circle at 50% 65%, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.8) 75%), url('assets/bg_highway.jpg') center bottom / cover no-repeat;
+  background: radial-gradient(circle at 50% 65%, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.8) 75%), url('/assets/environment/bg_highway.png') center bottom / cover no-repeat;
   border-radius: 20px;
   border: 1.5px solid rgba(56, 189, 248, 0.3);
   margin-bottom: 14px;
@@ -210,7 +210,7 @@
   transform: translateX(-50%);
   width: 90px;
   height: 90px;
-  background: url('assets/truck.png') center center / contain no-repeat;
+  background: url('/assets/vehicles/truck.png') center center / contain no-repeat;
   filter: drop-shadow(0 15px 25px rgba(0,0,0,0.85));
   animation: truckIdleBreath 3.5s ease-in-out infinite;
 }
@@ -742,56 +742,143 @@
 }
 
 .rune-item-card {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.92) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-left: 3.5px solid rgba(56, 189, 248, 0.6);
   border-radius: 14px;
-  padding: 12px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s, box-shadow 0.2s;
+}
+
+.rune-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.rune-item-card.cat-gun {
+  border-left-color: #f97316;
+}
+.rune-item-card.cat-defense {
+  border-left-color: #10b981;
+}
+.rune-item-card.cat-skill {
+  border-left-color: #a855f7;
+}
+.rune-item-card.cat-util {
+  border-left-color: #06b6d4;
 }
 
 .rune-item-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
 .rune-item-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: #020617;
-  border: 1px solid rgba(255,255,255,0.1);
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 30%, #1e293b, #030712);
+  border: 1.5px solid rgba(148, 163, 184, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s, box-shadow 0.2s;
+}
+
+.rune-item-card:hover .rune-item-icon {
+  transform: scale(1.06);
+}
+
+.rune-item-icon.cat-gun {
+  border-color: rgba(249, 115, 22, 0.55);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.22), inset 0 1px 2px rgba(255, 200, 100, 0.3);
+}
+.rune-item-icon.cat-defense {
+  border-color: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.22), inset 0 1px 2px rgba(167, 243, 208, 0.3);
+}
+.rune-item-icon.cat-skill {
+  border-color: rgba(168, 85, 247, 0.55);
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.22), inset 0 1px 2px rgba(233, 213, 255, 0.3);
+}
+.rune-item-icon.cat-util {
+  border-color: rgba(6, 182, 212, 0.55);
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.22), inset 0 1px 2px rgba(165, 243, 252, 0.3);
+}
+
+.rune-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+.rune-icon-fallback {
+  font-size: 22px;
 }
 
 .rune-item-name {
   font-size: 14px;
   font-weight: 800;
-  color: #fff;
+  color: #f8fafc;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .rune-item-desc {
-  font-size: 11px;
+  font-size: 11.5px;
   color: #94a3b8;
-  margin-top: 2px;
+  margin-top: 3px;
+  line-height: 1.4;
 }
 
 .rune-item-btn {
-  background: #1e293b;
-  border: 1px solid rgba(250, 204, 21, 0.35);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(250, 204, 21, 0.4);
   color: #facc15;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 700;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rune-item-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.25) 0%, rgba(202, 138, 4, 0.35) 100%);
+  border-color: #fde047;
+  color: #fef08a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.25);
+}
+
+.rune-item-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
 }
 
 /* ------------------- TAB 6: 试炼之路 (Trials) ------------------- */

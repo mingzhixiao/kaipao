@@ -138,9 +138,26 @@ export class SaveManager {
   spendGems(amount) { amount = Math.round(amount); if ((this.data.gems || 0) < amount) return false; this.data.gems -= amount; this.save(); return true; }
   getGems() { return this.data.gems || 0; }
 
-  getEnergy() { return this.data.energy ?? 50; }
+  getEnergy() {
+    const now = Date.now();
+    const last = this.data.lastEnergyRefresh || now;
+    const diffSec = Math.floor((now - last) / 1000);
+    if (diffSec >= 60) {
+      const regen = Math.floor(diffSec / 60) * 2; // 每分钟恢复 2 点
+      this.data.energy = Math.min(this.data.maxEnergy || 50, (this.data.energy || 0) + regen);
+      this.data.lastEnergyRefresh = now;
+      this.save();
+    }
+    // 保底：若体能低于 15，自动恢复到 35，保障顺畅体验
+    if ((this.data.energy || 0) < 15) {
+      this.data.energy = 35;
+      this.save();
+    }
+    return this.data.energy;
+  }
   getMaxEnergy() { return this.data.maxEnergy || 50; }
   useEnergy(amount = 5) {
+    this.getEnergy();
     if ((this.data.energy || 0) < amount) return false;
     this.data.energy -= amount;
     this.save();

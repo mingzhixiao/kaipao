@@ -15,10 +15,10 @@ const EMOJI_REPLACEMENTS = [
 ];
 
 const VECTOR_SKILL_ASSETS = {
-  tornado: 'assets/skills/tornado.svg',
-  boomerang: 'assets/skills/boomerang.svg',
-  laser: 'assets/skills/laser.svg',
-  bomber: 'assets/skills/bomber.svg'
+  tornado: 'assets/skills/tornado.png',
+  boomerang: 'assets/skills/boomerang.png',
+  laser: 'assets/skills/laser.png',
+  bomber: 'assets/skills/bomber.png'
 };
 
 function sanitizeText(value) {
@@ -116,8 +116,8 @@ function syncRuntimeConfig() {
     Object.assign(PET_TYPES[id], cfg);
   }
 
-  if (PET_TYPES.fluffy) PET_TYPES.fluffy.asset = 'assets/pets/fluffy.svg';
-  if (PET_TYPES.dragon) PET_TYPES.dragon.asset = 'assets/pets/dragon.svg';
+  if (PET_TYPES.fluffy) PET_TYPES.fluffy.asset = 'assets/pets/fluffy.png';
+  if (PET_TYPES.dragon) PET_TYPES.dragon.asset = 'assets/pets/dragon.png';
 
   for (const card of GAME_CONFIG.skillCatalog || []) {
     if (VECTOR_SKILL_ASSETS[card.id]) card.asset = VECTOR_SKILL_ASSETS[card.id];
@@ -162,9 +162,9 @@ function injectVisualPolish() {
     #bottom-hud .fortress-bars { margin-bottom: 6px !important; }
     #bottom-hud .bar-wrap { gap: 6px !important; font-size: 10px !important; }
     #bottom-hud .bar-outer { height: 9px !important; border-radius: 5px !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
-    #kp-skill-hud { bottom: 66px !important; }
+    #kp-skill-hud { bottom: 96px !important; }
     @media (max-width: 420px) {
-      #kp-skill-hud { bottom: 62px !important; }
+      #kp-skill-hud { bottom: 88px !important; }
     }
   `;
   document.head.appendChild(style);

@@ -45,9 +45,9 @@ export const GAME_CONFIG = {
   },
 
   skillCatalog: [
-    { id: 'rocket', name: '温压火箭', element: 'fire', asset: 'assets/icon_rocket.jpg', rarity: 'legendary', type: '火系 · 范围爆破', desc: '部署温压重型火箭，定点引发大范围爆轰核爆与持续烈火灼烧区。', cooldown: 5.5, materialId: 'chip_rocket' },
-    { id: 'truck', name: '装甲战车', element: 'physical', asset: 'assets/icon_truck.jpg', rarity: 'legendary', type: '物理 · 直线碾压', desc: '呼叫突击重型装甲车，自防线冲撞碾压沿途所有敌人并造成高额击退！', cooldown: 8.0, materialId: 'chip_truck' },
-    { id: 'freeze', name: '极寒射线', element: 'ice', asset: 'assets/icon_frost.jpg', rarity: 'rare', type: '冰系 · 控场霜冻', desc: '向前喷射大范围超低温冰雾，附带霜冻伤害并极速削减敌人移速。', cooldown: 7.0, materialId: 'chip_freeze' },
+    { id: 'rocket', name: '温压火箭', element: 'fire', asset: 'assets/cards/icon_rocket.png', rarity: 'legendary', type: '火系 · 范围爆破', desc: '部署温压重型火箭，定点引发大范围爆轰核爆与持续烈火灼烧区。', cooldown: 5.5, materialId: 'chip_rocket' },
+    { id: 'truck', name: '装甲战车', element: 'physical', asset: 'assets/cards/icon_truck.png', rarity: 'legendary', type: '物理 · 直线碾压', desc: '呼叫突击重型装甲车，自防线冲撞碾压沿途所有敌人并造成高额击退！', cooldown: 8.0, materialId: 'chip_truck' },
+    { id: 'freeze', name: '极寒射线', element: 'ice', asset: 'assets/cards/icon_frost.png', rarity: 'rare', type: '冰系 · 控场霜冻', desc: '向前喷射大范围超低温冰雾，附带霜冻伤害并极速削减敌人移速。', cooldown: 7.0, materialId: 'chip_freeze' },
     { id: 'tornado', name: '裂风涡流', element: 'wind', asset: 'assets/skills/tornado.png', rarity: 'epic', type: '风系 · 元素扩散', desc: '生成持续 4 秒的风暴漩涡，平滑阻尼牵引敌人并使火与冰状态向外大范围扩散！', cooldown: 8.0, materialId: 'chip_tornado' },
     { id: 'boomerang', name: '回旋刃', element: 'physical', asset: 'assets/skills/boomerang.png', rarity: 'rare', type: '物理 · 往返高暴', desc: '高速发射合金穿透飞刃，往返切割穿透，自带 35% 额外暴击率！', cooldown: 5.0, materialId: 'chip_boomerang' },
     { id: 'laser', name: '湮灭射线', element: 'thunder', asset: 'assets/skills/laser.png', rarity: 'legendary', type: '雷系 · 感电超载', desc: '释放贯穿全屏的高能雷电射线，对直线目标造成感电，并能引燃超载大爆轰！', cooldown: 3.0, materialId: 'chip_laser' },
@@ -55,13 +55,13 @@ export const GAME_CONFIG = {
   ],
 
   synergyCatalog: [
-    { name: '热力冲击引擎', synergy: '元素反应 · 殉爆', desc: '火箭或烈焰击中冰冻目标时，引发 220% 威力温差热力殉爆与破甲蒸汽！', icon: 'assets/icon_thermal.jpg', rarity: 'legendary' },
-    { name: '电磁超导弹头', synergy: '电磁连锁', desc: '主武器暴击时释放高压电弧，自动弹射连锁跳跃至附近 2 个敌方目标！', icon: 'assets/icon_tesla.jpg', rarity: 'epic' },
+    { name: '热力冲击引擎', synergy: '元素反应 · 殉爆', desc: '火箭或烈焰击中冰冻目标时，引发 220% 威力温差热力殉爆与破甲蒸汽！', icon: 'assets/cards/icon_thermal.png', rarity: 'legendary' },
+    { name: '电磁超导弹头', synergy: '电磁连锁', desc: '主武器暴击时释放高压电弧，自动弹射连锁跳跃至附近 2 个敌方目标！', icon: 'assets/cards/icon_tesla.png', rarity: 'epic' },
     { name: '雷火超载爆轰', synergy: '元素反应 · 超载', desc: '雷电属性攻击击中已灼烧的敌人时，触发剧烈超载大爆炸并击退周围群怪！', icon: 'assets/skills/laser.png', rarity: 'legendary' },
     { name: '裂风元素扩散', synergy: '元素反应 · 扩散', desc: '风暴涡流吸附敌人时，将其身上的燃烧或冰冻状态瞬间向周围所有怪物扩散！', icon: 'assets/skills/tornado.png', rarity: 'epic' },
-    { name: '防线 EMP 脉冲环', synergy: '绝对防御', desc: '护盾破裂时爆发超强 EMP 冲击波，眩晕全屏所有普通感染者 1.5 秒！', icon: 'assets/icon_emp.jpg', rarity: 'epic' },
-    { name: '战车热能喷射器', synergy: '火焰战车', desc: '装甲战车行进尾迹遗留持续燃烧的高温火径，持续焚烧踩踏的敌人。', icon: 'assets/icon_inferno.png', rarity: 'legendary' },
-    { name: '极低温裂碎', synergy: '冰爆碎冰', desc: '击杀处于霜冻状态的敌人时发生冰爆，造成范围伤害并冻结周围目标。', icon: 'assets/icon_shatter.png', rarity: 'legendary' }
+    { name: '防线 EMP 脉冲环', synergy: '绝对防御', desc: '护盾破裂时爆发超强 EMP 冲击波，眩晕全屏所有普通感染者 1.5 秒！', icon: 'assets/cards/icon_emp.png', rarity: 'epic' },
+    { name: '战车热能喷射器', synergy: '火焰战车', desc: '装甲战车行进尾迹遗留持续燃烧的高温火径，持续焚烧踩踏的敌人。', icon: 'assets/cards/icon_inferno.png', rarity: 'legendary' },
+    { name: '极低温裂碎', synergy: '冰爆碎冰', desc: '击杀处于霜冻状态的敌人时发生冰爆，造成范围伤害并冻结周围目标。', icon: 'assets/cards/icon_shatter.png', rarity: 'legendary' }
   ],
 
   pets: {

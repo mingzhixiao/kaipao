@@ -7,7 +7,7 @@
       "id": "fluffy",
       "name": "小毛球",
       "tag": "速射突击 · 屏障防护",
-      "asset": "assets/pets/fluffy.svg",
+      "asset": "assets/pets/fluffy.png",
       "description": "发射多重连发能量弹幕，并用护盾抵挡前线敌人冲击。",
       "baseStats": {
         "hp": 70,
@@ -29,7 +29,7 @@
       "id": "dragon",
       "name": "烈焰幼龙",
       "tag": "火系吐息 · 范围灼烧",
-      "asset": "assets/pets/dragon.svg",
+      "asset": "assets/pets/dragon.png",
       "description": "喷吐扇形炽烈龙炎，造成持续火焰灼烧并引燃战场。",
       "baseStats": {
         "hp": 100,

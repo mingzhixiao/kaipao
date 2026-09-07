@@ -594,11 +594,11 @@ export class GameRenderer {
 
       const img = b.isCrit ? bulletCritImg : bulletNormalImg;
       if (img) {
-        const bw = b.isCrit ? 16 : 13;
-        const bh = b.isCrit ? 36 : 28;
-        ctx.shadowColor = b.isCrit ? '#ffaa00' : '#00f0ff';
-        ctx.shadowBlur = 8;
-        ctx.drawImage(img, -bw / 2, -bh * 0.35, bw, bh);
+        const bw = b.isCrit ? 18 : 15;
+        const bh = b.isCrit ? 46 : 38;
+        ctx.shadowColor = b.isCrit ? 'rgba(255, 140, 0, 0.9)' : 'rgba(0, 240, 255, 0.85)';
+        ctx.shadowBlur = b.isCrit ? 12 : 9;
+        ctx.drawImage(img, -bw / 2, -bh * 0.7, bw, bh);
         ctx.shadowBlur = 0;
       } else {
         ctx.fillStyle = b.isCrit ? '#ffcc00' : '#00f0ff';

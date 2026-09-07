@@ -39,7 +39,16 @@ export function showStageClearModal(game) {
     choices.forEach(c => {
       const el = document.createElement('div');
       el.className = 'rune-choice-card';
-      el.innerHTML = `<div class="rune-icon">${c.icon}</div><div class="rune-choice-info"><div class="rune-choice-name">${c.name}</div><div class="rune-choice-lv">Lv.${c.level} → ${c.nextLevel}</div><div class="rune-choice-desc">${c.desc}</div></div>`;
+      el.innerHTML = `
+        <div class="rune-icon cat-${c.category}">
+          <img class="rune-icon-img" src="${c.asset || `assets/runes/rune_${c.id}.png`}" alt="${c.name}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">
+          <span class="rune-icon-fallback" style="display:none;">${c.icon}</span>
+        </div>
+        <div class="rune-choice-info">
+          <div class="rune-choice-name">${c.name}</div>
+          <div class="rune-choice-lv">Lv.${c.level} → ${c.nextLevel}</div>
+          <div class="rune-choice-desc">${c.desc}</div>
+        </div>`;
       el.addEventListener('click', () => {
         runeSystem.grantFreeLevel(c.id);
         box.querySelectorAll('.rune-choice-card').forEach(n => n.classList.add('disabled'));
@@ -120,7 +129,16 @@ function renderRuneForgeList() {
     const cost = maxed ? 0 : getRuneUpgradeCost(rune, lv);
     const el = document.createElement('div');
     el.className = 'rune-forge-row' + (maxed ? ' maxed' : '');
-    el.innerHTML = `<div class="rune-forge-icon">${rune.icon}</div><div class="rune-forge-info"><div class="rune-forge-name">${rune.name} <span class="rune-lv">Lv.${lv}/${rune.maxLevel}</span></div><div class="rune-forge-desc">${rune.desc}</div></div><button class="rune-upgrade-btn" ${maxed ? 'disabled' : ''}>${maxed ? 'MAX' : cost + ' 碎片'}</button>`;
+    el.innerHTML = `
+      <div class="rune-forge-icon cat-${rune.category}">
+        <img class="rune-icon-img" src="${rune.asset || `assets/runes/rune_${rune.id}.png`}" alt="${rune.name}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">
+        <span class="rune-icon-fallback" style="display:none;">${rune.icon}</span>
+      </div>
+      <div class="rune-forge-info">
+        <div class="rune-forge-name">${rune.name} <span class="rune-lv">Lv.${lv}/${rune.maxLevel}</span></div>
+        <div class="rune-forge-desc">${rune.desc}</div>
+      </div>
+      <button class="rune-upgrade-btn" ${maxed ? 'disabled' : ''}>${maxed ? 'MAX' : cost + ' 碎片'}</button>`;
     const btn = el.querySelector('button');
     if (!maxed) {
       btn.addEventListener('click', () => {
