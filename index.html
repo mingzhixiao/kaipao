@@ -93,19 +93,6 @@
     }
     .bar-hp { height: 100%; width: 100%; background: linear-gradient(90deg, #ef4444, #f97316); }
     .bar-shield { height: 100%; width: 100%; background: linear-gradient(90deg, #3b82f6, #06b6d4); }
-    .skills-hud { display: flex; gap: 10px; justify-content: center; pointer-events: auto; }
-    .skill-slot {
-      width: 52px; height: 52px; border-radius: 10px; background: rgba(15, 23, 42, 0.9);
-      border: 1.5px solid rgba(255,255,255,0.15); position: relative; overflow: hidden;
-    }
-    .skill-slot.unlocked { border-color: var(--neon-cyan); }
-    .skill-cd-mask {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 100%;
-      background: rgba(0,0,0,0.65); transition: height 0.1s;
-    }
-    .skill-lvl {
-      position: absolute; bottom: 2px; right: 4px; font-size: 10px; font-weight: 800; color: var(--neon-gold);
-    }
     #cheat-panel-toggle {
       position: absolute; top: 70px; right: 8px; z-index: 50;
       background: rgba(15, 23, 42, 0.9); border: 1px solid var(--panel-border);
@@ -319,20 +306,6 @@
           <span>SHD</span>
           <div class="bar-outer"><div class="bar-shield" id="shield-bar-fill"></div></div>
           <span id="shield-text">300/300</span>
-        </div>
-      </div>
-      <div class="skills-hud">
-        <div class="skill-slot" id="slot-skill-a" title="技能A: 温压火箭">
-          <div class="skill-cd-mask" id="mask-skill-a"></div>
-          <div class="skill-lvl" id="lvl-skill-a">Lv.0</div>
-        </div>
-        <div class="skill-slot" id="slot-skill-b" title="技能B: 装甲战车">
-          <div class="skill-cd-mask" id="mask-skill-b"></div>
-          <div class="skill-lvl" id="lvl-skill-b">Lv.0</div>
-        </div>
-        <div class="skill-slot" id="slot-skill-c" title="技能C: 极寒射线">
-          <div class="skill-cd-mask" id="mask-skill-c"></div>
-          <div class="skill-lvl" id="lvl-skill-c">Lv.0</div>
         </div>
       </div>
     </div>
