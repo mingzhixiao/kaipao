@@ -46,7 +46,7 @@ function ensureStyle() {
     #kp-skill-hud {
       position: absolute;
       left: 50%;
-      bottom: 96px;
+      bottom: 116px;
       transform: translateX(-50%);
       z-index: 35;
       display: flex;

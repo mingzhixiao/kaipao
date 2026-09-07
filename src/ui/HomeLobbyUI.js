@@ -1,6 +1,6 @@
 // ---------------- 现代流行 H5 游戏首页大厅、五大管理与背包系统控制器 ----------------
 import { saveManager } from '../systems/SaveManager.js';
-import { GAME_CONFIG } from '../core/Config.js?v=20260908_items_v2';
+import { GAME_CONFIG } from '../core/Config.js';
 import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost } from '../systems/RuneSystem.js';
 
 export class HomeLobbyUI {

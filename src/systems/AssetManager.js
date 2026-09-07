@@ -1,11 +1,18 @@
 // ---------------- 资源管理系统 ----------------
+let _globalAssetInstance = globalThis.__KAIPAO_ASSETS_INSTANCE__ || null;
+
 export class AssetManager {
   constructor() {
+    if (_globalAssetInstance) {
+      return _globalAssetInstance;
+    }
     this.images = {};
     this.loaded = false;
     this.loadingPromise = null;
     // 发布版本统一改这里，避免每次请求都使用 Date.now() 造成无法命中浏览器缓存。
     this.assetVersion = '20260908';
+    _globalAssetInstance = this;
+    globalThis.__KAIPAO_ASSETS_INSTANCE__ = this;
     this.manifest = {
       bg_highway: 'assets/environment/bg_highway.png',
       fortress_wall: 'assets/environment/fortress_wall.png',
