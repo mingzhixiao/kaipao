@@ -124,7 +124,7 @@ export class Pet {
         this.curlTimer = 0;
         this.hp = this.maxHp;
         this.shield = this.maxShield;
-        sound.playPowerUp();
+        sound.playLevelUp();
         game.spawnParticles(this.x, this.y, '#22c55e', 20, 'spark');
         game.spawnDamageText(this.x, this.y - 24, '✨ 护盾重启！重返战线！', '#22c55e', true, true);
       }
