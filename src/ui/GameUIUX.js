@@ -57,7 +57,7 @@ function injectStyles() {
     #upgrade-modal .cards-container,#gameover-modal .report-card,#stage-select-modal > *,#stage-clear-modal > *,#rune-forge-modal > * { max-height:calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - 24px); overflow-y:auto; overscroll-behavior:contain; }
     .primary-btn,.reroll-btn,.cheat-btn { min-height:44px; }
 
-    /* 第二层导航：把七个并列入口压缩成“基地 / 构筑 / 养成 / 试炼 / 更多”。 */
+    /* 信息架构：七个并列入口收敛为“基地 / 构筑 / 养成 / 试炼 / 更多”。 */
     #kp-lobby-more-panel { position:fixed; inset:0; z-index:190; display:none; align-items:flex-end; justify-content:center; padding:16px var(--ui-safe-right) calc(12px + var(--ui-safe-bottom)) var(--ui-safe-left); background:rgba(0,0,0,.62); backdrop-filter:blur(8px); }
     #kp-lobby-more-panel.open { display:flex; }
     .kp-more-sheet { width:min(520px,100%); max-height:min(72dvh,560px); overflow:auto; padding:16px; border:1px solid var(--ui-line-strong); border-radius:20px; background:linear-gradient(180deg,rgba(14,24,39,.99),rgba(5,10,19,.99)); box-shadow:0 -20px 50px rgba(0,0,0,.5); }
@@ -70,7 +70,6 @@ function injectStyles() {
     .kp-more-action { min-height:58px; display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--ui-line); border-radius:13px; background:rgba(255,255,255,.045); color:#e2e8f0; text-align:left; }
     .kp-more-action strong { display:block; font-size:13px; }
     .kp-more-action small { display:block; margin-top:2px; color:#94a3b8; font-size:10px; }
-    .kp-more-action.primary { border-color:rgba(0,240,255,.32); background:rgba(0,240,255,.08); }
 
     @media (min-width:700px) {
       #home-lobby { padding-left:18px!important; padding-right:18px!important; }
@@ -154,8 +153,6 @@ function enhanceLobbyNavigation() {
   lobby.dataset.uiNavEnhanced = '1';
   const buttons = [...nav.querySelectorAll('.nav-tab-btn')];
   const byTab = tab => buttons.find(b => b.dataset.tab === tab);
-
-  // 不改变旧的 view/render 逻辑，只改变入口层级。
   const weapons = byTab('weapons');
   const skills = byTab('skills');
   const backpack = byTab('backpack');
@@ -163,27 +160,23 @@ function enhanceLobbyNavigation() {
   const runes = byTab('runes');
   const trials = byTab('trials');
 
-  if (weapons) { weapons.dataset.originalTab = 'weapons'; weapons.dataset.tab = 'build'; weapons.querySelector('.nav-tab-icon').textContent='🧩'; weapons.querySelector('.nav-tab-label').textContent='构筑'; }
-  if (skills) skills.style.display = 'none';
-  if (runes) runes.style.display = 'none';
-  if (backpack) { backpack.dataset.originalTab='backpack'; backpack.dataset.tab='growth'; backpack.querySelector('.nav-tab-icon').textContent='📈'; backpack.querySelector('.nav-tab-label').textContent='养成'; }
-  if (pets) pets.style.display = 'none';
-  if (trials) { trials.dataset.originalTab='trials'; trials.querySelector('.nav-tab-label').textContent='试炼'; }
+  // 保留原 data-tab，避免破坏 HomeLobbyUI 的既有路由；这里只改变入口文案与层级。
+  if (weapons) { weapons.querySelector('.nav-tab-icon').textContent='🧩'; weapons.querySelector('.nav-tab-label').textContent='构筑'; }
+  if (skills) skills.style.display='none';
+  if (runes) runes.style.display='none';
+  if (backpack) { backpack.querySelector('.nav-tab-icon').textContent='📈'; backpack.querySelector('.nav-tab-label').textContent='养成'; }
+  if (pets) pets.style.display='none';
+  if (trials) trials.querySelector('.nav-tab-label').textContent='试炼';
 
   const moreBtn = document.createElement('button');
-  moreBtn.type='button'; moreBtn.className='nav-tab-btn'; moreBtn.innerHTML='<span class="nav-tab-icon">☰</span><span class="nav-tab-label">更多</span>';
+  moreBtn.type='button'; moreBtn.className='nav-tab-btn';
+  moreBtn.innerHTML='<span class="nav-tab-icon">☰</span><span class="nav-tab-label">更多</span>';
   moreBtn.setAttribute('aria-label','更多管理');
   nav.appendChild(moreBtn);
   const panel = createLobbyMorePanel();
   moreBtn.addEventListener('click', () => panel.classList.add('open'));
-
-  // 构筑/养成作为入口页：点击后默认打开该分类中最常用的页面。
-  weapons?.addEventListener('click', e => { if (weapons.dataset.uiRouted) return; e.preventDefault(); openLobbyTab('weapons'); });
-  backpack?.addEventListener('click', e => { if (backpack.dataset.uiRouted) return; e.preventDefault(); openLobbyTab('backpack'); });
-
-  // 原有 HomeLobbyUI 的事件监听仍会工作；这里补一个稳定的快捷菜单状态提示。
   nav.setAttribute('aria-label','主导航');
-  nav.querySelectorAll('.nav-tab-btn').forEach((btn,index) => btn.setAttribute('tabindex', index === 0 ? '0' : '0'));
+  nav.querySelectorAll('.nav-tab-btn').forEach(btn => btn.setAttribute('tabindex','0'));
 }
 
 export function installGameUIUX(game = null) {
