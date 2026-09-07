@@ -45,6 +45,7 @@ export class WaveSystem {
     this.waveSpawnedCount = 0;
     this.stageCleared = false;
     this.waveTransitionTimer = 0;
+    this.game.waveIntermission = false;
     this.wavePlan = this.levelDesign.getPlan(this.stageId, 1, this.stageConfig);
     this.waveTotalToSpawn = this.calcEnemyCount(1);
     this.waveEnemySpawnInterval = this.calcSpawnInterval(1);
@@ -69,6 +70,7 @@ export class WaveSystem {
     this.waveSpawnTimer = 0;
     this.waveSpawnedCount = 0;
     this.waveTransitionTimer = 0;
+    this.game.waveIntermission = false;
     this.wavePlan = this.levelDesign.getPlan(this.stageId, waveNum, this.stageConfig);
     this.waveTotalToSpawn = this.calcEnemyCount(waveNum);
     this.waveEnemySpawnInterval = this.calcSpawnInterval(waveNum);
@@ -102,8 +104,7 @@ export class WaveSystem {
         return;
       }
 
-      // 关卡节奏：战斗结束后给玩家一个短暂的“呼吸区”，再进入下一波。
-      // 休息时间由关卡设计数据决定，而不是固定秒数。
+      // 关卡节奏：战斗结束后给玩家一个短暂呼吸区，再进入下一波。
       if (this.waveTransitionTimer <= 0) {
         const nextPlan = this.levelDesign.getPlan(this.stageId, this.wave + 1, this.stageConfig);
         this.waveTransitionTimer = Math.max(0.7, nextPlan.rest || this.wavePlan?.rest || 1.2);
@@ -156,8 +157,8 @@ export class WaveSystem {
     enemy.color = cfg.color;
     enemy.expVal = cfg.expVal;
     const road = this.game.getRoadBounds(0);
-    const lanes = [0.18, 0.38, 0.62, 0.82];
-    enemy.laneRatio = lanes[Math.floor(Math.random() * lanes.length)];
+    const spawnIndex = this.waveSpawnedCount;
+    enemy.laneRatio = this.levelDesign.chooseLane(this.wavePlan, spawnIndex);
     enemy.x = road.left + road.roadWidth * enemy.laneRatio;
     enemy.y = -enemy.radius - Math.random() * 20;
     enemy.vx = 0; enemy.vy = enemy.speed;
@@ -199,5 +200,6 @@ export class WaveSystem {
 
 const DEFAULT_PLAN = {
   intensity: 0.5,
-  bias: { runner: 0.5, charger: 0.35, behemoth: 0.15 }
+  bias: { runner: 0.5, charger: 0.35, behemoth: 0.15 },
+  lane: 'spread'
 };
