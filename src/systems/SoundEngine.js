@@ -3,21 +3,53 @@ export class SoundEngine {
   constructor() {
     this.ctx = null;
     this.enabled = true;
+    this._initFailed = false;
+    this._unlocked = false;
   }
 
+  /** 静默失败：部分移动端需用户手势后才能创建 AudioContext */
   init() {
-    if (!this.ctx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioContext();
+    if (this._initFailed || !this.enabled) return false;
+    try {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) {
+          this._initFailed = true;
+          return false;
+        }
+        this.ctx = new AC();
+      }
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+      this._unlocked = true;
+      return true;
+    } catch (e) {
+      console.warn('[SoundEngine] init failed, audio disabled:', e);
+      this._initFailed = true;
+      this.enabled = false;
+      return false;
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+  }
+
+  /** 首次用户交互时解锁（移动端策略） */
+  unlock() {
+    if (this._unlocked || this._initFailed) return;
+    this.init();
+  }
+
+  toggleMute() {
+    this.enabled = !this.enabled;
+    if (!this.enabled && this.ctx && this.ctx.state === 'running') {
+      try { this.ctx.suspend(); } catch (_) {}
+    } else if (this.enabled) {
+      this.init();
     }
+    return !this.enabled; // true = muted
   }
 
   playShoot() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -33,8 +65,7 @@ export class SoundEngine {
   }
 
   playHit() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -50,8 +81,7 @@ export class SoundEngine {
   }
 
   playHeartbeat() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -67,8 +97,7 @@ export class SoundEngine {
   }
 
   playExplosion() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const bufferSize = this.ctx.sampleRate * 0.4;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -94,8 +123,7 @@ export class SoundEngine {
   }
 
   playFreeze() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -111,8 +139,7 @@ export class SoundEngine {
   }
 
   playTruckRumble() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -128,8 +155,7 @@ export class SoundEngine {
   }
 
   playGemPickup() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -145,8 +171,7 @@ export class SoundEngine {
   }
 
   playLevelUp() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const notes = [523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, idx) => {
       const now = this.ctx.currentTime + idx * 0.07;
@@ -164,8 +189,7 @@ export class SoundEngine {
   }
 
   playAlarm() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -181,8 +205,7 @@ export class SoundEngine {
   }
 
   playCritHit() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -198,10 +221,8 @@ export class SoundEngine {
   }
 
   playThermalShock() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
-    // 低频气压下潜冲击
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
@@ -214,7 +235,6 @@ export class SoundEngine {
     osc.start(now);
     osc.stop(now + 0.38);
 
-    // 高频蒸汽骤变爆裂白噪
     const bufferSize = this.ctx.sampleRate * 0.25;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -237,8 +257,7 @@ export class SoundEngine {
   }
 
   playShatter() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const freqs = [1800, 2400, 3200];
     freqs.forEach((freq, idx) => {
       const now = this.ctx.currentTime + idx * 0.02;
@@ -257,8 +276,7 @@ export class SoundEngine {
   }
 
   playFreezeSpray() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const bufferSize = this.ctx.sampleRate * 0.3;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -282,8 +300,7 @@ export class SoundEngine {
   }
 
   playEmp() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -299,8 +316,7 @@ export class SoundEngine {
   }
 
   playBossAlert() {
-    if (!this.enabled) return;
-    this.init();
+    if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
