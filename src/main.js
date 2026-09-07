@@ -1,15 +1,12 @@
 import { assets } from './systems/AssetManager.js';
 import { Game } from './core/Game.js';
 
-// ---------------- 游戏启动引导与测试入口 (Game Bootstrap) ----------------
-
 function initCheatPanel(game) {
   const params = new URLSearchParams(location.search);
   const debug = params.get('debug') === '1' || params.get('cheat') === '1';
   const toggleBtn = document.getElementById('cheat-panel-toggle');
   const panel = document.getElementById('cheat-panel');
 
-  // 正式游玩默认隐藏调试面板，加 ?debug=1 才显示
   if (!debug) {
     if (toggleBtn) toggleBtn.style.display = 'none';
     if (panel) panel.style.display = 'none';
@@ -28,9 +25,7 @@ function initCheatPanel(game) {
   }
 
   const btnCheatLvl = document.getElementById('cheat-lvl');
-  if (btnCheatLvl) {
-    btnCheatLvl.addEventListener('click', () => game.triggerLevelUp());
-  }
+  if (btnCheatLvl) btnCheatLvl.addEventListener('click', () => game.triggerLevelUp());
 
   const btnCheatHeal = document.getElementById('cheat-heal');
   if (btnCheatHeal) {
@@ -55,13 +50,10 @@ function initCheatPanel(game) {
 
   const btnCheatBoss = document.getElementById('cheat-boss');
   if (btnCheatBoss) {
-    btnCheatBoss.addEventListener('click', () => {
-      game.spawnBoss(180);
-    });
+    btnCheatBoss.addEventListener('click', () => game.spawnBoss(180));
   }
 }
 
-// 页面与图片预加载完成后启动
 window.addEventListener('DOMContentLoaded', () => {
   const loadingBar = document.getElementById('loading-bar-inner');
   const loadingText = document.getElementById('loading-progress-text');
@@ -76,13 +68,13 @@ window.addEventListener('DOMContentLoaded', () => {
     if (loadingText) loadingText.textContent = 'SYSTEM READY · LAUNCHING... 100%';
 
     setTimeout(() => {
-      if (loadingScreen) {
-        loadingScreen.classList.add('fade-out');
-      }
+      if (loadingScreen) loadingScreen.classList.add('fade-out');
       const gameInstance = new Game();
       window.gameInstance = gameInstance;
       initCheatPanel(gameInstance);
-      console.log('[Kaipao Roguelike] Modular Engine Initialized Successfully!');
+      gameInstance.isPaused = true;
+      gameInstance.hud.showStageSelectModal(gameInstance);
+      console.log('[Kaipao Roguelike] Modular Engine + Stage/Rune System Ready!');
     }, 280);
   });
 });
