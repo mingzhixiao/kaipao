@@ -2,6 +2,7 @@
 import { GAME_CONFIG } from '../core/Config.js';
 import { sound } from './SoundEngine.js';
 import { saveManager } from './SaveManager.js';
+import { LevelDesignSystem } from './LevelDesignSystem.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -16,6 +17,9 @@ export class WaveSystem {
     this.stageConfig = null;
     this.stageCleared = false;
     this.difficultyMult = 1.0;
+    this.levelDesign = new LevelDesignSystem(game);
+    this.wavePlan = null;
+    this.waveTransitionTimer = 0;
   }
 
   getStageConfig(stageId) {
@@ -40,18 +44,22 @@ export class WaveSystem {
     this.waveSpawnTimer = 0;
     this.waveSpawnedCount = 0;
     this.stageCleared = false;
+    this.waveTransitionTimer = 0;
+    this.wavePlan = this.levelDesign.getPlan(this.stageId, 1, this.stageConfig);
     this.waveTotalToSpawn = this.calcEnemyCount(1);
     this.waveEnemySpawnInterval = this.calcSpawnInterval(1);
   }
 
   calcEnemyCount(wave) {
     const base = GAME_CONFIG.difficulty.getWaveEnemyCount(wave);
-    return Math.round(base * (0.85 + this.difficultyMult * 0.15));
+    const plan = this.levelDesign.getPlan(this.stageId, wave, this.stageConfig);
+    return Math.max(8, Math.round(base * (0.85 + this.difficultyMult * 0.15) * this.levelDesign.getCountMultiplier(plan)));
   }
 
   calcSpawnInterval(wave) {
     const base = GAME_CONFIG.difficulty.getWaveSpawnInterval(wave);
-    return Math.max(0.22, base / (0.9 + this.difficultyMult * 0.1));
+    const plan = this.levelDesign.getPlan(this.stageId, wave, this.stageConfig);
+    return Math.max(0.24, base * this.levelDesign.getIntervalMultiplier(plan) / (0.9 + this.difficultyMult * 0.1));
   }
 
   startWave(waveNum) {
@@ -60,11 +68,12 @@ export class WaveSystem {
     this.waveTimer = 0;
     this.waveSpawnTimer = 0;
     this.waveSpawnedCount = 0;
+    this.waveTransitionTimer = 0;
+    this.wavePlan = this.levelDesign.getPlan(this.stageId, waveNum, this.stageConfig);
     this.waveTotalToSpawn = this.calcEnemyCount(waveNum);
     this.waveEnemySpawnInterval = this.calcSpawnInterval(waveNum);
-    const bossEvery = this.stageConfig?.bossEvery || 5;
-    const isBossWave = waveNum % bossEvery === 0;
-    this.game.hud.showWaveBanner(waveNum, isBossWave, this.stageConfig);
+    const isBossWave = this.wavePlan.boss;
+    this.game.hud.showWaveBanner(waveNum, isBossWave, this.stageConfig, this.wavePlan);
     if (isBossWave) {
       sound.playBossAlert();
       this.game.feedback.addTrauma(0.5);
@@ -92,7 +101,22 @@ export class WaveSystem {
         this.onStageClear();
         return;
       }
-      this.startWave(this.wave + 1);
+
+      // 关卡节奏：战斗结束后给玩家一个短暂的“呼吸区”，再进入下一波。
+      // 休息时间由关卡设计数据决定，而不是固定秒数。
+      if (this.waveTransitionTimer <= 0) {
+        const nextPlan = this.levelDesign.getPlan(this.stageId, this.wave + 1, this.stageConfig);
+        this.waveTransitionTimer = Math.max(0.7, nextPlan.rest || this.wavePlan?.rest || 1.2);
+        this.game.waveIntermission = true;
+        this.game.waveIntermissionLabel = nextPlan.label;
+        return;
+      }
+
+      this.waveTransitionTimer -= dt;
+      if (this.waveTransitionTimer <= 0) {
+        this.game.waveIntermission = false;
+        this.startWave(this.wave + 1);
+      }
     }
   }
 
@@ -121,13 +145,9 @@ export class WaveSystem {
     const enemy = this.game.enemyPool.get();
     enemy.active = true;
     enemy.isBoss = false;
-    const rand = Math.random();
-    let type = 'runner';
-    if (this.wave >= 2 && rand > 0.65) type = 'charger';
-    if (this.wave >= 3 && (rand > 0.88 || (this.waveSpawnedCount === this.waveTotalToSpawn && this.wave % 3 === 0))) type = 'behemoth';
-    enemy.type = type;
+    enemy.type = this.levelDesign.chooseEnemyType(this.wavePlan || DEFAULT_PLAN, this.wave);
     const waveScale = GAME_CONFIG.difficulty.getEnemyWaveScale(this.wave) * this.difficultyMult;
-    const cfg = GAME_CONFIG.enemies[type];
+    const cfg = GAME_CONFIG.enemies[enemy.type] || GAME_CONFIG.enemies.runner;
     enemy.radius = cfg.radius;
     enemy.maxHp = enemy.hp = Math.round(cfg.baseHp * waveScale);
     enemy.speed = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
@@ -176,3 +196,8 @@ export class WaveSystem {
     this.game.spawnParticles(boss.x, 80, '#ff2a5f', 30, 'fire');
   }
 }
+
+const DEFAULT_PLAN = {
+  intensity: 0.5,
+  bias: { runner: 0.5, charger: 0.35, behemoth: 0.15 }
+};
