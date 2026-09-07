@@ -1,6 +1,7 @@
-// ---------------- 本地持久化：战报 + 关卡进度 + 符文 + 宠物 + 枪械 + 指挥官 ----------------
+// ---------------- 本地持久化：战报 + 关卡进度 + 符文 + 宠物 + 枪械 + 背包素材 + 指挥官 ----------------
+import { GAME_CONFIG } from '../core/Config.js';
 
-const SAVE_KEY = 'kaipao_roguelike_save_v3';
+const SAVE_KEY = 'kaipao_roguelike_save_v4';
 
 export class SaveManager {
   constructor() { this.data = this.load(); }
@@ -8,7 +9,7 @@ export class SaveManager {
   getDefaultData() {
     return {
       highWave: 1, maxKills: 0, totalKills: 0, totalRuns: 0, maxSurvivalTime: 0,
-      unlockedSynergies: [], lastPlayed: Date.now(), scrap: 150, gems: 120,
+      unlockedSynergies: [], lastPlayed: Date.now(), scrap: 200, gems: 150,
       energy: 50, maxEnergy: 50,
       commanderLevel: 1, commanderExp: 0,
       highestStageCleared: 0, unlockedStage: 1, equippedStage: 1,
@@ -34,6 +35,27 @@ export class SaveManager {
           rocket: 1, truck: 1, freeze: 1,
           tornado: 1, boomerang: 1, laser: 1, bomber: 1
         }
+      },
+      inventory: {
+        // 枪械专属配件
+        assault_part: 18,
+        gatling_part: 12,
+        gauss_part: 8,
+        plasma_part: 6,
+        // 宠物专属基因
+        fluffy_shard: 15,
+        dragon_shard: 6,
+        // 技能专属芯片
+        chip_rocket: 10,
+        chip_truck: 8,
+        chip_freeze: 12,
+        chip_tornado: 6,
+        chip_boomerang: 9,
+        chip_laser: 5,
+        chip_bomber: 6,
+        // 补给物资
+        energy_potion: 3,
+        supply_crate: 2
       }
     };
   }
@@ -42,10 +64,10 @@ export class SaveManager {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) {
+        const legacyV3 = localStorage.getItem('kaipao_roguelike_save_v3');
+        if (legacyV3) return this.mergeDefaults(JSON.parse(legacyV3));
         const legacyV2 = localStorage.getItem('kaipao_roguelike_save_v2');
         if (legacyV2) return this.mergeDefaults(JSON.parse(legacyV2));
-        const legacyV1 = localStorage.getItem('kaipao_roguelike_save_v1');
-        if (legacyV1) return this.mergeDefaults(JSON.parse(legacyV1));
         return this.getDefaultData();
       }
       return this.mergeDefaults(JSON.parse(raw));
@@ -64,6 +86,7 @@ export class SaveManager {
     merged.weaponData.weapons = { ...defaults.weaponData.weapons, ...(data?.weaponData?.weapons || {}) };
     merged.skillData = { ...defaults.skillData, ...(data?.skillData || {}) };
     merged.skillData.levels = { ...defaults.skillData.levels, ...(data?.skillData?.levels || {}) };
+    merged.inventory = { ...defaults.inventory, ...(data?.inventory || {}) };
     return merged;
   }
 
@@ -100,6 +123,8 @@ export class SaveManager {
     this.addScrap(scrapEarned);
     this.addGems(15 + stageId * 5);
     this.addCommanderExp(50 + stageId * 25);
+    // 战役胜利奖励军备箱与随机零件
+    if (Math.random() < 0.75) this.addItem('supply_crate', 1);
     this.save();
     return { scrap: this.data.scrap, unlockedStage: this.data.unlockedStage, highestStageCleared: this.data.highestStageCleared };
   }
@@ -121,9 +146,71 @@ export class SaveManager {
     this.save();
     return true;
   }
-  refillEnergy() {
-    this.data.energy = this.data.maxEnergy || 50;
+  refillEnergy(amount = 25) {
+    this.data.energy = Math.min((this.data.maxEnergy || 50) + 50, (this.data.energy || 0) + amount);
     this.save();
+    return this.data.energy;
+  }
+
+  // 背包物品与专属素材体系
+  getInventory() { return this.data.inventory; }
+  getItemCount(id) { return this.data.inventory[id] || 0; }
+  addItem(id, amount = 1) {
+    this.data.inventory[id] = (this.data.inventory[id] || 0) + amount;
+    this.save();
+    return this.data.inventory[id];
+  }
+  consumeItem(id, amount = 1) {
+    if ((this.data.inventory[id] || 0) < amount) return false;
+    this.data.inventory[id] -= amount;
+    this.save();
+    return true;
+  }
+  hasItem(id, amount = 1) {
+    return (this.data.inventory[id] || 0) >= amount;
+  }
+
+  // 开箱军备箱
+  openSupplyCrate() {
+    if (!this.consumeItem('supply_crate', 1)) return null;
+
+    const droppedScrap = 60 + Math.floor(Math.random() * 60);
+    this.addScrap(droppedScrap);
+
+    const weaponPartKeys = ['assault_part', 'gatling_part', 'gauss_part', 'plasma_part'];
+    const petShardKeys = ['fluffy_shard', 'dragon_shard'];
+    const skillChipKeys = ['chip_rocket', 'chip_truck', 'chip_freeze', 'chip_tornado', 'chip_boomerang', 'chip_laser', 'chip_bomber'];
+
+    const dropped = [];
+
+    // 随机 2 个枪械零件
+    const wp1 = weaponPartKeys[Math.floor(Math.random() * weaponPartKeys.length)];
+    const cnt1 = 2 + Math.floor(Math.random() * 3);
+    this.addItem(wp1, cnt1);
+    dropped.push({ id: wp1, count: cnt1 });
+
+    // 随机 1 个宠物碎片
+    const p1 = petShardKeys[Math.floor(Math.random() * petShardKeys.length)];
+    const cnt2 = 1 + Math.floor(Math.random() * 3);
+    this.addItem(p1, cnt2);
+    dropped.push({ id: p1, count: cnt2 });
+
+    // 随机 2 个技能芯片
+    const sc1 = skillChipKeys[Math.floor(Math.random() * skillChipKeys.length)];
+    const cnt3 = 2 + Math.floor(Math.random() * 3);
+    this.addItem(sc1, cnt3);
+    dropped.push({ id: sc1, count: cnt3 });
+
+    this.save();
+    return { scrap: droppedScrap, items: dropped };
+  }
+
+  // 使用高能体能药剂
+  useEnergyPotion() {
+    if (!this.consumeItem('energy_potion', 1)) return false;
+    this.refillEnergy(25);
+    this.save();
+    return true;
   }
 
   // 指挥官等级与经验
@@ -136,7 +223,8 @@ export class SaveManager {
     while (this.data.commanderExp >= needed && this.data.commanderLevel < 60) {
       this.data.commanderExp -= needed;
       this.data.commanderLevel++;
-      this.addGems(20);
+      this.addGems(25);
+      this.addItem('supply_crate', 1);
       needed = this.getExpForNextLevel();
     }
     this.save();
@@ -151,13 +239,16 @@ export class SaveManager {
   getEquippedStage() { return this.data.equippedStage || 1; }
   setEquippedStage(stageId) { this.data.equippedStage = Math.max(1, stageId); this.save(); }
 
-  // 宠物
+  // 宠物 (消耗专属基因碎片 + 废料)
   getPetData() { return this.data.petData; }
   setSelectedPet(id) { this.data.petData.selected = id || null; this.save(); }
-  upgradePet(id, cost) {
+  upgradePet(id, scrapCost, shardCost = 2) {
     const pet = this.data.petData.pets[id];
     if (!pet || !pet.unlocked) return false;
-    if (!this.spendScrap(cost)) return false;
+    const materialId = GAME_CONFIG.pets.types[id]?.materialId || `${id}_shard`;
+    if (!this.hasItem(materialId, shardCost)) return false;
+    if (!this.spendScrap(scrapCost)) return false;
+    this.consumeItem(materialId, shardCost);
     pet.level = (pet.level || 1) + 1;
     this.save();
     return true;
@@ -171,7 +262,7 @@ export class SaveManager {
     return true;
   }
 
-  // 枪械
+  // 枪械 (消耗专属零件 + 废料)
   getWeaponData() { return this.data.weaponData; }
   getEquippedWeapon() { return this.data.weaponData.equipped || 'assault'; }
   equipWeapon(id) {
@@ -180,10 +271,13 @@ export class SaveManager {
     this.save();
     return true;
   }
-  upgradeWeapon(id, cost) {
+  upgradeWeapon(id, scrapCost, partCost = 3) {
     const w = this.data.weaponData.weapons[id];
     if (!w || !w.unlocked) return false;
-    if (!this.spendScrap(cost)) return false;
+    const materialId = GAME_CONFIG.weapons[id]?.materialId || `${id}_part`;
+    if (!this.hasItem(materialId, partCost)) return false;
+    if (!this.spendScrap(scrapCost)) return false;
+    this.consumeItem(materialId, partCost);
     w.level = (w.level || 1) + 1;
     this.save();
     return true;
@@ -197,10 +291,13 @@ export class SaveManager {
     return true;
   }
 
-  // 技能专精
+  // 技能专精 (消耗专属芯片 + 废料)
   getSkillData() { return this.data.skillData; }
-  upgradeSkillMastery(id, cost) {
-    if (!this.spendScrap(cost)) return false;
+  upgradeSkillMastery(id, scrapCost, chipCost = 2) {
+    const materialId = `chip_${id}`;
+    if (!this.hasItem(materialId, chipCost)) return false;
+    if (!this.spendScrap(scrapCost)) return false;
+    this.consumeItem(materialId, chipCost);
     this.data.skillData.levels[id] = (this.data.skillData.levels[id] || 1) + 1;
     this.save();
     return true;
@@ -209,20 +306,16 @@ export class SaveManager {
   // 综合战力评分
   calcCombatPower() {
     let power = 1000 + (this.getCommanderLevel() - 1) * 85;
-    // 武器战力
     const equippedW = this.getEquippedWeapon();
     const wLevel = this.data.weaponData.weapons[equippedW]?.level || 1;
     power += wLevel * 120;
-    // 符文战力
     const runeLevels = this.getRuneLevels();
     for (const lv of Object.values(runeLevels)) power += lv * 45;
-    // 宠物战力
     const selectedPet = this.data.petData.selected;
     if (selectedPet) {
       const pLevel = this.data.petData.pets[selectedPet]?.level || 1;
       power += pLevel * 90;
     }
-    // 技能专精
     for (const lv of Object.values(this.data.skillData.levels)) power += (lv - 1) * 35;
     return Math.round(power);
   }

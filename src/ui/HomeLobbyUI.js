@@ -1,4 +1,4 @@
-// ---------------- 现代流行 H5 游戏首页大厅与五大管理系统控制器 ----------------
+// ---------------- 现代流行 H5 游戏首页大厅、五大管理与背包系统控制器 ----------------
 import { saveManager } from '../systems/SaveManager.js';
 import { GAME_CONFIG } from '../core/Config.js';
 import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost } from '../systems/RuneSystem.js';
@@ -8,6 +8,7 @@ export class HomeLobbyUI {
     this.game = null;
     this.activeTab = 'lobby';
     this.runeFilter = 'all';
+    this.backpackFilter = 'all';
     this.dom = {};
   }
 
@@ -38,7 +39,7 @@ export class HomeLobbyUI {
             <span class="lobby-avatar-level" id="lobby-cmd-lvl">1</span>
           </div>
           <div class="lobby-commander-meta">
-            <span class="lobby-commander-name">防线指挥官</span>
+            <span class="lobby-commander-name">防线特级指挥官</span>
             <div class="lobby-exp-track">
               <div class="lobby-exp-bar" id="lobby-cmd-exp-bar"></div>
             </div>
@@ -99,7 +100,7 @@ export class HomeLobbyUI {
         <div class="lobby-tab-view" id="view-weapons">
           <div class="section-header">
             <div class="section-title">🔫 枪械武器库</div>
-            <div class="section-subtitle">切换并改装主防线武器</div>
+            <div class="section-subtitle">切换并改装主防线武器（消耗专属零件强化）</div>
           </div>
           <div class="weapons-grid" id="weapons-list"></div>
         </div>
@@ -108,7 +109,7 @@ export class HomeLobbyUI {
         <div class="lobby-tab-view" id="view-skills">
           <div class="section-header">
             <div class="section-title">📖 战术技能图谱</div>
-            <div class="section-subtitle">局内 Roguelike 战术技能与元素协同</div>
+            <div class="section-subtitle">战术技能专精（消耗专属芯片）与元素协同</div>
           </div>
           <div class="filter-bar">
             <div class="filter-pill active" id="skill-filter-active">战术技能库 (7)</div>
@@ -117,16 +118,36 @@ export class HomeLobbyUI {
           <div id="skills-catalog-container" class="skills-catalog-grid"></div>
         </div>
 
-        <!-- Tab 4: 宠物乐园 (Pets) -->
+        <!-- Tab 4: 战术背包 (Backpack / Inventory) -->
+        <div class="lobby-tab-view" id="view-backpack">
+          <div class="section-header">
+            <div class="section-title">🎒 军备战术背包</div>
+            <div class="section-subtitle">管理各类枪械配件、技能芯片与宠物基因碎片</div>
+          </div>
+          <div class="backpack-summary-bar">
+            <span class="backpack-count-tag" id="backpack-total-held">物资种类: 0 种</span>
+            <button class="backpack-open-crate-btn" id="btn-quick-open-crate">📦 开启军备箱</button>
+          </div>
+          <div class="filter-bar" id="backpack-filter-bar">
+            <div class="filter-pill active" data-bfilter="all">全部物资</div>
+            <div class="filter-pill" data-bfilter="weapon">枪械配件</div>
+            <div class="filter-pill" data-bfilter="skill">技能芯片</div>
+            <div class="filter-pill" data-bfilter="pet">宠物基因</div>
+            <div class="filter-pill" data-bfilter="consumable">军备补给</div>
+          </div>
+          <div class="backpack-grid" id="backpack-items-list"></div>
+        </div>
+
+        <!-- Tab 5: 宠物乐园 (Pets) -->
         <div class="lobby-tab-view" id="view-pets">
           <div class="section-header">
             <div class="section-title">🐾 战术宠物乐园</div>
-            <div class="section-subtitle">携带强力作战伙伴伴飞助阵</div>
+            <div class="section-subtitle">携带伴飞伙伴助阵（消耗专属基因碎片升级）</div>
           </div>
           <div class="pets-showcase-grid" id="pets-list"></div>
         </div>
 
-        <!-- Tab 5: 符文秘境 (Runes) -->
+        <!-- Tab 6: 符文秘境 (Runes) -->
         <div class="lobby-tab-view" id="view-runes">
           <div class="section-header">
             <div class="section-title">💠 符文矩阵工坊</div>
@@ -142,7 +163,7 @@ export class HomeLobbyUI {
           <div class="runes-grid" id="runes-list"></div>
         </div>
 
-        <!-- Tab 6: 试炼之路 (Trials) -->
+        <!-- Tab 7: 试炼之路 (Trials) -->
         <div class="lobby-tab-view" id="view-trials">
           <div class="section-header">
             <div class="section-title">⚔️ 试炼之路</div>
@@ -152,7 +173,7 @@ export class HomeLobbyUI {
         </div>
       </main>
 
-      <!-- 底部 6 大主流导航栏 -->
+      <!-- 底部 7 大主流导航栏 -->
       <nav class="lobby-bottom-nav">
         <button class="nav-tab-btn active" data-tab="lobby">
           <span class="nav-tab-icon">🏰</span>
@@ -165,6 +186,10 @@ export class HomeLobbyUI {
         <button class="nav-tab-btn" data-tab="skills">
           <span class="nav-tab-icon">📖</span>
           <span class="nav-tab-label">技能</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="backpack">
+          <span class="nav-tab-icon">🎒</span>
+          <span class="nav-tab-label">背包</span>
         </button>
         <button class="nav-tab-btn" data-tab="pets">
           <span class="nav-tab-icon">🐾</span>
@@ -179,16 +204,24 @@ export class HomeLobbyUI {
           <span class="nav-tab-label">试炼</span>
         </button>
       </nav>
+
+      <!-- 物品详情抽屉弹窗容器 -->
+      <div id="lobby-item-modal" style="display:none;"></div>
+      <!-- 开启补给箱奖励弹窗容器 -->
+      <div id="lobby-crate-modal" style="display:none;"></div>
     `;
   }
 
   bindEvents() {
     // 底部 Tab 切换
     this.dom.root.querySelectorAll('.nav-tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
-        this.switchTab(tab);
-      });
+      const handleTab = (e) => {
+        if (e) e.preventDefault();
+        const tab = btn.getAttribute('data-tab');
+        if (tab) this.switchTab(tab);
+      };
+      btn.addEventListener('click', handleTab);
+      btn.addEventListener('touchend', handleTab);
     });
 
     // 首页出击按钮
@@ -201,6 +234,25 @@ export class HomeLobbyUI {
     document.getElementById('btn-switch-to-trials').addEventListener('click', () => {
       this.switchTab('trials');
     });
+
+    // 背包分类筛选
+    const bpFilterBar = document.getElementById('backpack-filter-bar');
+    if (bpFilterBar) {
+      bpFilterBar.querySelectorAll('.filter-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          bpFilterBar.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          this.backpackFilter = pill.dataset.bfilter;
+          this.renderBackpack();
+        });
+      });
+    }
+
+    // 快捷开箱按钮
+    const btnCrate = document.getElementById('btn-quick-open-crate');
+    if (btnCrate) {
+      btnCrate.onclick = () => this.handleOpenCrate();
+    }
 
     // 技能库模式切换
     const filterActive = document.getElementById('skill-filter-active');
@@ -234,15 +286,12 @@ export class HomeLobbyUI {
 
   switchTab(tabId) {
     this.activeTab = tabId;
-    // 激活底部 Tab
     this.dom.root.querySelectorAll('.nav-tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabId);
     });
-    // 显示对应面板
     this.dom.root.querySelectorAll('.lobby-tab-view').forEach(view => {
       view.classList.toggle('active', view.id === `view-${tabId}`);
     });
-    // 刷新该面板内容
     this.render();
   }
 
@@ -261,6 +310,7 @@ export class HomeLobbyUI {
     if (this.activeTab === 'lobby') this.renderLobby();
     else if (this.activeTab === 'weapons') this.renderWeapons();
     else if (this.activeTab === 'skills') this.renderSkills();
+    else if (this.activeTab === 'backpack') this.renderBackpack();
     else if (this.activeTab === 'pets') this.renderPets();
     else if (this.activeTab === 'runes') this.renderRunes();
     else if (this.activeTab === 'trials') this.renderTrials();
@@ -290,7 +340,6 @@ export class HomeLobbyUI {
     const powerEl = document.getElementById('lobby-total-power');
     if (powerEl) powerEl.textContent = saveManager.calcCombatPower().toLocaleString();
 
-    // 伴飞宠物预览
     const petImg = document.getElementById('lobby-arena-pet-img');
     const selectedPetId = saveManager.getPetData().selected;
     if (petImg) {
@@ -302,7 +351,6 @@ export class HomeLobbyUI {
       }
     }
 
-    // 当前关卡
     const currentStageId = saveManager.getEquippedStage();
     const stage = GAME_CONFIG.stages.find(s => s.id === currentStageId) || GAME_CONFIG.stages[0];
     const nameEl = document.getElementById('lobby-stage-name');
@@ -311,7 +359,7 @@ export class HomeLobbyUI {
     if (descEl) descEl.textContent = stage.endless ? '无尽模式 · 极限生存挑战' : `通关波次 ${stage.clearWaves} · 难度 x${stage.difficulty}`;
   }
 
-  // 2. 枪械管理
+  // 2. 枪械管理 (专属零件 + 废料)
   renderWeapons() {
     const container = document.getElementById('weapons-list');
     if (!container) return;
@@ -321,10 +369,17 @@ export class HomeLobbyUI {
     container.innerHTML = Object.entries(GAME_CONFIG.weapons).map(([id, cfg]) => {
       const state = weaponData.weapons[id] || { unlocked: false, level: 1 };
       const isEquipped = id === equippedId;
-      const upgradeCost = 60 + (state.level - 1) * 45;
+      const partCost = 2 + (state.level - 1) * 2;
+      const scrapCost = 60 + (state.level - 1) * 45;
       const unlockCost = state.unlockCost || 150;
       const damage = Math.round(cfg.baseStats.damage + (state.level - 1) * cfg.growth.damagePerLevel);
       const fireInterval = (cfg.baseStats.fireInterval * (cfg.growth.fireRatePerLevel ? Math.pow(0.98, state.level - 1) : 1)).toFixed(2);
+
+      const partItem = GAME_CONFIG.items[cfg.materialId] || { name: '专属零件', icon: '🔩' };
+      const heldParts = saveManager.getItemCount(cfg.materialId);
+      const canAffordParts = heldParts >= partCost;
+      const canAffordScrap = saveManager.getScrap() >= scrapCost;
+      const canUpgrade = state.unlocked && canAffordParts && canAffordScrap;
 
       return `
         <div class="weapon-card ${isEquipped ? 'equipped' : ''}">
@@ -357,10 +412,22 @@ export class HomeLobbyUI {
             </div>
           </div>
 
+          ${state.unlocked ? `
+            <div class="mat-req-box">
+              <div class="mat-req-left">
+                <span>${partItem.icon}</span>
+                <span>${partItem.name}</span>
+              </div>
+              <div class="mat-req-status ${canAffordParts ? 'met' : 'unmet'}">
+                ${heldParts}/${partCost} ${canAffordParts ? '✓' : '✕ (缺少)'}
+              </div>
+            </div>
+          ` : ''}
+
           <div class="weapon-actions">
             ${state.unlocked ? `
-              <button class="weapon-btn upgrade" data-action="upgrade-weapon" data-id="${id}" data-cost="${upgradeCost}" ${saveManager.getScrap() < upgradeCost ? 'disabled' : ''}>
-                🪙 ${upgradeCost} 强化
+              <button class="weapon-btn upgrade" data-action="upgrade-weapon" data-id="${id}" data-scost="${scrapCost}" data-pcost="${partCost}" ${!canUpgrade ? 'disabled' : ''}>
+                🪙 ${scrapCost} 强化
               </button>
               <button class="weapon-btn primary" data-action="equip-weapon" data-id="${id}" ${isEquipped ? 'disabled' : ''}>
                 ${isEquipped ? '已出战' : '装备此枪'}
@@ -375,25 +442,26 @@ export class HomeLobbyUI {
       `;
     }).join('');
 
-    // 事件绑定
     container.querySelectorAll('[data-action]').forEach(btn => {
       btn.onclick = () => {
         const action = btn.dataset.action;
         const id = btn.dataset.id;
-        const cost = parseInt(btn.dataset.cost || '0', 10);
         if (action === 'equip-weapon') {
           saveManager.equipWeapon(id);
           this.render();
         } else if (action === 'upgrade-weapon') {
-          if (saveManager.upgradeWeapon(id, cost)) this.render();
+          const scost = parseInt(btn.dataset.scost, 10);
+          const pcost = parseInt(btn.dataset.pcost, 10);
+          if (saveManager.upgradeWeapon(id, scost, pcost)) this.render();
         } else if (action === 'unlock-weapon') {
+          const cost = parseInt(btn.dataset.cost, 10);
           if (saveManager.unlockWeapon(id, cost)) this.render();
         }
       };
     });
   }
 
-  // 3. 技能管理
+  // 3. 技能管理 (专属芯片 + 废料)
   renderSkills(mode = 'skills') {
     const container = document.getElementById('skills-catalog-container');
     if (!container) return;
@@ -414,7 +482,14 @@ export class HomeLobbyUI {
     const skillData = saveManager.getSkillData();
     container.innerHTML = GAME_CONFIG.skillCatalog.map(sk => {
       const level = skillData.levels[sk.id] || 1;
-      const upgradeCost = 50 + (level - 1) * 35;
+      const chipCost = 2 + Math.floor((level - 1) / 2);
+      const scrapCost = 50 + (level - 1) * 35;
+      const chipItem = GAME_CONFIG.items[sk.materialId] || { name: '战术芯片', icon: '💾' };
+      const heldChips = saveManager.getItemCount(sk.materialId);
+      const canAffordChips = heldChips >= chipCost;
+      const canAffordScrap = saveManager.getScrap() >= scrapCost;
+      const canUpgrade = canAffordChips && canAffordScrap;
+
       return `
         <div class="skill-catalog-card">
           <img class="skill-catalog-img" src="${sk.asset}" alt="${sk.name}">
@@ -425,12 +500,23 @@ export class HomeLobbyUI {
             </div>
             <div class="skill-catalog-desc">${sk.desc}</div>
             <div class="skill-catalog-meta">
-              <span>冷却: ${sk.cooldown}s</span>
+              <span>基础冷却: ${sk.cooldown}s</span>
               <span style="color:#facc15;">专精等级: Lv.${level}</span>
             </div>
-            <div style="margin-top:8px;">
-              <button class="weapon-btn upgrade" data-action="upgrade-skill" data-id="${sk.id}" data-cost="${upgradeCost}" style="padding:4px 10px;font-size:11px;" ${saveManager.getScrap() < upgradeCost ? 'disabled' : ''}>
-                🪙 ${upgradeCost} 专精强化
+
+            <div class="mat-req-box" style="margin-top:6px;">
+              <div class="mat-req-left">
+                <span>${chipItem.icon}</span>
+                <span>${chipItem.name}</span>
+              </div>
+              <div class="mat-req-status ${canAffordChips ? 'met' : 'unmet'}">
+                ${heldChips}/${chipCost} ${canAffordChips ? '✓' : '✕'}
+              </div>
+            </div>
+
+            <div style="margin-top:6px;">
+              <button class="weapon-btn upgrade" data-action="upgrade-skill" data-id="${sk.id}" data-scost="${scrapCost}" data-ccost="${chipCost}" style="padding:6px 12px;font-size:11px;" ${!canUpgrade ? 'disabled' : ''}>
+                🪙 ${scrapCost} 专精升级
               </button>
             </div>
           </div>
@@ -441,13 +527,185 @@ export class HomeLobbyUI {
     container.querySelectorAll('[data-action="upgrade-skill"]').forEach(btn => {
       btn.onclick = () => {
         const id = btn.dataset.id;
-        const cost = parseInt(btn.dataset.cost, 10);
-        if (saveManager.upgradeSkillMastery(id, cost)) this.render();
+        const scost = parseInt(btn.dataset.scost, 10);
+        const ccost = parseInt(btn.dataset.ccost, 10);
+        if (saveManager.upgradeSkillMastery(id, scost, ccost)) this.render();
       };
     });
   }
 
-  // 4. 宠物乐园
+  // 4. 战术背包 (Backpack / Inventory)
+  renderBackpack() {
+    const container = document.getElementById('backpack-items-list');
+    const totalHeldEl = document.getElementById('backpack-total-held');
+    if (!container) return;
+
+    const inventory = saveManager.getInventory();
+    const allItemKeys = Object.keys(GAME_CONFIG.items);
+    let totalItems = 0;
+
+    const filteredKeys = allItemKeys.filter(key => {
+      const cfg = GAME_CONFIG.items[key];
+      const count = inventory[key] || 0;
+      if (count > 0) totalItems++;
+      if (this.backpackFilter === 'all') return true;
+      return cfg.category === this.backpackFilter;
+    });
+
+    if (totalHeldEl) totalHeldEl.textContent = `当前仓位: ${totalItems} 种素材物资`;
+
+    container.innerHTML = filteredKeys.map(key => {
+      const item = GAME_CONFIG.items[key];
+      const count = inventory[key] || 0;
+
+      return `
+        <div class="item-slot rarity-${item.rarity}" data-item-id="${item.id}">
+          <span class="item-name-sub">${item.name}</span>
+          <div class="item-slot-icon">${item.icon}</div>
+          <span class="item-count-badge">x${count}</span>
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.item-slot').forEach(slot => {
+      slot.onclick = () => {
+        const itemId = slot.dataset.itemId;
+        this.showItemDetail(itemId);
+      };
+    });
+  }
+
+  // 物品详情抽屉弹窗
+  showItemDetail(itemId) {
+    const item = GAME_CONFIG.items[itemId];
+    if (!item) return;
+    const held = saveManager.getItemCount(itemId);
+    const modal = document.getElementById('lobby-item-modal');
+    if (!modal) return;
+
+    const rarityNames = {
+      legendary: '传说品质',
+      epic: '史诗品质',
+      rare: '稀有品质',
+      fine: '精良品质'
+    };
+    const rarityColors = {
+      legendary: '#f59e0b',
+      epic: '#a855f7',
+      rare: '#0ea5e9',
+      fine: '#10b981'
+    };
+
+    let actionButtonHtml = '';
+    if (item.targetType === 'weapon') {
+      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往改装枪械</button>`;
+    } else if (item.targetType === 'pet') {
+      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往培养宠物</button>`;
+    } else if (item.targetType === 'skill') {
+      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往技能专精</button>`;
+    } else if (item.targetType === 'crate') {
+      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action" style="background:#a855f7;border-color:#c084fc;" ${held <= 0 ? 'disabled' : ''}>立即开启军备箱</button>`;
+    } else if (item.targetType === 'energy') {
+      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action" style="background:#0284c7;border-color:#38bdf8;" ${held <= 0 ? 'disabled' : ''}>使用药剂 (+25体能)</button>`;
+    }
+
+    modal.innerHTML = `
+      <div class="item-modal-overlay">
+        <div class="item-detail-card">
+          <div class="item-detail-header">
+            <div class="item-detail-avatar" style="border-color:${rarityColors[item.rarity]}">
+              <span>${item.icon}</span>
+            </div>
+            <div class="item-detail-info">
+              <div class="item-detail-name">${item.name}</div>
+              <div class="item-detail-tag-row">
+                <span class="item-quality-pill" style="background:${rarityColors[item.rarity]}">${rarityNames[item.rarity]}</span>
+              </div>
+              <div class="item-detail-held">当前持有: ${held} 件</div>
+            </div>
+          </div>
+
+          <div class="item-detail-desc">${item.desc}</div>
+          <div class="item-detail-usage">💡 ${item.usage}</div>
+
+          <div class="item-detail-actions">
+            ${actionButtonHtml}
+            <button class="weapon-btn upgrade" id="btn-modal-close" style="background:#334155;color:#e2e8f0;border-color:#64748b;">关闭</button>
+          </div>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'block';
+
+    document.getElementById('btn-modal-close').onclick = () => {
+      modal.style.display = 'none';
+    };
+
+    const btnAction = document.getElementById('btn-modal-action');
+    if (btnAction) {
+      btnAction.onclick = () => {
+        modal.style.display = 'none';
+        if (item.targetType === 'weapon') {
+          this.switchTab('weapons');
+        } else if (item.targetType === 'pet') {
+          this.switchTab('pets');
+        } else if (item.targetType === 'skill') {
+          this.switchTab('skills');
+        } else if (item.targetType === 'crate') {
+          this.handleOpenCrate();
+        } else if (item.targetType === 'energy') {
+          if (saveManager.useEnergyPotion()) {
+            this.render();
+          }
+        }
+      };
+    }
+  }
+
+  // 开启军备箱
+  handleOpenCrate() {
+    const res = saveManager.openSupplyCrate();
+    if (!res) {
+      alert('军备箱库存不足！可通过通关关卡或指挥官升级获得。');
+      return;
+    }
+    this.render();
+
+    const modal = document.getElementById('lobby-crate-modal');
+    if (!modal) return;
+
+    modal.innerHTML = `
+      <div class="item-modal-overlay">
+        <div class="crate-reward-card">
+          <div class="crate-reward-title">✨ 军备箱物资开启 ✨</div>
+          <div style="font-size:13px;color:#facc15;font-weight:800;">🪙 额外获得废料 +${res.scrap}</div>
+
+          <div class="crate-reward-items-grid">
+            ${res.items.map(it => {
+              const cfg = GAME_CONFIG.items[it.id] || { name: '物资', icon: '📦' };
+              return `
+                <div class="crate-reward-item">
+                  <span class="crate-reward-item-icon">${cfg.icon}</span>
+                  <span class="crate-reward-item-name">${cfg.name}</span>
+                  <span class="crate-reward-item-cnt">+${it.count}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <button class="weapon-btn primary" id="btn-crate-confirm" style="width:100%;height:44px;font-size:14px;">收入背包</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'block';
+
+    document.getElementById('btn-crate-confirm').onclick = () => {
+      modal.style.display = 'none';
+      this.render();
+    };
+  }
+
+  // 5. 宠物乐园 (专属基因 + 废料)
   renderPets() {
     const container = document.getElementById('pets-list');
     if (!container) return;
@@ -457,8 +715,16 @@ export class HomeLobbyUI {
     container.innerHTML = Object.entries(GAME_CONFIG.pets.types).map(([id, cfg]) => {
       const saved = petData.pets[id] || { unlocked: false, level: 1 };
       const isDeployed = selected === id;
-      const upgradeCost = 50 + (saved.level - 1) * 35;
+      const shardCost = 2 + (saved.level - 1);
+      const scrapCost = 50 + (saved.level - 1) * 35;
       const unlockCost = cfg.unlockCost || 200;
+
+      const shardItem = GAME_CONFIG.items[cfg.materialId] || { name: '基因碎片', icon: '🧬' };
+      const heldShards = saveManager.getItemCount(cfg.materialId);
+      const canAffordShards = heldShards >= shardCost;
+      const canAffordScrap = saveManager.getScrap() >= scrapCost;
+      const canUpgrade = saved.unlocked && canAffordShards && canAffordScrap;
+
       const stats = {
         hp: Math.round(cfg.baseStats.hp * (1 + (saved.level - 1) * 0.1)),
         atk: Math.round(cfg.baseStats.attack * (1 + (saved.level - 1) * 0.1)),
@@ -489,10 +755,22 @@ export class HomeLobbyUI {
             <div><div class="pet-stat-unit">射程</div><div class="pet-stat-num">${stats.range}</div></div>
           </div>
 
+          ${saved.unlocked ? `
+            <div class="mat-req-box">
+              <div class="mat-req-left">
+                <span>${shardItem.icon}</span>
+                <span>${shardItem.name}</span>
+              </div>
+              <div class="mat-req-status ${canAffordShards ? 'met' : 'unmet'}">
+                ${heldShards}/${shardCost} ${canAffordShards ? '✓' : '✕ (缺少)'}
+              </div>
+            </div>
+          ` : ''}
+
           <div class="pet-card-actions">
             ${saved.unlocked ? `
-              <button class="weapon-btn upgrade" data-action="upgrade-pet" data-id="${id}" data-cost="${upgradeCost}" ${saveManager.getScrap() < upgradeCost ? 'disabled' : ''}>
-                🪙 ${upgradeCost} 升级
+              <button class="weapon-btn upgrade" data-action="upgrade-pet" data-id="${id}" data-scost="${scrapCost}" data-hcost="${shardCost}" ${!canUpgrade ? 'disabled' : ''}>
+                🪙 ${scrapCost} 升级
               </button>
               <button class="weapon-btn primary" data-action="deploy-pet" data-id="${id}" ${isDeployed ? 'disabled' : ''}>
                 ${isDeployed ? '已出战' : '选此出战'}
@@ -511,20 +789,22 @@ export class HomeLobbyUI {
       btn.onclick = () => {
         const action = btn.dataset.action;
         const id = btn.dataset.id;
-        const cost = parseInt(btn.dataset.cost || '0', 10);
         if (action === 'deploy-pet') {
           saveManager.setSelectedPet(id);
           this.render();
         } else if (action === 'upgrade-pet') {
-          if (saveManager.upgradePet(id, cost)) this.render();
+          const scost = parseInt(btn.dataset.scost, 10);
+          const hcost = parseInt(btn.dataset.hcost, 10);
+          if (saveManager.upgradePet(id, scost, hcost)) this.render();
         } else if (action === 'unlock-pet') {
+          const cost = parseInt(btn.dataset.cost, 10);
           if (saveManager.unlockPet(id, cost)) this.render();
         }
       };
     });
   }
 
-  // 5. 符文管理
+  // 6. 符文管理
   renderRunes() {
     const container = document.getElementById('runes-list');
     if (!container) return;
@@ -564,7 +844,7 @@ export class HomeLobbyUI {
     });
   }
 
-  // 6. 试炼之路
+  // 7. 试炼之路
   renderTrials() {
     const container = document.getElementById('stages-list');
     if (!container) return;
@@ -616,12 +896,12 @@ export class HomeLobbyUI {
   // 发起战斗
   launchBattle(stageId) {
     if (!saveManager.useEnergy(5)) {
-      alert('作战体能不足（需要 5 点能量）！请等待恢复或补充。');
+      alert('作战体能不足（需要 5 点能量）！请等待恢复或在背包中使用高能能量剂。');
       return;
     }
     this.hide();
 
-    // 应用当前装备的武器数值
+    // 应用装备的枪械与强化等级属性
     const equippedWeaponId = saveManager.getEquippedWeapon();
     const weaponConfig = GAME_CONFIG.weapons[equippedWeaponId] || GAME_CONFIG.weapons.assault;
     const weaponLevel = saveManager.getWeaponData().weapons[equippedWeaponId]?.level || 1;
@@ -636,7 +916,7 @@ export class HomeLobbyUI {
     };
     this.game.hero.baseAttackInterval = weaponConfig.baseStats.fireInterval;
 
-    // 应用关卡与战斗
+    // 应用关卡与开战
     this.game.startStage(stageId);
     this.game.isPaused = false;
   }

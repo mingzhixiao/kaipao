@@ -1,5 +1,12 @@
 /* ================= 现代流行 H5 战术塔防首页与管理系统 ================= */
 
+:root {
+  --rarity-legendary: #f59e0b;
+  --rarity-epic: #a855f7;
+  --rarity-rare: #0ea5e9;
+  --rarity-fine: #10b981;
+}
+
 #home-lobby {
   position: absolute;
   inset: 0;
@@ -17,14 +24,14 @@
 .lobby-header {
   height: 64px;
   flex-shrink: 0;
-  background: rgba(10, 16, 30, 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+  background: rgba(10, 16, 30, 0.88);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.25);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
   z-index: 10;
 }
 
@@ -387,6 +394,33 @@
   box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
 }
 
+/* ------------------- 专属材料进度指示行 (Material Requirement) ------------------- */
+.mat-req-box {
+  background: rgba(2, 6, 23, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mat-req-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mat-req-status {
+  font-size: 11px;
+  font-weight: 800;
+}
+.mat-req-status.met { color: #10b981; }
+.mat-req-status.unmet { color: #f43f5e; }
+
 /* ------------------- TAB 2: 枪械管理 (Weapons) ------------------- */
 .weapons-grid {
   display: grid;
@@ -401,7 +435,7 @@
   padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   position: relative;
   transition: 0.2s;
 }
@@ -491,7 +525,7 @@
 
 .weapon-btn {
   flex: 1;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border-radius: 10px;
   font-size: 12px;
   font-weight: 800;
@@ -579,7 +613,6 @@
   gap: 12px;
 }
 
-/* 羁绊反应矩阵卡片 */
 .synergy-card {
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(168, 85, 247, 0.3);
@@ -612,7 +645,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   position: relative;
   transition: 0.2s;
 }
@@ -839,22 +872,297 @@
   cursor: pointer;
 }
 
-/* ------------------- 底部现代化 6 大导航栏 ------------------- */
+/* ------------------- TAB 7: 背包系统 (Backpack / Inventory) ------------------- */
+.backpack-summary-bar {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.backpack-count-tag {
+  font-size: 12px;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.backpack-open-crate-btn {
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  border: 1px solid #c084fc;
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+  transition: transform 0.15s;
+}
+
+.backpack-open-crate-btn:hover {
+  transform: translateY(-1px);
+}
+
+.backpack-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 380px) {
+  .backpack-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.item-slot {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 35%, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 2px solid rgba(148, 163, 184, 0.25);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.item-slot:hover {
+  transform: translateY(-3px);
+}
+
+.item-slot.rarity-legendary {
+  border-color: var(--rarity-legendary);
+  background: radial-gradient(circle at 50% 35%, rgba(245, 158, 11, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+}
+
+.item-slot.rarity-epic {
+  border-color: var(--rarity-epic);
+  background: radial-gradient(circle at 50% 35%, rgba(168, 85, 247, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
+}
+
+.item-slot.rarity-rare {
+  border-color: var(--rarity-rare);
+  background: radial-gradient(circle at 50% 35%, rgba(14, 165, 233, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%);
+  box-shadow: 0 0 14px rgba(14, 165, 233, 0.25);
+}
+
+.item-slot.rarity-fine {
+  border-color: var(--rarity-fine);
+  background: radial-gradient(circle at 50% 35%, rgba(16, 185, 129, 0.2) 0%, rgba(15, 23, 42, 0.95) 100%);
+}
+
+.item-slot-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+
+.item-count-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  background: rgba(2, 6, 23, 0.82);
+  border-radius: 99px;
+  padding: 1px 6px;
+  border: 0.5px solid rgba(255,255,255,0.2);
+}
+
+.item-name-sub {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #94a3b8;
+  max-width: 80%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------- 物品详情抽屉弹窗 (Item Detail Modal) ------------------- */
+.item-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.item-detail-card {
+  width: min(92vw, 420px);
+  background: linear-gradient(145deg, #1e293b, #090e1a);
+  border: 1.5px solid rgba(56, 189, 248, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.item-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.item-detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  border: 2px solid #38bdf8;
+  flex-shrink: 0;
+}
+
+.item-detail-info {
+  flex: 1;
+}
+
+.item-detail-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.item-detail-tag-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.item-quality-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 99px;
+  color: #fff;
+}
+
+.item-detail-held {
+  font-size: 12px;
+  color: #facc15;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.item-detail-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  background: rgba(2, 6, 23, 0.5);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.item-detail-usage {
+  font-size: 12px;
+  color: #38bdf8;
+  font-weight: 800;
+  background: rgba(8, 145, 178, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.item-detail-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ------------------- 开箱战利品弹窗 (Crate Reward Modal) ------------------- */
+.crate-reward-card {
+  width: min(92vw, 420px);
+  background: linear-gradient(145deg, #1e1b4b, #090e1a);
+  border: 2px solid #a855f7;
+  border-radius: 20px;
+  box-shadow: 0 0 50px rgba(168, 85, 247, 0.5);
+  padding: 24px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.crate-reward-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #f8fafc;
+  letter-spacing: 2px;
+}
+
+.crate-reward-items-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin: 6px 0;
+}
+
+.crate-reward-item {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.crate-reward-item-icon {
+  font-size: 26px;
+}
+
+.crate-reward-item-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.crate-reward-item-cnt {
+  font-size: 12px;
+  font-weight: 900;
+  color: #facc15;
+}
+
+/* ------------------- 底部现代化 7 大导航栏 ------------------- */
 .lobby-bottom-nav {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   height: 64px;
-  background: rgba(10, 16, 30, 0.95);
-  backdrop-filter: blur(14px);
-  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(10, 16, 30, 0.96);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 4px;
+  padding: 0 2px;
   z-index: 20;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+  box-shadow: 0 -4px 25px rgba(0,0,0,0.6);
 }
 
 .nav-tab-btn {
@@ -863,7 +1171,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   background: none;
   border: none;
   color: #64748b;
@@ -881,7 +1189,7 @@
 }
 
 .nav-tab-icon {
-  font-size: 18px;
+  font-size: 17px;
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -902,7 +1210,7 @@
   content: '';
   position: absolute;
   bottom: 2px;
-  width: 16px;
+  width: 14px;
   height: 3px;
   background: #38bdf8;
   border-radius: 99px;
