@@ -3,7 +3,10 @@ import { Game } from './core/Game.js';
 import { runeSystem } from './systems/RuneSystem.js';
 import { installSkillsPetsFeature } from './features/SkillsPetsFeature.js';
 import { installSkillsPetsHud } from './ui/SkillsPetsHud.js';
+import { installSkillsPetsPolish } from './features/SkillsPetsPolish.js';
 import { homeLobbyUI } from './ui/HomeLobbyUI.js';
+import { GAME_CONFIG } from './core/Config.js';
+import { SKILL_CONFIG, PET_TYPES } from './features/SkillsPetsFeature.js';
 
 function wireStageAndRunes(game) {
   game.startStage = function(stageId) {
@@ -74,20 +77,29 @@ function initCheatPanel(game) {
   const btnCheatLvl = document.getElementById('cheat-lvl');
   if (btnCheatLvl) btnCheatLvl.addEventListener('click', () => game.triggerLevelUp());
   const btnCheatHeal = document.getElementById('cheat-heal');
-  if (btnCheatHeal) btnCheatHeal.addEventListener('click', () => { game.fortress.hp = game.fortress.maxHp; game.fortress.shield = game.fortress.maxShield; game.spawnDamageText(game.hero.x, game.hero.y - 30, 'REPAIRED!', '#39ff14', true); game.hud.updateHUD(game); });
+  if (btnCheatHeal) btnCheatHeal.addEventListener('click', () => {
+    game.fortress.hp = game.fortress.maxHp;
+    game.fortress.shield = game.fortress.maxShield;
+    game.spawnDamageText(game.hero.x, game.hero.y - 30, 'REPAIRED!', '#39ff14', true);
+    game.hud.updateHUD(game);
+  });
   const btnCheatSkills = document.getElementById('cheat-skills');
-  if (btnCheatSkills) btnCheatSkills.addEventListener('click', () => { game.skills.rocket.level = Math.max(1, game.skills.rocket.level + 1); game.skills.truck.level = Math.max(1, game.skills.truck.level + 1); game.skills.freeze.level = Math.max(1, game.skills.freeze.level + 1); if (game.feature) Object.keys(game.feature.skills).forEach(k => { game.feature.skills[k].level = Math.max(1, game.feature.skills[k].level); }); game.hud.updateSkillHUD(game); });
+  if (btnCheatSkills) btnCheatSkills.addEventListener('click', () => {
+    game.skills.rocket.level = Math.max(1, game.skills.rocket.level + 1);
+    game.skills.truck.level = Math.max(1, game.skills.truck.level + 1);
+    game.skills.freeze.level = Math.max(1, game.skills.freeze.level + 1);
+    if (game.feature) Object.keys(game.feature.skills).forEach(k => { game.feature.skills[k].level = Math.max(1, game.feature.skills[k].level); });
+    game.hud.updateSkillHUD(game);
+  });
   const btnCheatBoss = document.getElementById('cheat-boss');
   if (btnCheatBoss) btnCheatBoss.addEventListener('click', () => game.spawnBoss(180));
 }
-
-import { GAME_CONFIG } from './core/Config.js';
-import { SKILL_CONFIG, PET_TYPES } from './features/SkillsPetsFeature.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   const loadingBar = document.getElementById('loading-bar-inner');
   const loadingText = document.getElementById('loading-progress-text');
   const loadingScreen = document.getElementById('loading-screen');
+
   assets.loadAll((loaded, total, key) => {
     const percent = Math.round((loaded / total) * 100);
     if (loadingBar) loadingBar.style.width = `${percent}%`;
@@ -96,7 +108,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (loadingBar) loadingBar.style.width = '100%';
     if (loadingText) loadingText.textContent = 'SYSTEM READY · LAUNCHING... 100%';
 
-    // 运行时异步热更配置 (Runtime JSON Hot-Reload)
     try {
       const [skillsJson, petsJson] = await Promise.all([
         assets.loadJSON('config/skills.json'),
@@ -112,10 +123,16 @@ window.addEventListener('DOMContentLoaded', () => {
         Object.assign(GAME_CONFIG.pets.types, petsJson.types);
         Object.assign(PET_TYPES, petsJson.types);
         if (petsJson.growthRate) GAME_CONFIG.pets.statGrowthPerLevel = petsJson.growthRate;
+        if (petsJson.recoveryTime) GAME_CONFIG.pets.recoveryTime = petsJson.recoveryTime;
+        if (petsJson.teleportThreshold) GAME_CONFIG.pets.teleportThreshold = petsJson.teleportThreshold;
         console.log('[Config] Hot-reloaded pets.json successfully');
       }
+
+      // 在实例化宠物之前修正成长、护盾与运行时平衡；避免配置与运行时逻辑漂移。
+      installSkillsPetsPolish();
     } catch (cfgErr) {
       console.warn('[Config] JSON hot-reload skipped, using default config:', cfgErr);
+      installSkillsPetsPolish();
     }
 
     setTimeout(() => {
@@ -123,13 +140,14 @@ window.addEventListener('DOMContentLoaded', () => {
       const gameInstance = new Game();
       wireStageAndRunes(gameInstance);
       installSkillsPetsFeature(gameInstance);
+      installSkillsPetsPolish(gameInstance);
       installSkillsPetsHud(gameInstance);
       bindFeatureTarget(gameInstance);
       window.gameInstance = gameInstance;
       initCheatPanel(gameInstance);
       gameInstance.isPaused = true;
       homeLobbyUI.init(gameInstance);
-      console.log('[Kaipao] Home Lobby + Weapons + Skills + Pets + Runes + Trials ready');
+      console.log('[Kaipao] Mobile HUD + Vector Pet Art + Skills + Pets + Runes ready');
     }, 280);
   });
 });
