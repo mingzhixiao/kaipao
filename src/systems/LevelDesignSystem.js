@@ -1,46 +1,36 @@
 // ---------------- 关卡设计数据与节奏系统 (Level Design) ----------------
-// 关卡不是单纯的“敌人数值递增”，而是由教学、压力、混合、休息、Boss 等体验节拍组成。
-// 该系统保持引擎无关：WaveSystem 只消费当前波次的设计意图。
+// 关卡由教学、压力、混合、休息、Boss 与车道空间模式组成，而不是单纯堆叠敌人数值。
 
 const STAGE_DESIGNS = {
-  1: {
-    theme: 'teach',
-    beats: [
-      { type: 'teach', intensity: 0.20, rest: 1.8, bias: { runner: 1 } },
-      { type: 'test', intensity: 0.34, rest: 1.6, bias: { runner: 0.72, charger: 0.28 } },
-      { type: 'pressure', intensity: 0.48, rest: 1.8, bias: { runner: 0.58, charger: 0.42 } },
-      { type: 'mixed', intensity: 0.58, rest: 2.2, bias: { runner: 0.50, charger: 0.35, behemoth: 0.15 } },
-      { type: 'boss', intensity: 0.90, rest: 0, bias: { runner: 0.45, charger: 0.35, behemoth: 0.20 } }
-    ]
-  },
-  2: {
-    theme: 'rush',
-    beats: [
-      { type: 'teach', intensity: 0.34, rest: 1.6, bias: { runner: 0.60, charger: 0.40 } },
-      { type: 'rush', intensity: 0.50, rest: 1.4, bias: { runner: 0.45, charger: 0.55 } },
-      { type: 'pressure', intensity: 0.60, rest: 1.6, bias: { runner: 0.42, charger: 0.48, behemoth: 0.10 } },
-      { type: 'mixed', intensity: 0.66, rest: 1.8, bias: { runner: 0.40, charger: 0.42, behemoth: 0.18 } },
-      { type: 'boss', intensity: 0.92, rest: 2.2, bias: { runner: 0.35, charger: 0.40, behemoth: 0.25 } },
-      { type: 'recovery', intensity: 0.48, rest: 1.6, bias: { runner: 0.55, charger: 0.35, behemoth: 0.10 } },
-      { type: 'finale', intensity: 0.82, rest: 0, bias: { runner: 0.35, charger: 0.40, behemoth: 0.25 } }
-    ]
-  },
-  3: {
-    theme: 'heavy',
-    beats: [
-      { type: 'teach', intensity: 0.46, rest: 1.6, bias: { runner: 0.50, charger: 0.40, behemoth: 0.10 } },
-      { type: 'pressure', intensity: 0.58, rest: 1.4, bias: { runner: 0.42, charger: 0.42, behemoth: 0.16 } },
-      { type: 'elite', intensity: 0.70, rest: 2.0, bias: { runner: 0.35, charger: 0.35, behemoth: 0.30 } },
-      { type: 'boss', intensity: 0.95, rest: 2.4, bias: { runner: 0.30, charger: 0.35, behemoth: 0.35 } },
-      { type: 'recovery', intensity: 0.52, rest: 1.6, bias: { runner: 0.50, charger: 0.35, behemoth: 0.15 } },
-      { type: 'mixed', intensity: 0.72, rest: 1.8, bias: { runner: 0.34, charger: 0.36, behemoth: 0.30 } },
-      { type: 'elite', intensity: 0.78, rest: 1.8, bias: { runner: 0.30, charger: 0.35, behemoth: 0.35 } },
-      { type: 'finale', intensity: 0.98, rest: 0, bias: { runner: 0.28, charger: 0.34, behemoth: 0.38 } }
-    ]
-  }
+  1: { theme: 'teach', beats: [
+    { type: 'teach', intensity: 0.20, rest: 1.8, bias: { runner: 1 }, lane: 'spread' },
+    { type: 'test', intensity: 0.34, rest: 1.6, bias: { runner: 0.72, charger: 0.28 }, lane: 'alternating' },
+    { type: 'pressure', intensity: 0.48, rest: 1.8, bias: { runner: 0.58, charger: 0.42 }, lane: 'center' },
+    { type: 'mixed', intensity: 0.58, rest: 2.2, bias: { runner: 0.50, charger: 0.35, behemoth: 0.15 }, lane: 'flank' },
+    { type: 'boss', intensity: 0.90, rest: 0, bias: { runner: 0.45, charger: 0.35, behemoth: 0.20 }, lane: 'center' }
+  ] },
+  2: { theme: 'rush', beats: [
+    { type: 'teach', intensity: 0.34, rest: 1.6, bias: { runner: 0.60, charger: 0.40 }, lane: 'spread' },
+    { type: 'rush', intensity: 0.50, rest: 1.4, bias: { runner: 0.45, charger: 0.55 }, lane: 'alternating' },
+    { type: 'pressure', intensity: 0.60, rest: 1.6, bias: { runner: 0.42, charger: 0.48, behemoth: 0.10 }, lane: 'flank' },
+    { type: 'mixed', intensity: 0.66, rest: 1.8, bias: { runner: 0.40, charger: 0.42, behemoth: 0.18 }, lane: 'center' },
+    { type: 'boss', intensity: 0.92, rest: 2.2, bias: { runner: 0.35, charger: 0.40, behemoth: 0.25 }, lane: 'center' },
+    { type: 'recovery', intensity: 0.48, rest: 1.6, bias: { runner: 0.55, charger: 0.35, behemoth: 0.10 }, lane: 'spread' },
+    { type: 'finale', intensity: 0.82, rest: 0, bias: { runner: 0.35, charger: 0.40, behemoth: 0.25 }, lane: 'flank' }
+  ] },
+  3: { theme: 'heavy', beats: [
+    { type: 'teach', intensity: 0.46, rest: 1.6, bias: { runner: 0.50, charger: 0.40, behemoth: 0.10 }, lane: 'spread' },
+    { type: 'pressure', intensity: 0.58, rest: 1.4, bias: { runner: 0.42, charger: 0.42, behemoth: 0.16 }, lane: 'alternating' },
+    { type: 'elite', intensity: 0.70, rest: 2.0, bias: { runner: 0.35, charger: 0.35, behemoth: 0.30 }, lane: 'center' },
+    { type: 'boss', intensity: 0.95, rest: 2.4, bias: { runner: 0.30, charger: 0.35, behemoth: 0.35 }, lane: 'center' },
+    { type: 'recovery', intensity: 0.52, rest: 1.6, bias: { runner: 0.50, charger: 0.35, behemoth: 0.15 }, lane: 'spread' },
+    { type: 'mixed', intensity: 0.72, rest: 1.8, bias: { runner: 0.34, charger: 0.36, behemoth: 0.30 }, lane: 'flank' },
+    { type: 'elite', intensity: 0.78, rest: 1.8, bias: { runner: 0.30, charger: 0.35, behemoth: 0.35 }, lane: 'alternating' },
+    { type: 'finale', intensity: 0.98, rest: 0, bias: { runner: 0.28, charger: 0.34, behemoth: 0.38 }, lane: 'flank' }
+  ] }
 };
 
-const DEFAULT_BEAT = { type: 'pressure', intensity: 0.55, rest: 1.5, bias: { runner: 0.45, charger: 0.40, behemoth: 0.15 } };
+const DEFAULT_BEAT = { type: 'pressure', intensity: 0.55, rest: 1.5, bias: { runner: 0.45, charger: 0.40, behemoth: 0.15 }, lane: 'spread' };
 
 export class LevelDesignSystem {
   constructor(game) {
@@ -54,7 +44,6 @@ export class LevelDesignSystem {
     const beats = design?.beats || [];
     let beat = beats[Math.min(Math.max(wave - 1, 0), beats.length - 1)] || DEFAULT_BEAT;
 
-    // 后期关卡沿用节拍结构，但自动提高压力；不把所有难度都塞进敌人 HP。
     if (wave > beats.length && clearWaves > beats.length) {
       const cycle = beats[(wave - 1) % beats.length] || DEFAULT_BEAT;
       beat = {
@@ -71,6 +60,7 @@ export class LevelDesignSystem {
       intensity: beat.intensity,
       rest: beat.rest,
       bias: { ...beat.bias },
+      lane: beat.lane || 'spread',
       boss: !!stageConfig.bossEvery && wave % stageConfig.bossEvery === 0,
       label: this.getLabel(beat.type)
     };
@@ -79,17 +69,7 @@ export class LevelDesignSystem {
   }
 
   getLabel(type) {
-    return ({
-      teach: '教学波',
-      test: '验证波',
-      pressure: '压力波',
-      rush: '疾袭波',
-      mixed: '混合波',
-      elite: '重装波',
-      recovery: '整备波',
-      boss: '首领战',
-      finale: '决战波'
-    })[type] || '战斗波';
+    return ({ teach: '教学波', test: '验证波', pressure: '压力波', rush: '疾袭波', mixed: '混合波', elite: '重装波', recovery: '整备波', boss: '首领战', finale: '决战波' })[type] || '战斗波';
   }
 
   chooseEnemyType(plan, wave) {
@@ -106,13 +86,21 @@ export class LevelDesignSystem {
     return 'runner';
   }
 
+  chooseLane(plan, spawnIndex = 0) {
+    const lanes = [0.18, 0.38, 0.62, 0.82];
+    switch (plan?.lane) {
+      case 'center': return lanes[Math.random() > 0.5 ? 1 : 2];
+      case 'flank': return lanes[spawnIndex % 2 === 0 ? 0 : 3];
+      case 'alternating': return lanes[spawnIndex % lanes.length];
+      default: return lanes[Math.floor(Math.random() * lanes.length)];
+    }
+  }
+
   getCountMultiplier(plan) {
-    // 数量只做小幅修正，保证关卡节奏由“组合”主导，而不是无脑堆怪。
     return 0.88 + plan.intensity * 0.24;
   }
 
   getIntervalMultiplier(plan) {
-    // 压力越高，刷怪间隔越短，但保留 WaveSystem 的安全下限。
     return 1.10 - plan.intensity * 0.20;
   }
 }
