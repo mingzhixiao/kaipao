@@ -1,12 +1,12 @@
-import { assets } from './systems/AssetManager.js';
+import { assets } from './systems/AssetManager.js?v=20260908_items_v2';
 import { Game } from './core/Game.js';
 import { runeSystem } from './systems/RuneSystem.js';
 import { installSkillsPetsFeature } from './features/SkillsPetsFeature.js';
 import { installSkillsPetsHud } from './ui/SkillsPetsHud.js';
 import { installSkillsPetsPolish } from './features/SkillsPetsPolish.js';
 import { installGameUIUX } from './ui/GameUIUX.js';
-import { homeLobbyUI } from './ui/HomeLobbyUI.js';
-import { GAME_CONFIG } from './core/Config.js';
+import { homeLobbyUI } from './ui/HomeLobbyUI.js?v=20260908_items_v2';
+import { GAME_CONFIG } from './core/Config.js?v=20260908_items_v2';
 import { SKILL_CONFIG, PET_TYPES } from './features/SkillsPetsFeature.js';
 import { installGameOptimization } from './systems/GameOptimization.js';
 import { installBuildIdentity } from './systems/BuildIdentitySystem.js';

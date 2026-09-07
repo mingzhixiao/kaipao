@@ -1,6 +1,6 @@
 // ---------------- 现代流行 H5 游戏首页大厅、五大管理与背包系统控制器 ----------------
 import { saveManager } from '../systems/SaveManager.js';
-import { GAME_CONFIG } from '../core/Config.js';
+import { GAME_CONFIG } from '../core/Config.js?v=20260908_items_v2';
 import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost } from '../systems/RuneSystem.js';
 
 export class HomeLobbyUI {
@@ -16,6 +16,24 @@ export class HomeLobbyUI {
     this.game = game;
     window.homeLobbyUI = this;
     this.buildDOM();
+    this.initEventListeners();
+  }
+
+  formatItemIcon(icon, alt = '', cls = 'backpack-item-img', itemId = null) {
+    const candidateId = itemId || (typeof icon === 'string' && GAME_CONFIG.items[icon] ? icon : null);
+    if (candidateId && GAME_CONFIG.items[candidateId]?.icon) {
+      icon = GAME_CONFIG.items[candidateId].icon;
+    }
+    if (typeof icon === 'string' && !icon.includes('.png') && candidateId) {
+      icon = `assets/items/item_${candidateId}.png`;
+    }
+    if (typeof icon === 'string' && (icon.includes('.png') || icon.includes('assets/'))) {
+      return `<img src="${icon}" class="${cls}" alt="${alt}" />`;
+    }
+    return icon || '';
+  }
+
+  initEventListeners() {
     this.bindEvents();
     this.render();
     this.show();
@@ -415,7 +433,7 @@ export class HomeLobbyUI {
           ${state.unlocked ? `
             <div class="mat-req-box">
               <div class="mat-req-left">
-                <span>${partItem.icon}</span>
+                <span>${this.formatItemIcon(partItem.icon, partItem.name, 'mat-req-icon-img')}</span>
                 <span>${partItem.name}</span>
               </div>
               <div class="mat-req-status ${canAffordParts ? 'met' : 'unmet'}">
@@ -506,7 +524,7 @@ export class HomeLobbyUI {
 
             <div class="mat-req-box" style="margin-top:6px;">
               <div class="mat-req-left">
-                <span>${chipItem.icon}</span>
+                <span>${this.formatItemIcon(chipItem.icon, chipItem.name, 'mat-req-icon-img')}</span>
                 <span>${chipItem.name}</span>
               </div>
               <div class="mat-req-status ${canAffordChips ? 'met' : 'unmet'}">
@@ -561,7 +579,7 @@ export class HomeLobbyUI {
       return `
         <div class="item-slot rarity-${item.rarity}" data-item-id="${item.id}">
           <span class="item-name-sub">${item.name}</span>
-          <div class="item-slot-icon">${item.icon}</div>
+          <div class="item-slot-icon">${this.formatItemIcon(item.icon, item.name, 'backpack-item-img', item.id)}</div>
           <span class="item-count-badge">x${count}</span>
         </div>
       `;
@@ -614,7 +632,7 @@ export class HomeLobbyUI {
         <div class="item-detail-card">
           <div class="item-detail-header">
             <div class="item-detail-avatar" style="border-color:${rarityColors[item.rarity]}">
-              <span>${item.icon}</span>
+              ${this.formatItemIcon(item.icon, item.name, 'modal-item-img', item.id || itemId)}
             </div>
             <div class="item-detail-info">
               <div class="item-detail-name">${item.name}</div>
@@ -685,7 +703,7 @@ export class HomeLobbyUI {
               const cfg = GAME_CONFIG.items[it.id] || { name: '物资', icon: '📦' };
               return `
                 <div class="crate-reward-item">
-                  <span class="crate-reward-item-icon">${cfg.icon}</span>
+                  <span class="crate-reward-item-icon">${this.formatItemIcon(cfg.icon, cfg.name, 'crate-item-icon-img')}</span>
                   <span class="crate-reward-item-name">${cfg.name}</span>
                   <span class="crate-reward-item-cnt">+${it.count}</span>
                 </div>
@@ -761,7 +779,7 @@ export class HomeLobbyUI {
           ${saved.unlocked ? `
             <div class="mat-req-box">
               <div class="mat-req-left">
-                <span>${shardItem.icon}</span>
+                <span>${this.formatItemIcon(shardItem.icon, shardItem.name, 'mat-req-icon-img')}</span>
                 <span>${shardItem.name}</span>
               </div>
               <div class="mat-req-status ${canAffordShards ? 'met' : 'unmet'}">

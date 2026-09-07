@@ -21,7 +21,22 @@ export class AssetManager {
       icon_shield: 'assets/cards/icon_shield.png', icon_multishot: 'assets/cards/icon_multishot.png', icon_firerate: 'assets/cards/icon_firerate.png', icon_crit: 'assets/cards/icon_crit.png',
       icon_inferno: 'assets/cards/icon_inferno.png', icon_shatter: 'assets/cards/icon_shatter.png',
       skill_tornado: 'assets/skills/tornado.png', skill_boomerang: 'assets/skills/boomerang.png', skill_laser: 'assets/skills/laser.png', skill_bomber: 'assets/skills/bomber.png',
-      pet_fluffy: 'assets/pets/fluffy.png', pet_dragon: 'assets/pets/dragon.png'
+      pet_fluffy: 'assets/pets/fluffy.png', pet_dragon: 'assets/pets/dragon.png',
+      item_assault_part: 'assets/items/item_assault_part.png',
+      item_gatling_part: 'assets/items/item_gatling_part.png',
+      item_gauss_part: 'assets/items/item_gauss_part.png',
+      item_plasma_part: 'assets/items/item_plasma_part.png',
+      item_fluffy_shard: 'assets/items/item_fluffy_shard.png',
+      item_dragon_shard: 'assets/items/item_dragon_shard.png',
+      item_chip_rocket: 'assets/items/item_chip_rocket.png',
+      item_chip_truck: 'assets/items/item_chip_truck.png',
+      item_chip_freeze: 'assets/items/item_chip_freeze.png',
+      item_chip_tornado: 'assets/items/item_chip_tornado.png',
+      item_chip_boomerang: 'assets/items/item_chip_boomerang.png',
+      item_chip_laser: 'assets/items/item_chip_laser.png',
+      item_chip_bomber: 'assets/items/item_chip_bomber.png',
+      item_energy_potion: 'assets/items/item_energy_potion.png',
+      item_supply_crate: 'assets/items/item_supply_crate.png'
     };
   }
 

@@ -100,27 +100,27 @@ export const GAME_CONFIG = {
   // 专属素材与背包道具总库 (Item Catalog)
   items: {
     // 枪械专属配件
-    assault_part: { id: 'assault_part', name: '先锋电磁枪机', category: 'weapon', rarity: 'rare', icon: '🔩', targetId: 'assault', targetType: 'weapon', desc: '先锋电磁步枪的核心高密闭锁机件，能显著改善连续射击弹道与基础威力。', usage: '用于【先锋电磁步枪】强化升级' },
-    gatling_part: { id: 'gatling_part', name: '加特林超频转子', category: 'weapon', rarity: 'epic', icon: '⚙️', targetId: 'gatling', targetType: 'weapon', desc: '六管加特林的高速超导驱动电机，极大压缩射击间隔并降低过热损耗。', usage: '用于【毁灭加特林风暴】强化升级' },
-    gauss_part: { id: 'gauss_part', name: '高斯强磁导轨', category: 'weapon', rarity: 'legendary', icon: '🧲', targetId: 'gauss', targetType: 'weapon', desc: '重型轨道狙击炮的超导加速磁轨，赋予弹丸超音速穿甲毁伤与极限暴击。', usage: '用于【泰坦高斯穿甲狙】强化升级' },
-    plasma_part: { id: 'plasma_part', name: '等离子约束磁环', category: 'weapon', rarity: 'epic', icon: '🌀', targetId: 'plasma', targetType: 'weapon', desc: '离子散射炮的能量聚焦约束组件，使三路等离子散射弹丸覆盖更密集。', usage: '用于【离子散射爆能枪】强化升级' },
+    assault_part: { id: 'assault_part', name: '先锋电磁枪机', category: 'weapon', rarity: 'rare', icon: 'assets/items/item_assault_part.png', targetId: 'assault', targetType: 'weapon', desc: '先锋电磁步枪的核心高密闭锁机件，能显著改善连续射击弹道与基础威力。', usage: '用于【先锋电磁步枪】强化升级' },
+    gatling_part: { id: 'gatling_part', name: '加特林超频转子', category: 'weapon', rarity: 'epic', icon: 'assets/items/item_gatling_part.png', targetId: 'gatling', targetType: 'weapon', desc: '六管加特林的高速超导驱动电机，极大压缩射击间隔并降低过热损耗。', usage: '用于【毁灭加特林风暴】强化升级' },
+    gauss_part: { id: 'gauss_part', name: '高斯强磁导轨', category: 'weapon', rarity: 'legendary', icon: 'assets/items/item_gauss_part.png', targetId: 'gauss', targetType: 'weapon', desc: '重型轨道狙击炮的超导加速磁轨，赋予弹丸超音速穿甲毁伤与极限暴击。', usage: '用于【泰坦高斯穿甲狙】强化升级' },
+    plasma_part: { id: 'plasma_part', name: '等离子约束磁环', category: 'weapon', rarity: 'epic', icon: 'assets/items/item_plasma_part.png', targetId: 'plasma', targetType: 'weapon', desc: '离子散射炮的能量聚焦约束组件，使三路等离子散射弹丸覆盖更密集。', usage: '用于【离子散射爆能枪】强化升级' },
 
     // 宠物专属基因碎片
-    fluffy_shard: { id: 'fluffy_shard', name: '小毛球基因碎片', category: 'pet', rarity: 'rare', icon: '🧬', targetId: 'fluffy', targetType: 'pet', desc: '蕴含星界虚空浮游生物特异基因，用于突破小毛球等级上限并提升弹幕威力。', usage: '用于伴飞宠物【小毛球】强化升级' },
-    dragon_shard: { id: 'dragon_shard', name: '幼龙烈焰晶核', category: 'pet', rarity: 'legendary', icon: '🔥', targetId: 'dragon', targetType: 'pet', desc: '远古火龙蜕鳞凝聚的纯净火核，用于滋养幼龙并大幅拓展龙息扇面与持续灼烧。', usage: '用于伴飞宠物【幼龙】强化升级' },
+    fluffy_shard: { id: 'fluffy_shard', name: '小毛球基因碎片', category: 'pet', rarity: 'rare', icon: 'assets/items/item_fluffy_shard.png', targetId: 'fluffy', targetType: 'pet', desc: '蕴含星界虚空浮游生物特异基因，用于突破小毛球等级上限并提升弹幕威力。', usage: '用于伴飞宠物【小毛球】强化升级' },
+    dragon_shard: { id: 'dragon_shard', name: '幼龙烈焰晶核', category: 'pet', rarity: 'legendary', icon: 'assets/items/item_dragon_shard.png', targetId: 'dragon', targetType: 'pet', desc: '远古火龙蜕鳞凝聚的纯净火核，用于滋养幼龙并大幅拓展龙息扇面与持续灼烧。', usage: '用于伴飞宠物【幼龙】强化升级' },
 
     // 技能专属战术芯片
-    chip_rocket: { id: 'chip_rocket', name: '温压弹火控芯片', category: 'skill', rarity: 'legendary', icon: '💾', targetId: 'rocket', targetType: 'skill', desc: '记载重型温压火箭定点爆轰算法的芯片，极大提升爆破杀伤半径与轰击伤害。', usage: '用于战术技能【温压火箭】专精强化' },
-    chip_truck: { id: 'chip_truck', name: '装甲战车推进模组', category: 'skill', rarity: 'epic', icon: '🛞', targetId: 'truck', targetType: 'skill', desc: '突击装甲车的加固冲撞前锋与动力增压器，增强战车碾压威力和推退距离。', usage: '用于战术技能【装甲战车】专精强化' },
-    chip_freeze: { id: 'chip_freeze', name: '极寒射线致冷核心', category: 'skill', rarity: 'rare', icon: '❄️', targetId: 'freeze', targetType: 'skill', desc: '超低温冷凝循环装置，扩大极寒射线的冰雾范围并延长霜冻控场持续时间。', usage: '用于战术技能【极寒射线】专精强化' },
-    chip_tornado: { id: 'chip_tornado', name: '裂风涡流导流核', category: 'skill', rarity: 'epic', icon: '🌪️', targetId: 'tornado', targetType: 'skill', desc: '人造气旋引力奇点组件，大幅提升风暴涡流对怪群的牵引力度与撕裂频次。', usage: '用于战术技能【裂风涡流】专精强化' },
-    chip_boomerang: { id: 'chip_boomerang', name: '回旋合金谐振片', category: 'skill', rarity: 'rare', icon: '🪃', targetId: 'boomerang', targetType: 'skill', desc: '高周波飞刃的微晶压电晶片，赋予穿透回旋刃更高的往返飞行速度与切割伤害。', usage: '用于战术技能【回旋刃】专精强化' },
-    chip_laser: { id: 'chip_laser', name: '湮灭偏振聚焦镜', category: 'skill', rarity: 'legendary', icon: '🔬', targetId: 'laser', targetType: 'skill', desc: '轨道歼灭炮的纯石英折射棱镜，使贯穿全屏的湮灭激光造成毁灭性光热灼烧。', usage: '用于战术技能【湮灭射线】专精强化' },
-    chip_bomber: { id: 'chip_bomber', name: '轨道轰炸定位密钥', category: 'skill', rarity: 'epic', icon: '📡', targetId: 'bomber', targetType: 'skill', desc: '近地轨道轰炸网络加密数据密钥，加快集束航弹投下频率并强化范围震荡。', usage: '用于战术技能【轨道轰炸】专精强化' },
+    chip_rocket: { id: 'chip_rocket', name: '温压弹火控芯片', category: 'skill', rarity: 'legendary', icon: 'assets/items/item_chip_rocket.png', targetId: 'rocket', targetType: 'skill', desc: '记载重型温压火箭定点爆轰算法的芯片，极大提升爆破杀伤半径与轰击伤害。', usage: '用于战术技能【温压火箭】专精强化' },
+    chip_truck: { id: 'chip_truck', name: '装甲战车推进模组', category: 'skill', rarity: 'epic', icon: 'assets/items/item_chip_truck.png', targetId: 'truck', targetType: 'skill', desc: '突击装甲车的加固冲撞前锋与动力增压器，增强战车碾压威力和推退距离。', usage: '用于战术技能【装甲战车】专精强化' },
+    chip_freeze: { id: 'chip_freeze', name: '极寒射线致冷核心', category: 'skill', rarity: 'rare', icon: 'assets/items/item_chip_freeze.png', targetId: 'freeze', targetType: 'skill', desc: '超低温冷凝循环装置，扩大极寒射线的冰雾范围并延长霜冻控场持续时间。', usage: '用于战术技能【极寒射线】专精强化' },
+    chip_tornado: { id: 'chip_tornado', name: '裂风涡流导流核', category: 'skill', rarity: 'epic', icon: 'assets/items/item_chip_tornado.png', targetId: 'tornado', targetType: 'skill', desc: '人造气旋引力奇点组件，大幅提升风暴涡流对怪群的牵引力度与撕裂频次。', usage: '用于战术技能【裂风涡流】专精强化' },
+    chip_boomerang: { id: 'chip_boomerang', name: '回旋合金谐振片', category: 'skill', rarity: 'rare', icon: 'assets/items/item_chip_boomerang.png', targetId: 'boomerang', targetType: 'skill', desc: '高周波飞刃的微晶压电晶片，赋予穿透回旋刃更高的往返飞行速度与切割伤害。', usage: '用于战术技能【回旋刃】专精强化' },
+    chip_laser: { id: 'chip_laser', name: '湮灭偏振聚焦镜', category: 'skill', rarity: 'legendary', icon: 'assets/items/item_chip_laser.png', targetId: 'laser', targetType: 'skill', desc: '轨道歼灭炮的纯石英折射棱镜，使贯穿全屏的湮灭激光造成毁灭性光热灼烧。', usage: '用于战术技能【湮灭射线】专精强化' },
+    chip_bomber: { id: 'chip_bomber', name: '轨道轰炸定位密钥', category: 'skill', rarity: 'epic', icon: 'assets/items/item_chip_bomber.png', targetId: 'bomber', targetType: 'skill', desc: '近地轨道轰炸网络加密数据密钥，加快集束航弹投下频率并强化范围震荡。', usage: '用于战术技能【轨道轰炸】专精强化' },
 
     // 军备补给与消耗道具
-    energy_potion: { id: 'energy_potion', name: '高能战术能量剂', category: 'consumable', rarity: 'rare', icon: '🧪', targetType: 'energy', desc: '军工高纯度神经活性复合营养剂，使用后可立即恢复 25 点前线作战体能。', usage: '直接在背包中使用可恢复 25 点体能' },
-    supply_crate: { id: 'supply_crate', name: '前线战略军备箱', category: 'consumable', rarity: 'epic', icon: '📦', targetType: 'crate', desc: '前线空投的高规格密封物资箱，开启可随机获得多种枪械零件、技能芯片与稀有宠物基因。', usage: '直接在背包中开启抽取战术物资' }
+    energy_potion: { id: 'energy_potion', name: '高能战术能量剂', category: 'consumable', rarity: 'rare', icon: 'assets/items/item_energy_potion.png', targetType: 'energy', desc: '军工高纯度神经活性复合营养剂，使用后可立即恢复 25 点前线作战体能。', usage: '直接在背包中使用可恢复 25 点体能' },
+    supply_crate: { id: 'supply_crate', name: '前线战略军备箱', category: 'consumable', rarity: 'epic', icon: 'assets/items/item_supply_crate.png', targetType: 'crate', desc: '前线空投的高规格密封物资箱，开启可随机获得多种枪械零件、技能芯片与稀有宠物基因。', usage: '直接在背包中开启抽取战术物资' }
   },
 
   enemies: {
