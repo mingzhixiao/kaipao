@@ -162,10 +162,6 @@ function injectVisualPolish() {
     #bottom-hud .fortress-bars { margin-bottom: 6px !important; }
     #bottom-hud .bar-wrap { gap: 6px !important; font-size: 10px !important; }
     #bottom-hud .bar-outer { height: 9px !important; border-radius: 5px !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
-    #kp-skill-hud { bottom: 96px !important; }
-    @media (max-width: 420px) {
-      #kp-skill-hud { bottom: 88px !important; }
-    }
   `;
   document.head.appendChild(style);
 }

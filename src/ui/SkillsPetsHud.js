@@ -43,73 +43,90 @@ function ensureStyle() {
   const style = document.createElement('style');
   style.id = 'kp-skill-hud-style';
   style.textContent = `
-    #kp-skill-hud {
+    #kp-wave-tactic {
       position: absolute;
       left: 50%;
-      bottom: 116px;
-      transform: translateX(-50%);
+      top: 50px;
+      transform: translate(-50%, -10px);
+      width: min(340px, calc(100% - 24px));
+      box-sizing: border-box;
+      padding: 10px 14px 11px;
+      border: 1px solid var(--kp-wave-accent, rgba(56, 189, 248, 0.65));
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(8, 15, 28, 0.96), rgba(15, 23, 42, 0.94));
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 0 18px color-mix(in srgb, var(--kp-wave-accent, #38bdf8) 22%, transparent);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 50;
+      transition: opacity .22s ease, transform .22s ease;
+      user-select: none;
+    }
+    #kp-wave-tactic.visible { opacity: 1; transform: translate(-50%, 0); }
+    #kp-wave-tactic.boss { padding: 12px 14px; }
+    #kp-wave-tactic-head { display: flex; align-items: center; gap: 7px; }
+    #kp-wave-tactic-icon { color: var(--kp-wave-accent, #38bdf8); font-size: 14px; font-weight: 900; }
+    #kp-wave-tactic-title { color: #fff; font-size: 13px; font-weight: 900; letter-spacing: .5px; }
+    #kp-wave-tactic-wave { margin-left: auto; color: #94a3b8; font-size: 9px; font-weight: 800; }
+    #kp-wave-tactic-tip { margin-top: 5px; color: #cbd5e1; font-size: 10px; line-height: 1.45; }
+    #kp-wave-tactic-line { height: 2px; margin-top: 8px; border-radius: 2px; background: var(--kp-wave-accent, #38bdf8); opacity: .65; transform-origin: left; animation: kp-wave-line .7s ease-out; }
+    @keyframes kp-wave-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @media (prefers-reduced-motion: reduce) {
+      #kp-wave-tactic { transition: none; }
+      #kp-wave-tactic-line { animation: none; }
+    }
+
+    #kp-skill-hud {
+      position: absolute;
+      right: 8px;
+      bottom: 108px;
       z-index: 35;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       pointer-events: none;
-      padding: 6px 10px 7px;
+      padding: 6px 5px 7px;
       border: 1.5px solid rgba(56, 189, 248, 0.28);
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(8, 15, 28, 0.88), rgba(3, 7, 18, 0.96));
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(8, 15, 28, 0.9), rgba(3, 7, 18, 0.96));
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(10px);
       user-select: none;
     }
-    .kp-wave-tactic {
-      position: absolute;
-      left: 50%;
-      bottom: calc(100% + 10px);
-      transform: translate(-50%, 8px);
-      width: min(330px, calc(100vw - 28px));
-      box-sizing: border-box;
-      padding: 10px 13px 11px;
-      border: 1px solid var(--kp-wave-accent, rgba(56, 189, 248, 0.65));
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(8, 15, 28, 0.96), rgba(15, 23, 42, 0.94));
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 18px color-mix(in srgb, var(--kp-wave-accent, #38bdf8) 22%, transparent);
-      opacity: 0;
-      transition: opacity .18s ease, transform .18s ease;
-    }
-    .kp-wave-tactic.visible { opacity: 1; transform: translate(-50%, 0); }
-    .kp-wave-tactic.boss { padding: 12px 14px; }
-    .kp-wave-tactic-head { display: flex; align-items: center; gap: 7px; }
-    .kp-wave-tactic-icon { color: var(--kp-wave-accent, #38bdf8); font-size: 14px; font-weight: 900; }
-    .kp-wave-tactic-title { color: #fff; font-size: 13px; font-weight: 900; letter-spacing: .5px; }
-    .kp-wave-tactic-wave { margin-left: auto; color: #94a3b8; font-size: 9px; font-weight: 800; }
-    .kp-wave-tactic-tip { margin-top: 5px; color: #cbd5e1; font-size: 10px; line-height: 1.45; }
-    .kp-wave-tactic-line { height: 2px; margin-top: 8px; border-radius: 2px; background: var(--kp-wave-accent, #38bdf8); opacity: .65; transform-origin: left; animation: kp-wave-line .7s ease-out; }
-    @keyframes kp-wave-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-    @media (prefers-reduced-motion: reduce) {
-      .kp-wave-tactic { transition: none; }
-      .kp-wave-tactic-line { animation: none; }
-    }
     .kp-skill-header {
-      font-size: 8px;
-      line-height: 1;
+      font-size: 7px;
+      line-height: 1.1;
       color: #38bdf8;
-      letter-spacing: 1.2px;
+      letter-spacing: 0.6px;
       font-weight: 900;
       text-transform: uppercase;
       opacity: 0.85;
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      margin-bottom: 1px;
+    }
+    .kp-skill-slots-wrap {
+      display: flex;
+      flex-direction: column;
       align-items: center;
       gap: 6px;
     }
-    .kp-skill-slots-wrap { display: flex; align-items: center; gap: 8px; }
     .kp-skill-slot {
-      position: relative; width: 44px; height: 44px; border-radius: 11px; overflow: hidden;
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      overflow: hidden;
       background: radial-gradient(circle at 50% 30%, #1e293b, #020617);
       border: 1px solid rgba(148, 163, 184, 0.25);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
       transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
-      flex: none; display: flex; align-items: center; justify-content: center;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .kp-skill-slot img { width: 100%; height: 100%; object-fit: contain; display: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
     .kp-skill-slot.equipped img { display: block; }
@@ -123,18 +140,18 @@ function ensureStyle() {
     .kp-skill-level { position: absolute; left: 3px; bottom: 2px; color: #facc15; font-size: 9px; font-weight: 900; line-height: 1; text-shadow: 0 1px 4px #000; pointer-events: none; }
     .kp-skill-key { position: absolute; right: 3px; top: 2px; color: rgba(255, 255, 255, 0.75); font-size: 8px; font-weight: 900; line-height: 1; text-shadow: 0 1px 3px #000; pointer-events: none; }
     @media (max-width: 470px) {
-      #kp-skill-hud { bottom: 88px; padding: 5px 8px; gap: 3px; }
-      .kp-skill-slot { width: 38px; height: 38px; border-radius: 9px; }
-      .kp-skill-slots-wrap { gap: 6px; }
+      #kp-skill-hud { right: 6px; bottom: 102px; padding: 5px 4px 6px; gap: 4px; }
+      .kp-skill-slot { width: 36px; height: 36px; border-radius: 8px; }
+      .kp-skill-slots-wrap { gap: 5px; }
       .kp-skill-time { font-size: 11px; }
       .kp-skill-level { font-size: 8px; left: 2px; bottom: 2px; }
-      .kp-wave-tactic { bottom: calc(100% + 8px); width: min(310px, calc(100vw - 20px)); }
+      #kp-wave-tactic { top: 48px; width: min(310px, calc(100% - 16px)); }
     }
     @media (max-width: 360px) {
-      #kp-skill-hud { bottom: 84px; }
-      .kp-skill-slot { width: 34px; height: 34px; }
+      #kp-skill-hud { right: 4px; bottom: 98px; }
+      .kp-skill-slot { width: 32px; height: 32px; }
       .kp-skill-slots-wrap { gap: 4px; }
-      .kp-wave-tactic-tip { font-size: 9px; }
+      #kp-wave-tactic-tip { font-size: 9px; }
     }
   `;
   document.head.appendChild(style);
@@ -155,21 +172,28 @@ export function installSkillsPetsHud(game) {
   if (!game.feature || document.getElementById('kp-skill-hud')) return;
   ensureStyle();
 
+  const tacticPanel = document.createElement('div');
+  tacticPanel.className = 'kp-wave-tactic';
+  tacticPanel.id = 'kp-wave-tactic';
+  tacticPanel.setAttribute('role', 'status');
+  tacticPanel.setAttribute('aria-live', 'polite');
+  tacticPanel.innerHTML = `
+    <div class="kp-wave-tactic-head">
+      <span class="kp-wave-tactic-icon" id="kp-wave-tactic-icon">◈</span>
+      <span class="kp-wave-tactic-title" id="kp-wave-tactic-title">战术提示</span>
+      <span class="kp-wave-tactic-wave" id="kp-wave-tactic-wave"></span>
+    </div>
+    <div class="kp-wave-tactic-tip" id="kp-wave-tactic-tip"></div>
+    <div class="kp-wave-tactic-line"></div>
+  `;
+  game.container.appendChild(tacticPanel);
+
   const hud = document.createElement('div');
   hud.id = 'kp-skill-hud';
   hud.setAttribute('aria-label', 'Tactical skill deck');
   hud.innerHTML = `
-    <div class="kp-wave-tactic" id="kp-wave-tactic" role="status" aria-live="polite">
-      <div class="kp-wave-tactic-head">
-        <span class="kp-wave-tactic-icon" id="kp-wave-tactic-icon">◈</span>
-        <span class="kp-wave-tactic-title" id="kp-wave-tactic-title">战术提示</span>
-        <span class="kp-wave-tactic-wave" id="kp-wave-tactic-wave"></span>
-      </div>
-      <div class="kp-wave-tactic-tip" id="kp-wave-tactic-tip"></div>
-      <div class="kp-wave-tactic-line"></div>
-    </div>
     <div class="kp-skill-header">
-      <span>TACTICAL SKILLS</span>
+      <span>SKILL</span>
       <span id="kp-skill-count-badge" style="color:#94a3b8;font-size:7.5px;">(0/4)</span>
     </div>
     <div class="kp-skill-slots-wrap">
