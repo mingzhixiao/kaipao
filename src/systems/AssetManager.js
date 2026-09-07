@@ -1,4 +1,4 @@
-// ---------------- 资源管理系统 (Asset Manager: RogueGen 8 探针色彩去底与多帧动作管理) ----------------
+// ---------------- 资源管理系统 (Asset Manager: 多帧动作 + 进度加载，透明图预处理完成) ----------------
 export class AssetManager {
   constructor() {
     this.images = {};
@@ -27,7 +27,7 @@ export class AssetManager {
       // 高清超音速等离子光矛与穿甲曳光弹头图素
       bullet_normal: 'assets/bullet_normal.png',
       bullet_crit: 'assets/bullet_crit.png',
-      // 技能与战略强化专属高清徽章 (全 14 种独立分类素材)
+      // 技能与战略强化专属高清徽章 (优先小体积 JPG)
       icon_rocket: 'assets/icon_rocket.jpg',
       icon_truck: 'assets/icon_truck.jpg',
       icon_frost: 'assets/icon_frost.jpg',
@@ -37,11 +37,11 @@ export class AssetManager {
       icon_thermal: 'assets/icon_thermal.jpg',
       icon_pierce: 'assets/icon_pierce.jpg',
       icon_shield: 'assets/icon_shield.jpg',
-      icon_multishot: 'assets/icon_multishot.png',
-      icon_firerate: 'assets/icon_firerate.png',
-      icon_crit: 'assets/icon_crit.png',
-      icon_inferno: 'assets/icon_inferno.png',
-      icon_shatter: 'assets/icon_shatter.png'
+      icon_multishot: 'assets/icon_multishot.jpg',
+      icon_firerate: 'assets/icon_firerate.jpg',
+      icon_crit: 'assets/icon_crit.jpg',
+      icon_inferno: 'assets/icon_inferno.jpg',
+      icon_shatter: 'assets/icon_shatter.jpg'
     };
   }
 
@@ -66,7 +66,7 @@ export class AssetManager {
           if (onProgress) onProgress(loadedCount, total, key);
           resolve();
         };
-        img.src = `${src}?v=7`;
+        img.src = `${src}?v=10`;
       });
     });
 
@@ -99,4 +99,3 @@ export class AssetManager {
 }
 
 export const assets = new AssetManager();
-

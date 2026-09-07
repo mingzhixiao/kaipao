@@ -1,11 +1,24 @@
-import { assets } from './systems/AssetManager.js?v=2';
-import { Game } from './core/Game.js?v=2';
+import { assets } from './systems/AssetManager.js';
+import { Game } from './core/Game.js';
 
 // ---------------- 游戏启动引导与测试入口 (Game Bootstrap) ----------------
 
 function initCheatPanel(game) {
+  const params = new URLSearchParams(location.search);
+  const debug = params.get('debug') === '1' || params.get('cheat') === '1';
   const toggleBtn = document.getElementById('cheat-panel-toggle');
   const panel = document.getElementById('cheat-panel');
+
+  // 正式游玩默认隐藏调试面板，加 ?debug=1 才显示
+  if (!debug) {
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    if (panel) panel.style.display = 'none';
+    return;
+  }
+
+  if (toggleBtn) toggleBtn.style.display = '';
+  if (panel) panel.style.display = '';
+
   if (toggleBtn && panel) {
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -73,4 +86,3 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 280);
   });
 });
-
