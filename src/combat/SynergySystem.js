@@ -6,6 +6,49 @@ export class SynergySystem {
     this.game = game;
   }
 
+  /** 简易网格邻域查询：只检查附近敌人，避免 O(n) 全表扫 */
+  static forEachInRadius(game, x, y, radius, fn) {
+    const enemies = game.enemies;
+    const r2 = radius * radius;
+    // 敌人数量少时直接线性扫更便宜
+    if (enemies.length <= 24) {
+      for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
+        if (!e.active) continue;
+        const dx = e.x - x, dy = e.y - y;
+        if (dx * dx + dy * dy <= r2) fn(e);
+      }
+      return;
+    }
+    const cell = Math.max(40, radius * 0.55);
+    const cx = Math.floor(x / cell);
+    const cy = Math.floor(y / cell);
+    const span = Math.ceil(radius / cell);
+    // 建临时桶（每帧范围查询时只建一次很小的 map）
+    const buckets = new Map();
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (!e.active) continue;
+      const key = ((Math.floor(e.x / cell) & 0xffff) << 16) | (Math.floor(e.y / cell) & 0xffff);
+      let arr = buckets.get(key);
+      if (!arr) { arr = []; buckets.set(key, arr); }
+      arr.push(e);
+    }
+    for (let gx = cx - span; gx <= cx + span; gx++) {
+      for (let gy = cy - span; gy <= cy + span; gy++) {
+        const key = ((gx & 0xffff) << 16) | (gy & 0xffff);
+        const arr = buckets.get(key);
+        if (!arr) continue;
+        for (let i = 0; i < arr.length; i++) {
+          const e = arr[i];
+          const dx = e.x - x, dy = e.y - y;
+          if (dx * dx + dy * dy <= r2) fn(e);
+        }
+      }
+    }
+  }
+
+
   // 1. 元素化学反应：温差热力殉爆 (Thermal Shock: 冰雾冻结 + 火箭核爆/烈焰)
   triggerThermalShock(enemy, x, y) {
     SynergySystem.triggerThermalShock(this.game, enemy, x, y);
@@ -29,17 +72,13 @@ export class SynergySystem {
 
     game.spawnDamageText(x, y - 25, `💥 殉爆! ${shockDmg}`, '#ff7700', true, true);
 
-    // 蒸汽冲击波波及周围小怪
-    for (let i = 0; i < game.enemies.length; i++) {
-      const other = game.enemies[i];
-      if (!other.active || other === enemy) continue;
-      const dist = Math.hypot(other.x - x, other.y - y);
-      if (dist < 90) {
-        other.hp -= Math.round(shockDmg * 0.45);
-        other.hitFlash = 0.12;
-        if (other.hp <= 0) game.killEnemy(other);
-      }
-    }
+    // 蒸汽冲击波波及周围小怪（网格邻域查询）
+    SynergySystem.forEachInRadius(game, x, y, 90, (other) => {
+      if (other === enemy) return;
+      other.hp -= Math.round(shockDmg * 0.45);
+      other.hitFlash = 0.12;
+      if (other.hp <= 0) game.killEnemy(other);
+    });
 
     if (enemy.hp <= 0) game.killEnemy(enemy);
   }
@@ -82,16 +121,11 @@ export class SynergySystem {
     let chainCount = 0;
     const chainTargets = [];
 
-    for (let i = 0; i < game.enemies.length; i++) {
-      const other = game.enemies[i];
-      if (!other.active || other === sourceEnemy) continue;
-      const dist = Math.hypot(other.x - sourceEnemy.x, other.y - sourceEnemy.y);
-      if (dist < 140) {
-        chainTargets.push(other);
-        chainCount++;
-        if (chainCount >= 2) break;
-      }
-    }
+    SynergySystem.forEachInRadius(game, sourceEnemy.x, sourceEnemy.y, 140, (other) => {
+      if (other === sourceEnemy || chainCount >= 2) return;
+      chainTargets.push(other);
+      chainCount++;
+    });
 
     chainTargets.forEach(target => {
       const chainDmg = Math.round(dmg * 0.6);
