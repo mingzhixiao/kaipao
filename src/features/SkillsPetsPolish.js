@@ -14,6 +14,13 @@ const EMOJI_REPLACEMENTS = [
   [/💀/gu, 'KILLS']
 ];
 
+const VECTOR_SKILL_ASSETS = {
+  tornado: 'assets/skills/tornado.svg',
+  boomerang: 'assets/skills/boomerang.svg',
+  laser: 'assets/skills/laser.svg',
+  bomber: 'assets/skills/bomber.svg'
+};
+
 function sanitizeText(value) {
   if (typeof value !== 'string') return value;
   return EMOJI_REPLACEMENTS.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), value);
@@ -111,6 +118,10 @@ function syncRuntimeConfig() {
 
   if (PET_TYPES.fluffy) PET_TYPES.fluffy.asset = 'assets/pets/fluffy.svg';
   if (PET_TYPES.dragon) PET_TYPES.dragon.asset = 'assets/pets/dragon.svg';
+
+  for (const card of GAME_CONFIG.skillCatalog || []) {
+    if (VECTOR_SKILL_ASSETS[card.id]) card.asset = VECTOR_SKILL_ASSETS[card.id];
+  }
 }
 
 function installTextSanitizer(game) {
