@@ -138,7 +138,8 @@ export class HUDManager {
     }
   }
 
-  showLevelUpModal(game) {
+  showLevelUpModal(game, onComplete = null) {
+    this.onUpgradeComplete = onComplete;
     game.isUpgrading = true;
     game.rerollAvailable = 1;
     sound.playLevelUp();
@@ -148,6 +149,69 @@ export class HUDManager {
     }
     this.renderUpgradeCards(game);
     if (this.dom.upgradeModal) this.dom.upgradeModal.style.display = 'flex';
+    this.startAutoSelectCountdown(game);
+  }
+
+  startAutoSelectCountdown(game) {
+    this.clearAutoSelectTimer();
+    this.autoSelectRemaining = 5;
+    this.updateAutoSelectBadge();
+
+    this.autoSelectTimer = setInterval(() => {
+      this.autoSelectRemaining--;
+      this.updateAutoSelectBadge();
+      if (this.autoSelectRemaining <= 0) {
+        this.clearAutoSelectTimer();
+        this.triggerAutoSelect(game);
+      }
+    }, 1000);
+  }
+
+  clearAutoSelectTimer() {
+    if (this.autoSelectTimer) {
+      clearInterval(this.autoSelectTimer);
+      this.autoSelectTimer = null;
+    }
+    const badge = document.getElementById('upgrade-auto-badge');
+    if (badge) badge.style.display = 'none';
+  }
+
+  updateAutoSelectBadge() {
+    let badge = document.getElementById('upgrade-auto-badge');
+    if (!badge && this.dom.upgradeModal) {
+      const titleBox = this.dom.upgradeModal.querySelector('.modal-title-box');
+      if (titleBox) {
+        badge = document.createElement('div');
+        badge.id = 'upgrade-auto-badge';
+        badge.style.cssText = 'display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:4px 14px;border-radius:14px;background:rgba(239,68,68,0.2);border:1.5px solid rgba(248,113,113,0.8);color:#fca5a5;font-size:12px;font-weight:800;letter-spacing:0.5px;box-shadow:0 0 12px rgba(239,68,68,0.3);';
+        titleBox.appendChild(badge);
+      }
+    }
+    if (badge) {
+      badge.innerHTML = `⏱️ <span style="color:#fff;font-size:14px;margin:0 2px;">${this.autoSelectRemaining}s</span> 后自动选取默认技能`;
+      badge.style.display = 'inline-flex';
+    }
+  }
+
+  triggerAutoSelect(game) {
+    if (!game.isUpgrading) return;
+    if (this.currentUpgradeCards && this.currentUpgradeCards.length > 0) {
+      this.applyUpgradeCard(this.currentUpgradeCards[0], game);
+    }
+  }
+
+  applyUpgradeCard(card, game) {
+    this.clearAutoSelectTimer();
+    card.apply();
+    if (this.dom.upgradeModal) this.dom.upgradeModal.style.display = 'none';
+    game.isUpgrading = false;
+    this.updateSkillHUD(game);
+    this.updateHUD(game);
+    if (typeof this.onUpgradeComplete === 'function') {
+      const cb = this.onUpgradeComplete;
+      this.onUpgradeComplete = null;
+      cb();
+    }
   }
 
   rerollUpgradeCards(game) {
@@ -159,6 +223,7 @@ export class HUDManager {
     }
     sound.playGemPickup();
     this.renderUpgradeCards(game);
+    this.startAutoSelectCountdown(game);
   }
 
   renderUpgradeCards(game) {
@@ -175,6 +240,7 @@ export class HUDManager {
     });
     const shuffled = availablePool.sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 3);
+    this.currentUpgradeCards = selected;
     const container = this.dom.cardsContainer;
     if (!container) return;
     container.innerHTML = '';
@@ -184,17 +250,15 @@ export class HUDManager {
       const elemTag = card.element ? `<span class="card-elem-pill elem-${card.element}">${card.element.toUpperCase()}</span>` : '';
       el.innerHTML = `<img class="card-icon-img" src="${card.img}" alt="${card.name}"><div class="card-info"><div class="card-header-row"><div class="card-name">${card.name}</div><div style="display:flex;gap:4px;align-items:center;">${elemTag}<div class="card-tag">${card.rarity}</div></div></div><div class="card-synergy">${card.synergy}</div><div class="card-desc">${card.desc}</div></div>`;
       el.addEventListener('click', () => {
-        card.apply();
-        if (this.dom.upgradeModal) this.dom.upgradeModal.style.display = 'none';
-        game.isUpgrading = false;
-        this.updateSkillHUD(game);
-        this.updateHUD(game);
+        this.applyUpgradeCard(card, game);
       });
       container.appendChild(el);
     });
   }
 
   showGameOverModal(game) {
+    this.clearAutoSelectTimer();
+    if (this.dom.upgradeModal) this.dom.upgradeModal.style.display = 'none';
     if (this.dom.resWave) this.dom.resWave.textContent = game.wave;
     if (this.dom.resKills) this.dom.resKills.textContent = game.kills;
     const mins = Math.floor(game.survivalTime / 60).toString().padStart(2, '0');

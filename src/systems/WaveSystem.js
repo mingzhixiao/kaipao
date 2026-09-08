@@ -45,6 +45,7 @@ export class WaveSystem {
     this.waveSpawnedCount = 0;
     this.stageCleared = false;
     this.waveTransitionTimer = 0;
+    this.waveUpgradeTriggered = false;
     this.game.waveIntermission = false;
     this.wavePlan = this.levelDesign.getPlan(this.stageId, 1, this.stageConfig);
     this.waveTotalToSpawn = this.calcEnemyCount(1);
@@ -70,6 +71,7 @@ export class WaveSystem {
     this.waveSpawnTimer = 0;
     this.waveSpawnedCount = 0;
     this.waveTransitionTimer = 0;
+    this.waveUpgradeTriggered = false;
     this.game.waveIntermission = false;
     this.wavePlan = this.levelDesign.getPlan(this.stageId, waveNum, this.stageConfig);
     this.waveTotalToSpawn = this.calcEnemyCount(waveNum);
@@ -104,19 +106,16 @@ export class WaveSystem {
         return;
       }
 
-      // 关卡节奏：战斗结束后给玩家一个短暂呼吸区，再进入下一波。
-      if (this.waveTransitionTimer <= 0) {
-        const nextPlan = this.levelDesign.getPlan(this.stageId, this.wave + 1, this.stageConfig);
-        this.waveTransitionTimer = Math.max(0.7, nextPlan.rest || this.wavePlan?.rest || 1.2);
+      // 每通过一波怪物时触发技能抽取 (5秒不选自动选取并开启下一波)
+      if (!this.waveUpgradeTriggered) {
+        this.waveUpgradeTriggered = true;
         this.game.waveIntermission = true;
-        this.game.waveIntermissionLabel = nextPlan.label;
+        const nextWave = this.wave + 1;
+        this.game.hud.showLevelUpModal(this.game, () => {
+          this.game.waveIntermission = false;
+          this.startWave(nextWave);
+        });
         return;
-      }
-
-      this.waveTransitionTimer -= dt;
-      if (this.waveTransitionTimer <= 0) {
-        this.game.waveIntermission = false;
-        this.startWave(this.wave + 1);
       }
     }
   }

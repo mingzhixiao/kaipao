@@ -498,7 +498,21 @@ export class HomeLobbyUI {
     }
 
     const skillData = saveManager.getSkillData();
-    container.innerHTML = GAME_CONFIG.skillCatalog.map(sk => {
+    const equippedSkills = saveManager.getEquippedSkills();
+
+    const bannerHtml = `
+      <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg, rgba(30,58,138,0.4), rgba(15,23,42,0.8)); border:1px solid rgba(59,130,246,0.3); border-radius:10px; padding:8px 14px; margin-bottom:4px;">
+        <div style="font-size:12px; color:#e2e8f0; font-weight:700;">
+          出战战术技能: <span style="color:${equippedSkills.length >= 4 ? '#facc15' : '#38bdf8'}; font-weight:900;">${equippedSkills.length} / 4</span>
+          <span style="font-size:11px; color:#94a3b8; margin-left:8px;">(战斗初始默认携带且均为 Lv.1)</span>
+        </div>
+        <div style="font-size:11px; color:#34d399;">
+          ${equippedSkills.length === 4 ? '✓ 槽位已满' : `还可佩戴 ${4 - equippedSkills.length} 个`}
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = bannerHtml + GAME_CONFIG.skillCatalog.map(sk => {
       const level = skillData.levels[sk.id] || 1;
       const chipCost = 2 + Math.floor((level - 1) / 2);
       const scrapCost = 50 + (level - 1) * 35;
@@ -507,14 +521,15 @@ export class HomeLobbyUI {
       const canAffordChips = heldChips >= chipCost;
       const canAffordScrap = saveManager.getScrap() >= scrapCost;
       const canUpgrade = canAffordChips && canAffordScrap;
+      const isEquipped = equippedSkills.includes(sk.id);
 
       return `
-        <div class="skill-catalog-card">
+        <div class="skill-catalog-card ${isEquipped ? 'equipped-card' : ''}" style="${isEquipped ? 'border-color:rgba(52,211,153,0.5);box-shadow:0 0 14px rgba(16,185,129,0.18);' : ''}">
           <img class="skill-catalog-img" src="${sk.asset}" alt="${sk.name}">
           <div class="skill-catalog-info">
             <div class="skill-catalog-header">
               <span class="skill-catalog-name">${sk.name}</span>
-              <span class="skill-catalog-type">${sk.type}</span>
+              <span class="skill-catalog-type" style="${isEquipped ? 'background:#065f46;color:#34d399;border-color:#10b981;' : ''}">${isEquipped ? '★ 出战中 · ' : ''}${sk.type}</span>
             </div>
             <div class="skill-catalog-desc">${sk.desc}</div>
             <div class="skill-catalog-meta">
@@ -532,15 +547,30 @@ export class HomeLobbyUI {
               </div>
             </div>
 
-            <div style="margin-top:6px;">
-              <button class="weapon-btn upgrade" data-action="upgrade-skill" data-id="${sk.id}" data-scost="${scrapCost}" data-ccost="${chipCost}" style="padding:6px 12px;font-size:11px;" ${!canUpgrade ? 'disabled' : ''}>
-                🪙 ${scrapCost} 专精升级
+            <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+              <button class="weapon-btn ${isEquipped ? 'equipped' : 'primary'}" data-action="toggle-equip-skill" data-id="${sk.id}" style="padding:6px 12px;font-size:11px;flex:1;${isEquipped ? 'background:linear-gradient(135deg,#059669,#10b981);border-color:#34d399;color:#fff;' : 'background:linear-gradient(135deg,#2563eb,#3b82f6);border-color:#60a5fa;color:#fff;'}">
+                ${isEquipped ? '✓ 已佩戴 (点击卸下)' : '+ 佩戴出战'}
+              </button>
+              <button class="weapon-btn upgrade" data-action="upgrade-skill" data-id="${sk.id}" data-scost="${scrapCost}" data-ccost="${chipCost}" style="padding:6px 10px;font-size:11px;" ${!canUpgrade ? 'disabled' : ''}>
+                🪙 ${scrapCost} 强化
               </button>
             </div>
           </div>
         </div>
       `;
     }).join('');
+
+    container.querySelectorAll('[data-action="toggle-equip-skill"]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        const res = saveManager.toggleEquipSkill(id);
+        if (!res.success) {
+          alert(res.message);
+        } else {
+          this.render();
+        }
+      };
+    });
 
     container.querySelectorAll('[data-action="upgrade-skill"]').forEach(btn => {
       btn.onclick = () => {
@@ -942,6 +972,22 @@ export class HomeLobbyUI {
 
     // 应用关卡与开战
     this.game.startStage(stageId);
+
+    // 同步出战佩戴的技能（初始默认携带且均为 Lv.1）
+    const equippedSkills = saveManager.getEquippedSkills();
+    for (const id of ['rocket', 'truck', 'freeze']) {
+      if (this.game.skills[id]) {
+        this.game.skills[id].level = equippedSkills.includes(id) ? 1 : 0;
+      }
+    }
+    if (this.game.feature?.skills) {
+      for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
+        if (this.game.feature.skills[id]) {
+          this.game.feature.skills[id].level = equippedSkills.includes(id) ? 1 : 0;
+        }
+      }
+    }
+
     if (this.game.feature?.syncPet) {
       this.game.feature.syncPet();
     }

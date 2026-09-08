@@ -764,8 +764,19 @@ function asset(src) {
 export function installSkillsPetsFeature(game) {
   if (game.feature) return;
 
+  const getEquipped = () => {
+    try {
+      return saveManager.getEquippedSkills() || [];
+    } catch (e) {
+      return ['rocket', 'truck', 'freeze', 'tornado'];
+    }
+  };
+
   game.feature = {
-    skills: Object.fromEntries(Object.entries(SKILL_CONFIG).map(([id, cfg]) => [id, { level: 0, cooldown: cfg.cooldown, timer: cfg.cooldown }])),
+    skills: Object.fromEntries(Object.entries(SKILL_CONFIG).map(([id, cfg]) => {
+      const isEq = getEquipped().includes(id);
+      return [id, { level: isEq ? 1 : 0, cooldown: cfg.cooldown, timer: cfg.cooldown }];
+    })),
     tornadoes: [],
     boomerangs: [],
     lasers: [],
@@ -799,8 +810,10 @@ export function installSkillsPetsFeature(game) {
   const originalReset = game.resetGame.bind(game);
   game.resetGame = function() {
     originalReset();
+    const equipped = getEquipped();
     for (const [id, cfg] of Object.entries(SKILL_CONFIG)) {
-      this.feature.skills[id] = { level: 0, cooldown: cfg.cooldown, timer: cfg.cooldown };
+      const isEq = equipped.includes(id);
+      this.feature.skills[id] = { level: isEq ? 1 : 0, cooldown: cfg.cooldown, timer: cfg.cooldown };
     }
     this.feature.tornadoes = [];
     this.feature.boomerangs = [];

@@ -1,3 +1,5 @@
+import { saveManager } from '../systems/SaveManager.js';
+
 // ---------------- Roguelike 升级卡池与技能构筑体系 ----------------
 
 export function buildUpgradeCardPool(game) {
@@ -248,28 +250,33 @@ export function buildUpgradeCardPool(game) {
     }
   ];
 
-  // 当前已激活的主动战术技能列表（上限最多 4 个）
+  // 当前出战携带的主动战术技能列表（上限最多 4 个）
   const activeSkillIds = ['rocket', 'truck', 'freeze', 'laser', 'tornado', 'boomerang', 'bomber'];
-  const equippedSkills = [];
-  if (game.skills?.rocket?.level > 0) equippedSkills.push('rocket');
-  if (game.skills?.truck?.level > 0) equippedSkills.push('truck');
-  if (game.skills?.freeze?.level > 0) equippedSkills.push('freeze');
-  if (game.feature?.skills) {
-    for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
-      if (game.feature.skills[id]?.level > 0) equippedSkills.push(id);
+  let equippedSkills = [];
+  try {
+    if (saveManager?.getEquippedSkills) {
+      equippedSkills = saveManager.getEquippedSkills();
+    }
+  } catch (e) {}
+
+  if (!equippedSkills || equippedSkills.length === 0) {
+    if (game.skills?.rocket?.level > 0) equippedSkills.push('rocket');
+    if (game.skills?.truck?.level > 0) equippedSkills.push('truck');
+    if (game.skills?.freeze?.level > 0) equippedSkills.push('freeze');
+    if (game.feature?.skills) {
+      for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
+        if (game.feature.skills[id]?.level > 0) equippedSkills.push(id);
+      }
     }
   }
 
-  const isSlotFull = equippedSkills.length >= 4;
-
   // 过滤卡池：
-  // 1. 若技能槽已满 4 个，绝不再出现未携带的技能卡！
+  // 1. 未携带/未出战的主动技能绝不出现在升级抽卡中！
   // 2. 过滤已激活的唯一协同反应卡及上限属性卡
   return pool.filter(card => {
     if (activeSkillIds.includes(card.id)) {
-      const isEquipped = equippedSkills.includes(card.id);
-      if (isSlotFull && !isEquipped) {
-        return false; // 槽位已满 4 个，未装备的技能不再出现！
+      if (!equippedSkills.includes(card.id)) {
+        return false; // 未携带的技能绝不出现！
       }
     }
     if (card.id === 'thermal_engine' && game.synergies.thermalEngine) return false;

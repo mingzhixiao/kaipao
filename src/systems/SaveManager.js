@@ -31,6 +31,7 @@ export class SaveManager {
         }
       },
       skillData: {
+        equipped: ['rocket', 'truck', 'freeze', 'tornado'],
         levels: {
           rocket: 1, truck: 1, freeze: 1,
           tornado: 1, boomerang: 1, laser: 1, bomber: 1
@@ -86,6 +87,9 @@ export class SaveManager {
     merged.weaponData.weapons = { ...defaults.weaponData.weapons, ...(data?.weaponData?.weapons || {}) };
     merged.skillData = { ...defaults.skillData, ...(data?.skillData || {}) };
     merged.skillData.levels = { ...defaults.skillData.levels, ...(data?.skillData?.levels || {}) };
+    if (!Array.isArray(merged.skillData.equipped) || merged.skillData.equipped.length === 0) {
+      merged.skillData.equipped = [...defaults.skillData.equipped];
+    }
     merged.inventory = { ...defaults.inventory, ...(data?.inventory || {}) };
     return merged;
   }
@@ -310,6 +314,41 @@ export class SaveManager {
 
   // 技能专精 (消耗专属芯片 + 废料)
   getSkillData() { return this.data.skillData; }
+  getEquippedSkills() {
+    if (!Array.isArray(this.data.skillData?.equipped) || this.data.skillData.equipped.length === 0) {
+      if (!this.data.skillData) this.data.skillData = {};
+      this.data.skillData.equipped = ['rocket', 'truck', 'freeze', 'tornado'];
+      this.save();
+    }
+    return this.data.skillData.equipped;
+  }
+  setEquippedSkills(skills) {
+    if (Array.isArray(skills) && skills.length > 0) {
+      this.data.skillData.equipped = skills.slice(0, 4);
+      this.save();
+    }
+  }
+  toggleEquipSkill(id) {
+    if (!this.data.skillData.equipped) {
+      this.data.skillData.equipped = ['rocket', 'truck', 'freeze', 'tornado'];
+    }
+    const idx = this.data.skillData.equipped.indexOf(id);
+    if (idx >= 0) {
+      if (this.data.skillData.equipped.length <= 1) {
+        return { success: false, message: '至少需要携带1个技能出战！' };
+      }
+      this.data.skillData.equipped.splice(idx, 1);
+      this.save();
+      return { success: true, equipped: false };
+    } else {
+      if (this.data.skillData.equipped.length >= 4) {
+        return { success: false, message: '出战技能位已满（最多4个）！请先卸下其他技能。' };
+      }
+      this.data.skillData.equipped.push(id);
+      this.save();
+      return { success: true, equipped: true };
+    }
+  }
   upgradeSkillMastery(id, scrapCost, chipCost = 2) {
     const materialId = `chip_${id}`;
     if (!this.hasItem(materialId, chipCost)) return false;

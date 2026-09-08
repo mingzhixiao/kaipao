@@ -78,7 +78,7 @@ function ensureStyle() {
     #kp-skill-hud {
       position: absolute;
       right: 8px;
-      bottom: 108px;
+      bottom: 148px;
       z-index: 35;
       display: flex;
       flex-direction: column;
@@ -140,7 +140,7 @@ function ensureStyle() {
     .kp-skill-level { position: absolute; left: 3px; bottom: 2px; color: #facc15; font-size: 9px; font-weight: 900; line-height: 1; text-shadow: 0 1px 4px #000; pointer-events: none; }
     .kp-skill-key { position: absolute; right: 3px; top: 2px; color: rgba(255, 255, 255, 0.75); font-size: 8px; font-weight: 900; line-height: 1; text-shadow: 0 1px 3px #000; pointer-events: none; }
     @media (max-width: 470px) {
-      #kp-skill-hud { right: 6px; bottom: 102px; padding: 5px 4px 6px; gap: 4px; }
+      #kp-skill-hud { right: 6px; bottom: 135px; padding: 5px 4px 6px; gap: 4px; }
       .kp-skill-slot { width: 36px; height: 36px; border-radius: 8px; }
       .kp-skill-slots-wrap { gap: 5px; }
       .kp-skill-time { font-size: 11px; }
@@ -148,7 +148,7 @@ function ensureStyle() {
       #kp-wave-tactic { top: 48px; width: min(310px, calc(100% - 16px)); }
     }
     @media (max-width: 360px) {
-      #kp-skill-hud { right: 4px; bottom: 98px; }
+      #kp-skill-hud { right: 4px; bottom: 125px; }
       .kp-skill-slot { width: 32px; height: 32px; }
       .kp-skill-slots-wrap { gap: 4px; }
       #kp-wave-tactic-tip { font-size: 9px; }
@@ -235,6 +235,12 @@ export function installSkillsPetsHud(game) {
     briefingTimer = tactic === WAVE_TACTICS.boss ? 5.5 : 4.0;
   };
 
+  const originalReset = game.resetGame.bind(game);
+  game.resetGame = function() {
+    originalReset();
+    slotMapping.length = 0;
+  };
+
   const originalUpdate = game.update.bind(game);
   game.update = function(dt) {
     originalUpdate(dt);
@@ -253,6 +259,12 @@ export function installSkillsPetsHud(game) {
     if (this.feature?.skills) {
       for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
         if (this.feature.skills[id]?.level > 0) allActiveIds.push(id);
+      }
+    }
+
+    for (let i = slotMapping.length - 1; i >= 0; i--) {
+      if (!allActiveIds.includes(slotMapping[i])) {
+        slotMapping.splice(i, 1);
       }
     }
 

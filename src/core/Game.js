@@ -158,9 +158,10 @@ export class Game {
     this.hero.baseAttackInterval = GAME_CONFIG.hero.baseAttackInterval;
     this.weapon = { ...GAME_CONFIG.weapon };
     const sk = GAME_CONFIG.skills;
-    this.skills.rocket = { level: 0, cooldown: sk.rocket.cooldown, timer: 3.0, damage: sk.rocket.damage, radius: sk.rocket.radius, burnDuration: sk.rocket.burnDuration, burnDps: sk.rocket.burnDps };
-    this.skills.truck = { level: 0, cooldown: sk.truck.cooldown, timer: 4.0, damage: sk.truck.damage, knockback: sk.truck.knockback, speed: sk.truck.speed, width: sk.truck.width, height: sk.truck.height };
-    this.skills.freeze = { level: 0, cooldown: sk.freeze.cooldown, timer: 5.0, duration: sk.freeze.duration, activeTimer: 0, damagePerTick: sk.freeze.damagePerTick, slowRatio: sk.freeze.slowRatio, range: sk.freeze.range, coneAngle: sk.freeze.coneAngle };
+    const equipped = saveManager.getEquippedSkills();
+    this.skills.rocket = { level: equipped.includes('rocket') ? 1 : 0, cooldown: sk.rocket.cooldown, timer: 3.0, damage: sk.rocket.damage, radius: sk.rocket.radius, burnDuration: sk.rocket.burnDuration, burnDps: sk.rocket.burnDps };
+    this.skills.truck = { level: equipped.includes('truck') ? 1 : 0, cooldown: sk.truck.cooldown, timer: 4.0, damage: sk.truck.damage, knockback: sk.truck.knockback, speed: sk.truck.speed, width: sk.truck.width, height: sk.truck.height };
+    this.skills.freeze = { level: equipped.includes('freeze') ? 1 : 0, cooldown: sk.freeze.cooldown, timer: 5.0, duration: sk.freeze.duration, activeTimer: 0, damagePerTick: sk.freeze.damagePerTick, slowRatio: sk.freeze.slowRatio, range: sk.freeze.range, coneAngle: sk.freeze.coneAngle };
     this.synergies = { thermalEngine: false, teslaCoil: false, fortressEmp: false, truckInferno: false, cryoShatter: false };
     this.kills = 0; this.totalDamage = 0; this.survivalTime = 0; this.rerollAvailable = 1; this.activeBoss = null;
     this.bulletPool.releaseAll(this.bullets); this.enemyPool.releaseAll(this.enemies);
