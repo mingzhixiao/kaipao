@@ -642,17 +642,22 @@ export class GameRenderer {
   renderFortressAndHero(ctx, game) {
     const fort = game.fortress;
 
-    // 1. 防御要塞防线
+    // 1. 防御要塞防线 (从 fort.y 延伸至画面底端，基座敦实无断层)
     const wallImg = assets.get('fortress_wall');
+    const wallTotalH = game.height - fort.y;
     if (wallImg) {
-      ctx.drawImage(wallImg, fort.x, fort.y, fort.width, fort.height);
+      // 底部基座深色加固
+      ctx.fillStyle = '#060911';
+      ctx.fillRect(fort.x, fort.y, fort.width, wallTotalH);
+      // 城防装甲墙原画整体铺满城防高地
+      ctx.drawImage(wallImg, fort.x, fort.y, fort.width, wallTotalH);
       if (fort.hitFlash > 0) {
         ctx.fillStyle = 'rgba(255, 42, 95, 0.35)';
-        ctx.fillRect(fort.x, fort.y, fort.width, fort.height);
+        ctx.fillRect(fort.x, fort.y, fort.width, wallTotalH);
       }
     } else {
       ctx.fillStyle = fort.hitFlash > 0 ? '#475569' : '#0f172a';
-      ctx.fillRect(fort.x, fort.y, fort.width, fort.height);
+      ctx.fillRect(fort.x, fort.y, fort.width, wallTotalH);
     }
 
     // 顶部能量盾流光与力场护罩

@@ -16,11 +16,10 @@ export class HUDManager {
       kills: document.getElementById('hud-kills'),
       scrap: document.getElementById('hud-scrap'),
       expFill: document.getElementById('exp-fill'),
-      hpRow: document.getElementById('hp-row-container'),
-      hpFill: document.getElementById('hp-bar-fill'),
-      hpText: document.getElementById('hp-text'),
-      shieldFill: document.getElementById('shield-bar-fill'),
-      shieldText: document.getElementById('shield-text'),
+      topHpCapsule: document.getElementById('top-hp-capsule'),
+      topHpText: document.getElementById('top-hp-text'),
+      topShieldCapsule: document.getElementById('top-shield-capsule'),
+      topShieldText: document.getElementById('top-shield-text'),
       bossHud: document.getElementById('boss-hud'),
       bossHpFill: document.getElementById('boss-hp-fill'),
       bossHpText: document.getElementById('boss-hp-text'),
@@ -66,17 +65,17 @@ export class HUDManager {
   initEventSubscriptions() {
     gameEvents.on('health_changed', ({ hp, maxHp }) => {
       const hpPct = Math.max(0, Math.round((hp / maxHp) * 100));
-      if (this.dom.hpFill) this.dom.hpFill.style.width = hpPct + '%';
-      if (this.dom.hpText) this.dom.hpText.textContent = `${Math.ceil(hp)}/${maxHp}`;
+      const formatted = `${Math.ceil(hp)} (${hpPct}%)`;
+      if (this.dom.topHpText) this.dom.topHpText.textContent = formatted;
       const isCritical = hpPct < 30 && hp > 0;
-      if (this.dom.hpRow) this.dom.hpRow.classList.toggle('critical', isCritical);
+      if (this.dom.topHpCapsule) this.dom.topHpCapsule.classList.toggle('critical', isCritical);
       if (this.dom.emergencyOverlay) this.dom.emergencyOverlay.classList.toggle('active', isCritical);
     });
 
     gameEvents.on('shield_changed', ({ shield, maxShield }) => {
       const shPct = Math.max(0, Math.round((shield / maxShield) * 100));
-      if (this.dom.shieldFill) this.dom.shieldFill.style.width = shPct + '%';
-      if (this.dom.shieldText) this.dom.shieldText.textContent = `${Math.ceil(shield)}/${maxShield}`;
+      const formatted = `${Math.ceil(shield)} (${shPct}%)`;
+      if (this.dom.topShieldText) this.dom.topShieldText.textContent = formatted;
     });
 
     gameEvents.on('exp_changed', ({ exp, expNeeded, level }) => {
@@ -130,31 +129,23 @@ export class HUDManager {
     }
     const hpRatio = Math.max(0, game.fortress.hp / game.fortress.maxHp);
     const hpPct = Math.round(hpRatio * 100);
-    if (this.cache.hpRatio !== hpPct) {
-      this.cache.hpRatio = hpPct;
-      if (this.dom.hpFill) this.dom.hpFill.style.width = hpPct + '%';
+    const hpText = `${Math.ceil(game.fortress.hp)} (${hpPct}%)`;
+    if (this.cache.hpText !== hpText) {
+      this.cache.hpText = hpText;
+      if (this.dom.topHpText) this.dom.topHpText.textContent = hpText;
     }
     const isCritical = hpPct < 30 && game.fortress.hp > 0;
     if (this.cache.criticalHp !== isCritical) {
       this.cache.criticalHp = isCritical;
-      if (this.dom.hpRow) this.dom.hpRow.classList.toggle('critical', isCritical);
+      if (this.dom.topHpCapsule) this.dom.topHpCapsule.classList.toggle('critical', isCritical);
       if (this.dom.emergencyOverlay) this.dom.emergencyOverlay.classList.toggle('active', isCritical);
-    }
-    const hpText = `${Math.ceil(game.fortress.hp)}/${game.fortress.maxHp}`;
-    if (this.cache.hpText !== hpText) {
-      this.cache.hpText = hpText;
-      if (this.dom.hpText) this.dom.hpText.textContent = hpText;
     }
     const shieldRatio = Math.max(0, game.fortress.shield / game.fortress.maxShield);
     const shPct = Math.round(shieldRatio * 100);
-    if (this.cache.shieldRatio !== shPct) {
-      this.cache.shieldRatio = shPct;
-      if (this.dom.shieldFill) this.dom.shieldFill.style.width = shPct + '%';
-    }
-    const shText = `${Math.ceil(game.fortress.shield)}/${game.fortress.maxShield}`;
+    const shText = `${Math.ceil(game.fortress.shield)} (${shPct}%)`;
     if (this.cache.shieldText !== shText) {
       this.cache.shieldText = shText;
-      if (this.dom.shieldText) this.dom.shieldText.textContent = shText;
+      if (this.dom.topShieldText) this.dom.topShieldText.textContent = shText;
     }
     const boss = game.activeBoss;
     const bossVisible = !!(boss && boss.active);

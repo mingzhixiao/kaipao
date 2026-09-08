@@ -129,8 +129,13 @@ export class Game {
     const dpr = window.devicePixelRatio || 1;
     this.canvas.width = this.width * dpr; this.canvas.height = this.height * dpr;
     this.ctx.resetTransform(); this.ctx.scale(dpr, dpr);
-    this.fortress.x = 0; this.fortress.y = this.height - this.fortress.height; this.fortress.width = this.width;
-    this.hero.x = this.width / 2; this.hero.y = this.fortress.y + 25;
+    const skillHudHeight = 68;
+    this.fortress.height = 84;
+    this.fortress.x = 0;
+    this.fortress.y = this.height - skillHudHeight - this.fortress.height;
+    this.fortress.width = this.width;
+    this.hero.x = this.width / 2;
+    this.hero.y = this.fortress.y + 22;
     this.renderer.invalidateBackground();
   }
 

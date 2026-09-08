@@ -163,57 +163,53 @@
     }
     .banner-subtext { font-size: 13px; color: #94a3b8; margin-top: 6px; }
 
-    /* 底部状态栏：横向高质感渐变血条与护盾条 (紧贴技能栏正上方) */
-    #bottom-hud {
-      position: absolute; bottom: 68px; left: 0; right: 0; padding: 0 14px;
-      display: flex; flex-direction: column; align-items: center;
-      z-index: 20; pointer-events: none;
+    /* 顶部精简城防血盾指示条 (剩余血量 + 剩余百分比，告别底部遮挡) */
+    .top-vitals-row {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      pointer-events: auto; padding: 2px 0 0;
     }
-    .fortress-visual-bars {
-      width: 100%; max-width: 420px;
-      display: flex; flex-direction: column; gap: 4px;
-      background: rgba(10, 16, 28, 0.85);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      border-radius: 10px; padding: 6px 12px;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+    .vital-capsule {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1.5px solid rgba(148, 163, 184, 0.3);
+      border-radius: 20px; padding: 3px 10px 3px 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
       backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
     }
-    .bar-row {
-      display: flex; align-items: center; gap: 8px; width: 100%; font-size: 11px;
+    .vital-capsule.shield {
+      border-color: rgba(56, 189, 248, 0.5);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
     }
-    .bar-tag {
-      display: flex; align-items: center; gap: 3px; min-width: 46px; font-weight: 800;
+    .vital-capsule.hp {
+      border-color: rgba(248, 113, 113, 0.5);
+      box-shadow: 0 0 10px rgba(248, 113, 113, 0.25);
     }
-    .shield-row .bar-tag { color: #38bdf8; }
-    .hp-row .bar-tag { color: #f87171; }
-    .bar-track {
-      flex: 1; height: 8px; background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;
+    .vital-capsule .vital-icon {
+      font-size: 12px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
     }
-    .hp-row .bar-track { height: 11px; }
-    .bar-fill-shield {
-      height: 100%; width: 100%;
-      background: linear-gradient(90deg, #00f0ff, #3b82f6);
-      transition: width 0.15s ease-out;
-      box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+    .vital-capsule .vital-val {
+      font-size: 11.5px; font-weight: 800; letter-spacing: 0.3px;
+      font-variant-numeric: tabular-nums;
     }
-    .bar-fill-hp {
-      height: 100%; width: 100%;
-      background: linear-gradient(90deg, #ef4444, #f97316);
-      transition: width 0.15s ease-out;
-      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    .vital-capsule.shield .vital-val {
+      color: #38bdf8; text-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
     }
-    .bar-numeric {
-      min-width: 76px; text-align: right; font-weight: 800; font-size: 11px;
-      color: #e2e8f0; font-variant-numeric: tabular-nums;
+    .vital-capsule.hp .vital-val {
+      color: #f87171; text-shadow: 0 0 6px rgba(248, 113, 113, 0.6);
     }
-    /* HP < 30% 紧急警报闪烁 */
-    .hp-row.critical .bar-numeric {
-      color: #ff2a5f; text-shadow: 0 0 8px rgba(255, 42, 95, 0.9);
-      animation: criticalNumberPulse 0.8s infinite alternate ease-in-out;
+    /* 生命值低于 30% 紧急警报脉冲 */
+    .vital-capsule.hp.critical {
+      border-color: #ff2a5f;
+      background: rgba(255, 42, 95, 0.25);
+      box-shadow: 0 0 16px rgba(255, 42, 95, 0.7);
+      animation: criticalVitalPulse 0.8s infinite alternate ease-in-out;
     }
-    @keyframes criticalNumberPulse {
-      from { transform: scale(1.0); opacity: 0.85; }
+    .vital-capsule.hp.critical .vital-val {
+      color: #ffffff; text-shadow: 0 0 10px #ff2a5f;
+    }
+    @keyframes criticalVitalPulse {
+      from { transform: scale(1.0); opacity: 0.9; }
       to { transform: scale(1.06); opacity: 1.0; }
     }
 
@@ -457,6 +453,15 @@
             </div>
           </div>
         </div>
+      <div class="top-vitals-row" id="top-vitals-container">
+        <div class="vital-capsule shield" id="top-shield-capsule" title="城防能量护盾">
+          <span class="vital-icon">🛡️</span>
+          <span class="vital-val" id="top-shield-text">300 (100%)</span>
+        </div>
+        <div class="vital-capsule hp" id="top-hp-capsule" title="要塞核心装甲">
+          <span class="vital-icon">❤️</span>
+          <span class="vital-val" id="top-hp-text">1000 (100%)</span>
+        </div>
       </div>
       <div class="exp-bar-container"><div class="exp-bar-fill" id="exp-fill"></div></div>
       <div id="boss-hud" style="display: none;">
@@ -472,20 +477,6 @@
     <div id="wave-banner">
       <div class="banner-text" id="banner-wave-text">WAVE 1</div>
       <div class="banner-subtext" id="banner-wave-sub">感染者大群正在接近！</div>
-    </div>
-    <div id="bottom-hud">
-      <div class="fortress-visual-bars" id="fortress-bars-container">
-        <div class="bar-row shield-row">
-          <div class="bar-tag"><span class="tag-icon">🛡️</span><span>SHD</span></div>
-          <div class="bar-track"><div class="bar-fill-shield" id="shield-bar-fill" style="width: 100%;"></div></div>
-          <div class="bar-numeric" id="shield-text">300/300</div>
-        </div>
-        <div class="bar-row hp-row" id="hp-row-container">
-          <div class="bar-tag"><span class="tag-icon">❤️</span><span>HP</span></div>
-          <div class="bar-track"><div class="bar-fill-hp" id="hp-bar-fill" style="width: 100%;"></div></div>
-          <div class="bar-numeric" id="hp-text">1000/1000</div>
-        </div>
-      </div>
     </div>
     <button id="cheat-panel-toggle" title="展开/收起调试菜单">🛠️ 调试</button>
     <div id="cheat-panel">
