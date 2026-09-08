@@ -3,7 +3,7 @@ import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost } from './RuneSystem.js';
 import { saveManager } from './SaveManager.js';
 import { GAME_CONFIG } from '../core/Config.js';
 
-export function showWaveBanner(waveNum, isBossWave, stageConfig = null) {
+export function showWaveBanner(waveNum, isBossWave, stageConfig = null, wavePlan = null) {
   const banner = document.getElementById('wave-banner');
   const text = document.getElementById('banner-wave-text');
   const sub = document.getElementById('banner-wave-sub');
@@ -13,7 +13,19 @@ export function showWaveBanner(waveNum, isBossWave, stageConfig = null) {
     text.textContent = isBossWave ? `⚠ BOSS WAVE ${waveNum}` : `WAVE ${waveNum}`;
     if (stageName) text.textContent = `${stageName} · ${text.textContent}`;
   }
-  if (sub) sub.textContent = isBossWave ? '高危目标正在逼近防线！' : '感染者集群接近中';
+  if (sub) {
+    if (isBossWave) {
+      sub.textContent = '👑 极度危险！暴君突变体领主正在逼近防线！';
+    } else if (wavePlan?.intensity > 0.75) {
+      sub.textContent = '⚡ 狂暴红潮！高密度集群疯狂扑击！';
+    } else if (wavePlan?.bias?.charger > 0.35) {
+      sub.textContent = '⚠️ 极速裂变者高速冲锋！当心防线穿透！';
+    } else if (wavePlan?.bias?.behemoth > 0.25) {
+      sub.textContent = '🛡️ 巨型重甲突变体推进！建议重火能集火！';
+    } else {
+      sub.textContent = '感染者集群接近中 · 坚守废土防线';
+    }
+  }
   banner.style.display = 'block';
   banner.style.animation = 'none';
   void banner.offsetWidth;

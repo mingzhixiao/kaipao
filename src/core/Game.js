@@ -85,7 +85,10 @@ export class Game {
     this.bindInputEvents();
     this.resize();
     this.resetGame();
-    requestAnimationFrame(this.loop.bind(this));
+
+    // 预绑定主循环，遵循 performance-optimization 技能规范，杜绝每秒60次函数闭包分配导致GC卡顿
+    this.loop = this.loop.bind(this);
+    requestAnimationFrame(this.loop);
   }
 
   initPools() {
@@ -218,20 +221,21 @@ export class Game {
   }
 
   spawnDamageText(x, y, text, color = '#ffffff', isCrit = false, isSpecial = false) {
-    if (this.damageTexts.length > 22 && !isSpecial && !isCrit) return;
+    if (this.damageTexts.length > 28 && !isSpecial && !isCrit) return;
     const t = this.textPool.get();
     t.active = true;
-    t.x = x + (Math.random() * 14 - 7);
+    t.x = x + (Math.random() * 12 - 6);
     t.y = y;
-    t.vy = -38;
+    t.vy = isSpecial ? -46 : (isCrit ? -42 : -32);
     t.text = typeof text === 'number' ? Math.round(text).toString() : text;
     t.color = color;
     t.isCrit = isCrit;
     t.isSpecial = isSpecial;
-    t.fontSize = isSpecial ? 14 : (isCrit ? 14 : 12);
-    t.scale = isSpecial ? 1.2 : (isCrit ? 1.15 : 1.0);
+    t.fontSize = isSpecial ? 15 : (isCrit ? 14 : 12);
+    // game-feel: 初始超弹膨胀 (Pop with overshoot)
+    t.scale = isSpecial ? 1.4 : (isCrit ? 1.32 : 1.12);
     t.targetScale = 1.0;
-    t.life = t.maxLife = isSpecial ? 0.7 : 0.5;
+    t.life = t.maxLife = isSpecial ? 0.75 : (isCrit ? 0.6 : 0.48);
     this.damageTexts.push(t);
   }
 
@@ -254,13 +258,13 @@ export class Game {
     if (this.feedback.hitStopTimer > 0) {
       this.feedback.hitStopTimer -= dtRaw;
       this.renderer.render(this);
-      requestAnimationFrame(this.loop.bind(this));
+      requestAnimationFrame(this.loop);
       return;
     }
     const dt = Math.min(0.1, dtRaw) * this.timeScale;
     if (!this.isPaused && !this.isGameOver && !this.isUpgrading) this.update(dt);
     this.renderer.render(this);
-    requestAnimationFrame(this.loop.bind(this));
+    requestAnimationFrame(this.loop);
   }
 
   updateSkills(dt) {
@@ -449,8 +453,10 @@ export class Game {
     for (let i = 0; i < this.damageTexts.length; i++) {
       const t = this.damageTexts[i];
       if (!t.active) continue;
-      t.life -= dt; t.y += t.vy * dt;
-      t.scale += (t.targetScale - t.scale) * Math.min(1, dt * 12);
+      t.life -= dt;
+      t.y += t.vy * dt;
+      t.vy *= 0.94; // 浮空微阻尼，呈现轻盈升腾感
+      t.scale += (t.targetScale - t.scale) * Math.min(1, dt * 14);
       if (t.life <= 0) { t.active = false; this.textPool.release(t); }
     }
     ObjectPool.compact(this.damageTexts);

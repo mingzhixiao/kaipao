@@ -183,12 +183,21 @@ export class HUDManager {
       if (titleBox) {
         badge = document.createElement('div');
         badge.id = 'upgrade-auto-badge';
-        badge.style.cssText = 'display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:4px 14px;border-radius:14px;background:rgba(239,68,68,0.2);border:1.5px solid rgba(248,113,113,0.8);color:#fca5a5;font-size:12px;font-weight:800;letter-spacing:0.5px;box-shadow:0 0 12px rgba(239,68,68,0.3);';
+        badge.style.cssText = 'display:inline-flex;flex-direction:column;align-items:center;gap:4px;margin-top:8px;padding:6px 18px;border-radius:12px;background:rgba(239,68,68,0.18);border:1.5px solid rgba(248,113,113,0.75);color:#fca5a5;font-size:12px;font-weight:800;letter-spacing:0.5px;box-shadow:0 0 16px rgba(239,68,68,0.25);';
         titleBox.appendChild(badge);
       }
     }
     if (badge) {
-      badge.innerHTML = `⏱️ <span style="color:#fff;font-size:14px;margin:0 2px;">${this.autoSelectRemaining}s</span> 后自动选取默认技能`;
+      const pct = Math.max(0, (this.autoSelectRemaining / 5) * 100);
+      badge.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span>⏱️</span>
+          <span><b style="color:#ffffff;font-size:15px;text-shadow:0 0 8px rgba(255,255,255,0.7);">${this.autoSelectRemaining}s</b> 后自动选取首选技能</span>
+        </div>
+        <div style="width:100%;min-width:140px;height:4px;background:rgba(255,255,255,0.16);border-radius:2px;overflow:hidden;margin-top:3px;">
+          <div style="width:${pct}%;height:100%;background:linear-gradient(90deg, #f43f5e, #fbbf24);transition:width 0.95s linear;border-radius:2px;box-shadow:0 0 8px rgba(251,191,36,0.6);"></div>
+        </div>
+      `;
       badge.style.display = 'inline-flex';
     }
   }
@@ -311,8 +320,8 @@ export class HUDManager {
     }
   }
 
-  showWaveBanner(waveNum, isBossWave, stageConfig = null) {
-    StageUI.showWaveBanner(waveNum, isBossWave, stageConfig);
+  showWaveBanner(waveNum, isBossWave, stageConfig = null, wavePlan = null) {
+    StageUI.showWaveBanner(waveNum, isBossWave, stageConfig, wavePlan);
   }
   showStageClearModal(game) { StageUI.showStageClearModal(game); }
   showStageSelectModal(game) { StageUI.showStageSelectModal(game); }

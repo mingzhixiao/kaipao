@@ -13,12 +13,13 @@ export class CombatSystem {
     this.activeRockets = [];
   }
 
-  // 自动瞄准最近或威胁最大的敌人 (曼哈顿距离粗分，避免每帧全量 hypot)
+  // 自动瞄准最近或威胁最大的敌人 (结合 tower-defense 技能防漏怪原则：纵深越靠近城防，威胁权重呈指数激增)
   updateAutoTarget() {
     const hero = this.game.hero;
     let closestEnemy = null;
     let bestScore = Infinity;
     const h = this.game.height || 800;
+    const fortressY = this.game.fortress ? this.game.fortress.y : (h - 100);
 
     for (let i = 0; i < this.game.enemies.length; i++) {
       const e = this.game.enemies[i];
@@ -26,7 +27,10 @@ export class CombatSystem {
 
       const dx = e.x - hero.x;
       const dy = e.y - hero.y;
-      const threatScore = Math.abs(dx) + Math.abs(dy) - (e.y / h) * 140 - (e.isBoss ? 180 : 0);
+      const distToWall = Math.max(0, fortressY - e.y);
+      // 距城防越近威胁权重越高 (防止漏怪爆墙)，首领与疾冲怪获得额外锁定权重
+      const proximityThreat = distToWall < 150 ? (150 - distToWall) * 2.6 : 0;
+      const threatScore = (Math.abs(dx) * 0.75 + Math.abs(dy)) - (e.y / h) * 160 - proximityThreat - (e.isBoss ? 220 : 0) - (e.type === 'charger' ? 60 : 0);
       if (threatScore < bestScore) {
         bestScore = threatScore;
         closestEnemy = e;
@@ -38,7 +42,13 @@ export class CombatSystem {
       let diff = targetAngle - hero.angle;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      hero.angle += diff * 0.22;
+      hero.angle += diff * 0.24;
+    } else {
+      // 无怪时缓慢回正向上，避免枪口僵硬斜向空处
+      let diff = (-Math.PI / 2) - hero.angle;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      hero.angle += diff * 0.08;
     }
   }
 

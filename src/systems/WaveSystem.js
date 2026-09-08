@@ -110,6 +110,9 @@ export class WaveSystem {
       if (!this.waveUpgradeTriggered) {
         this.waveUpgradeTriggered = true;
         this.game.waveIntermission = true;
+        if (typeof sound.playWaveClearFanfare === 'function') {
+          sound.playWaveClearFanfare();
+        }
         const nextWave = this.wave + 1;
         this.game.hud.showLevelUpModal(this.game, () => {
           this.game.waveIntermission = false;

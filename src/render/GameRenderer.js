@@ -17,8 +17,14 @@ export class GameRenderer {
 
   render(game) {
     const ctx = this.ctx;
-    // 保证画面视口绝对稳定，爆炸时不再产生视口晃动与倾斜黑边
     ctx.clearRect(0, 0, game.width, game.height);
+
+    ctx.save();
+    // 基于 game-feel 规范在画布变换矩阵层应用柔和物理微震屏，无任何外部 DOM 晃动
+    const shake = game.feedback ? game.feedback.getShake() : { x: 0, y: 0 };
+    if (shake.x !== 0 || shake.y !== 0) {
+      ctx.translate(shake.x, shake.y);
+    }
 
     // 1. 废土公路原画背景 (离屏 Canvas 预缓存)
     this.renderBattlefield(ctx, game);
