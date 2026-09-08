@@ -2,6 +2,7 @@
 import { sound } from '../systems/SoundEngine.js';
 import { ObjectPool } from '../systems/ObjectPool.js';
 import { GAME_CONFIG } from '../core/Config.js';
+import { gameEvents } from '../core/GameEventBus.js';
 
 export class CombatSystem {
   constructor(game) {
@@ -265,6 +266,7 @@ export class CombatSystem {
     enemy.active = false;
     const game = this.game;
     game.kills++;
+    gameEvents.emit('kill_changed', { kills: game.kills });
 
     if (enemy.isBoss) {
       sound.playExplosion();

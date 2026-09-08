@@ -3,6 +3,7 @@ import { GAME_CONFIG } from '../core/Config.js';
 import { sound } from './SoundEngine.js';
 import { saveManager } from './SaveManager.js';
 import { LevelDesignSystem } from './LevelDesignSystem.js';
+import { gameEvents } from '../core/GameEventBus.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -77,6 +78,7 @@ export class WaveSystem {
     this.waveTotalToSpawn = this.calcEnemyCount(waveNum);
     this.waveEnemySpawnInterval = this.calcSpawnInterval(waveNum);
     const isBossWave = this.wavePlan.boss;
+    gameEvents.emit('wave_changed', { wave: waveNum, stageId: this.stageId, wavePlan: this.wavePlan });
     this.game.hud.showWaveBanner(waveNum, isBossWave, this.stageConfig, this.wavePlan);
     if (isBossWave) {
       sound.playBossAlert();

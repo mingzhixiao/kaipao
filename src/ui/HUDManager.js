@@ -1,8 +1,12 @@
 import { buildUpgradeCardPool } from '../combat/SkillDeck.js';
 import { sound } from '../systems/SoundEngine.js';
 import * as StageUI from '../systems/StageUI.js';
+import { gameEvents } from '../core/GameEventBus.js';
+import { uiStack } from './UIStack.js';
+import { focusManager } from './FocusManager.js';
+import { tr } from '../core/I18n.js';
 
-// ---------------- 高性能 Dirty-Checked HUD 与 UI 管理器 ----------------
+// ---------------- 高性能 事件驱动 HUD 与 UI 管理器 ----------------
 
 export class HUDManager {
   constructor() {
@@ -54,6 +58,47 @@ export class HUDManager {
         freeze: { level: -1, cdPercent: -1 }
       }
     };
+
+    // 订阅全局事件总线 (Event-Driven HUD)
+    this.initEventSubscriptions();
+  }
+
+  initEventSubscriptions() {
+    gameEvents.on('health_changed', ({ hp, maxHp }) => {
+      const hpPct = Math.max(0, Math.round((hp / maxHp) * 100));
+      if (this.dom.hpFill) this.dom.hpFill.style.width = hpPct + '%';
+      if (this.dom.hpText) this.dom.hpText.textContent = `${Math.ceil(hp)}/${maxHp}`;
+      const isCritical = hpPct < 30 && hp > 0;
+      if (this.dom.hpRow) this.dom.hpRow.classList.toggle('critical', isCritical);
+      if (this.dom.emergencyOverlay) this.dom.emergencyOverlay.classList.toggle('active', isCritical);
+    });
+
+    gameEvents.on('shield_changed', ({ shield, maxShield }) => {
+      const shPct = Math.max(0, Math.round((shield / maxShield) * 100));
+      if (this.dom.shieldFill) this.dom.shieldFill.style.width = shPct + '%';
+      if (this.dom.shieldText) this.dom.shieldText.textContent = `${Math.ceil(shield)}/${maxShield}`;
+    });
+
+    gameEvents.on('exp_changed', ({ exp, expNeeded, level }) => {
+      const expRatio = Math.min(100, Math.round((exp / expNeeded) * 100));
+      if (this.dom.expFill) this.dom.expFill.style.width = expRatio + '%';
+      if (this.dom.level) this.dom.level.textContent = level;
+    });
+
+    gameEvents.on('wave_changed', ({ wave, stageId }) => {
+      if (this.dom.wave) {
+        const st = stageId ? `S${stageId}-` : '';
+        this.dom.wave.textContent = `${st}${wave}`;
+      }
+    });
+
+    gameEvents.on('kill_changed', ({ kills }) => {
+      if (this.dom.kills) this.dom.kills.textContent = kills;
+    });
+
+    gameEvents.on('scrap_changed', ({ scrap }) => {
+      if (this.dom.scrap) this.dom.scrap.textContent = scrap;
+    });
   }
 
   updateHUD(game) {
@@ -164,7 +209,16 @@ export class HUDManager {
       this.dom.btnReroll.disabled = false;
     }
     this.renderUpgradeCards(game);
-    if (this.dom.upgradeModal) this.dom.upgradeModal.style.display = 'flex';
+    uiStack.push({
+      id: 'upgrade_modal',
+      element: this.dom.upgradeModal,
+      pauseGame: true,
+      onOpen: () => focusManager.setupUpgradeCardFocus(),
+      onClose: () => {
+        this.clearAutoSelectTimer();
+        game.isUpgrading = false;
+      }
+    });
     this.startAutoSelectCountdown(game);
   }
 
@@ -228,10 +282,9 @@ export class HUDManager {
   applyUpgradeCard(card, game) {
     this.clearAutoSelectTimer();
     card.apply();
-    if (this.dom.upgradeModal) this.dom.upgradeModal.style.display = 'none';
+    uiStack.pop();
     game.isUpgrading = false;
     this.updateSkillHUD(game);
-    this.updateHUD(game);
     if (typeof this.onUpgradeComplete === 'function') {
       const cb = this.onUpgradeComplete;
       this.onUpgradeComplete = null;
@@ -272,25 +325,38 @@ export class HUDManager {
     selected.forEach(card => {
       const el = document.createElement('div');
       el.className = `upgrade-card rarity-${card.rarity}`;
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', `${card.name}: ${card.desc}`);
       const elemTag = card.element ? `<span class="card-elem-pill elem-${card.element}">${card.element.toUpperCase()}</span>` : '';
       el.innerHTML = `<img class="card-icon-img" src="${card.img}" alt="${card.name}"><div class="card-info"><div class="card-header-row"><div class="card-name">${card.name}</div><div style="display:flex;gap:4px;align-items:center;">${elemTag}<div class="card-tag">${card.rarity}</div></div></div><div class="card-synergy">${card.synergy}</div><div class="card-desc">${card.desc}</div></div>`;
       el.addEventListener('click', () => {
         this.applyUpgradeCard(card, game);
       });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.applyUpgradeCard(card, game);
+        }
+      });
       container.appendChild(el);
     });
+    focusManager.setupUpgradeCardFocus();
   }
 
   showGameOverModal(game) {
     this.clearAutoSelectTimer();
-    if (this.dom.upgradeModal) this.dom.upgradeModal.style.display = 'none';
     if (this.dom.resWave) this.dom.resWave.textContent = game.wave;
     if (this.dom.resKills) this.dom.resKills.textContent = game.kills;
     const mins = Math.floor(game.survivalTime / 60).toString().padStart(2, '0');
     const secs = Math.floor(game.survivalTime % 60).toString().padStart(2, '0');
     if (this.dom.resTime) this.dom.resTime.textContent = `${mins}:${secs}`;
     if (this.dom.resLevel) this.dom.resLevel.textContent = game.hero.level;
-    if (this.dom.gameoverModal) this.dom.gameoverModal.style.display = 'flex';
+    uiStack.push({
+      id: 'gameover_modal',
+      element: this.dom.gameoverModal,
+      pauseGame: true
+    });
   }
 
   initHUDListeners(game) {
@@ -318,18 +384,45 @@ export class HUDManager {
     if (this.dom.settingsToggle && this.dom.settingsMenu) {
       this.dom.settingsToggle.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.dom.settingsMenu.classList.toggle('open');
+        if (this.dom.settingsMenu.classList.contains('open')) {
+          uiStack.pop();
+        } else {
+          this.dom.settingsMenu.classList.add('open');
+          uiStack.push({
+            id: 'settings_menu',
+            element: this.dom.settingsMenu,
+            pauseGame: false,
+            onClose: () => this.dom.settingsMenu.classList.remove('open')
+          });
+        }
       });
       if (this.dom.settingsClose) {
         this.dom.settingsClose.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.dom.settingsMenu.classList.remove('open');
+          uiStack.pop();
         });
       }
       document.addEventListener('click', (e) => {
         if (!this.dom.settingsMenu.contains(e.target) && e.target !== this.dom.settingsToggle) {
-          this.dom.settingsMenu.classList.remove('open');
+          if (this.dom.settingsMenu.classList.contains('open')) {
+            uiStack.pop();
+          }
         }
+      });
+    }
+
+    const btnFontScale = document.getElementById('btn-font-scale');
+    if (btnFontScale) {
+      let scaleMode = 0;
+      const scales = [
+        { label: '标准 100%', val: '1.0' },
+        { label: '大号 115%', val: '1.15' },
+        { label: '超大 130%', val: '1.3' }
+      ];
+      btnFontScale.addEventListener('click', () => {
+        scaleMode = (scaleMode + 1) % scales.length;
+        btnFontScale.textContent = scales[scaleMode].label;
+        document.documentElement.style.setProperty('--ui-font-scale', scales[scaleMode].val);
       });
     }
 

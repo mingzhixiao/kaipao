@@ -179,8 +179,19 @@ function enhanceLobbyNavigation() {
   nav.querySelectorAll('.nav-tab-btn').forEach(btn => btn.setAttribute('tabindex','0'));
 }
 
+function applySafeAreaInsets() {
+  const root = document.documentElement;
+  root.style.setProperty('--safe-top', 'max(10px, env(safe-area-inset-top, 10px))');
+  root.style.setProperty('--safe-bottom', 'max(10px, env(safe-area-inset-bottom, 10px))');
+  root.style.setProperty('--safe-left', 'max(10px, env(safe-area-inset-left, 10px))');
+  root.style.setProperty('--safe-right', 'max(10px, env(safe-area-inset-right, 10px))');
+}
+
 export function installGameUIUX(game = null) {
   injectStyles();
+  applySafeAreaInsets();
+  window.addEventListener('resize', applySafeAreaInsets, { passive: true });
+  window.addEventListener('orientationchange', applySafeAreaInsets, { passive: true });
   setTouchTargets(document.getElementById('game-container') || document.body);
   if (game) {
     installScreenState(game);

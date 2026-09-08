@@ -1,7 +1,7 @@
 {
   "name": "kaipao-roguelike",
   "version": "1.0.0",
-  "description": "末日塔防 Roguelike H5 - 高清美术重制版",
+  "description": "末日塔防 Roguelike H5",
   "type": "module",
   "scripts": {
     "dev": "npx serve -l 8099 .",

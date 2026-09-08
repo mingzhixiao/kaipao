@@ -230,7 +230,7 @@ export function installSkillsPetsHud(game) {
   hud.innerHTML = `
     <div class="kp-skill-slots-wrap">
       ${Array.from({ length: MAX_SKILL_SLOTS }).map((_, i) => `
-        <div id="kp-slot-${i}" class="kp-skill-slot empty" title="战术槽位 ${i + 1}">
+        <div id="kp-slot-${i}" class="kp-skill-slot empty" tabindex="0" role="button" aria-label="战术技能槽位 ${i + 1}" title="战术槽位 ${i + 1}">
           <span class="kp-empty-mark">＋</span>
           <img src="" alt="" loading="eager">
           <span class="kp-skill-elem"></span>
@@ -247,6 +247,16 @@ export function installSkillsPetsHud(game) {
       `).join('')}
     </div>`;
   game.container.appendChild(hud);
+
+  // 绑定技能槽位的手柄/键盘回车点击响应
+  hud.querySelectorAll('.kp-skill-slot').forEach((slotEl, idx) => {
+    slotEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        slotEl.click();
+      }
+    });
+  });
 
   const slotMapping = [];
   let lastWaveBriefingKey = '';

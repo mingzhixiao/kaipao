@@ -9,6 +9,8 @@ import { GAME_CONFIG } from './Config.js';
 import { WaveSystem } from '../systems/WaveSystem.js';
 import { CombatSystem } from '../combat/CombatSystem.js';
 import { saveManager } from '../systems/SaveManager.js';
+import { gameEvents } from './GameEventBus.js';
+import { uiStack } from '../ui/UIStack.js';
 
 export class Game {
   constructor() {
@@ -81,6 +83,7 @@ export class Game {
     this.burnZones = []; this.activeTrucks = []; this.hitRings = []; this.iceSpikes = []; this.teslaArcs = []; this.shockwaves = [];
     this.muzzleFlash = 0; this.activeBoss = null; this.wave = 1;
     this.initPools();
+    uiStack.setGame(this);
     this.hud.initHUDListeners(this);
     this.bindInputEvents();
     this.resize();
@@ -175,7 +178,13 @@ export class Game {
     this.isGameOver = false; this.isPaused = false; this.isUpgrading = false;
     if (this.emergencyOverlay) this.emergencyOverlay.classList.remove('active');
     this.combatSystem.reset(); this.waveSystem.reset(); this.waveSystem.startWave(1);
-    this.hud.updateHUD(this); this.hud.updateSkillHUD(this);
+    gameEvents.emit('health_changed', { hp: this.fortress.hp, maxHp: this.fortress.maxHp });
+    gameEvents.emit('shield_changed', { shield: this.fortress.shield, maxShield: this.fortress.maxShield });
+    gameEvents.emit('exp_changed', { exp: this.hero.exp, expNeeded: this.hero.expNeeded, level: this.hero.level });
+    gameEvents.emit('wave_changed', { wave: 1, stageId: this.stageId || 1 });
+    gameEvents.emit('kill_changed', { kills: 0 });
+    gameEvents.emit('scrap_changed', { scrap: Number(this.scrap || this.feature?.account?.scrap || 0) });
+    this.hud.updateSkillHUD(this);
   }
 
   restart() { this.resetGame(); }
@@ -246,7 +255,7 @@ export class Game {
       this.hero.expNeeded = Math.round(this.hero.expNeeded * GAME_CONFIG.hero.expNeededGrowth + GAME_CONFIG.hero.expNeededAdd);
       this.triggerLevelUp();
     }
-    this.hud.updateHUD(this);
+    gameEvents.emit('exp_changed', { exp: this.hero.exp, expNeeded: this.hero.expNeeded, level: this.hero.level });
   }
 
   triggerLevelUp() { this.hud.showLevelUpModal(this); }
@@ -313,7 +322,11 @@ export class Game {
     if (this.fortress.shield < this.fortress.maxShield) {
       this.fortress.shieldRegenTimer += dt;
       if (this.fortress.shieldRegenTimer >= this.fortress.shieldRegenDelay) {
+        const prevShield = this.fortress.shield;
         this.fortress.shield = Math.min(this.fortress.maxShield, this.fortress.shield + this.fortress.shieldRegenRate * dt);
+        if (Math.floor(prevShield) !== Math.floor(this.fortress.shield)) {
+          gameEvents.emit('shield_changed', { shield: this.fortress.shield, maxShield: this.fortress.maxShield });
+        }
       }
     }
     const hpRatio = this.fortress.hp / this.fortress.maxHp;
@@ -470,7 +483,6 @@ export class Game {
       if (hr.life <= 0) { hr.active = false; this.hitRingPool.release(hr); }
     }
     ObjectPool.compact(this.hitRings);
-    this.hud.updateHUD(this);
   }
 
   damageFortress(dmg) {
@@ -488,6 +500,8 @@ export class Game {
     } else {
       this.fortress.hp -= dmg;
     }
+    gameEvents.emit('shield_changed', { shield: this.fortress.shield, maxShield: this.fortress.maxShield });
+    gameEvents.emit('health_changed', { hp: this.fortress.hp, maxHp: this.fortress.maxHp });
     if (this.fortress.hp <= 0) {
       this.fortress.hp = 0;
       this.isGameOver = true;
