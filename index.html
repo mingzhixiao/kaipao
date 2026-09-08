@@ -1227,6 +1227,55 @@
       transform: scale(0.96);
     }
 
+    /* 结算界面战利品与物资列表 */
+    .loot-settle-container {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .loot-settle-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .loot-settle-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .loot-item-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #f8fafc;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+    }
+    .loot-item-pill img {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+    }
+    .loot-item-pill .loot-cnt {
+      color: #facc15;
+      font-weight: 900;
+    }
+
     /* Stage / Rune UI */
     #stage-select-modal,
     #stage-clear-modal,
@@ -1701,6 +1750,14 @@
               </div>
             </div>
           </div>
+          <!-- 战利品与物资结算区域 -->
+          <div class="loot-settle-container" id="gameover-loot-container">
+            <div class="loot-settle-title">
+              <span>物资与战利品结算</span>
+              <span style="font-size:10px;color:#38bdf8;">自动存入仓库</span>
+            </div>
+            <div class="loot-settle-grid" id="gameover-loot-grid"></div>
+          </div>
           <button class="primary-btn" id="btn-restart">返回关卡选择</button>
           <button class="primary-btn" id="btn-gameover-forge"
             style="margin-top:8px;background:linear-gradient(135deg,rgba(179,75,253,0.35),rgba(100,40,180,0.5));border-color:var(--neon-purple);">符文工坊</button>
@@ -1725,6 +1782,13 @@
             获得碎片 <span class="scrap-gain" id="stage-clear-scrap">+0</span>
             <div style="font-size:12px;color:#94a3b8;margin-top:4px;">当前持有 <span id="stage-clear-total-scrap">0</span>
             </div>
+          </div>
+          <div class="loot-settle-container" id="stage-clear-loot-container" style="margin-bottom:12px;">
+            <div class="loot-settle-title">
+              <span>物资与战利品已入库</span>
+              <span style="font-size:10px;color:#34d399;">✓ 全部结算</span>
+            </div>
+            <div class="loot-settle-grid" id="stage-clear-loot-grid"></div>
           </div>
           <div style="font-size:12px;color:var(--neon-purple);text-align:center;font-weight:700;letter-spacing:1px;">
             选择一项永久符文强化</div>

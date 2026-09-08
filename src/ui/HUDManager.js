@@ -554,6 +554,44 @@ export class HUDManager {
     const secs = Math.floor(game.survivalTime % 60).toString().padStart(2, '0');
     if (this.dom.resTime) this.dom.resTime.textContent = `${mins}:${secs}`;
     if (this.dom.resLevel) this.dom.resLevel.textContent = game.hero.level;
+
+    // 渲染战利品自动结算清单
+    const lootGrid = document.getElementById('gameover-loot-grid');
+    if (lootGrid) {
+      const loot = game.lastGameOverReward || game.battleLoot || { scrap: 0, gems: 0, items: {} };
+      const pills = [];
+      pills.push(`
+        <div class="loot-item-pill">
+          <img src="assets/icons/icon_coin.png" alt="Scrap">
+          <span>工业废料</span>
+          <span class="loot-cnt">+${loot.scrap || 0}</span>
+        </div>
+      `);
+      if (loot.gems && loot.gems > 0) {
+        pills.push(`
+          <div class="loot-item-pill">
+            <img src="assets/icons/icon_gem.png" alt="Gem">
+            <span>高能晶核</span>
+            <span class="loot-cnt">+${loot.gems}</span>
+          </div>
+        `);
+      }
+      if (loot.items) {
+        Object.entries(loot.items).forEach(([id, count]) => {
+          if (count <= 0) return;
+          const cfg = GAME_CONFIG.items[id] || { name: '物资', icon: 'assets/icons/icon_chip.png' };
+          pills.push(`
+            <div class="loot-item-pill">
+              <img src="${cfg.icon}" alt="${cfg.name}">
+              <span>${cfg.name}</span>
+              <span class="loot-cnt">+${count}</span>
+            </div>
+          `);
+        });
+      }
+      lootGrid.innerHTML = pills.join('');
+    }
+
     uiStack.push({
       id: 'gameover_modal',
       element: this.dom.gameoverModal,

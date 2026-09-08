@@ -120,15 +120,35 @@ export class SaveManager {
     return { isNewRecord, highWave: this.data.highWave, maxKills: this.data.maxKills, totalRuns: this.data.totalRuns };
   }
 
-  recordStageClear(stageId, scrapEarned) {
+  // 战斗结束后自动统一结算战利品与物资 (无场内掉落物)
+  settleBattleLoot(loot, isVictory = false, stageId = 1) {
+    if (!loot) loot = { scrap: 0, gems: 0, items: {} };
+    const scrapEarned = Math.max(0, Math.round(loot.scrap || 0));
+    const gemsEarned = Math.max(0, Math.round(loot.gems || 0));
+    const itemsEarned = { ...(loot.items || {}) };
+
+    if (scrapEarned > 0) this.addScrap(scrapEarned);
+    if (gemsEarned > 0) this.addGems(gemsEarned);
+    Object.entries(itemsEarned).forEach(([itemId, count]) => {
+      if (count > 0) this.addItem(itemId, count);
+    });
+
+    this.save();
+    return {
+      scrap: scrapEarned,
+      gems: gemsEarned,
+      items: itemsEarned,
+      totalScrap: this.getScrap(),
+      totalGems: this.getGems()
+    };
+  }
+
+  recordStageClear(stageId, scrapEarned = 0) {
     this.data.totalStagesCleared = (this.data.totalStagesCleared || 0) + 1;
     if (stageId > (this.data.highestStageCleared || 0)) this.data.highestStageCleared = stageId;
     if (stageId >= (this.data.unlockedStage || 1)) this.data.unlockedStage = Math.min(8, stageId + 1);
-    this.addScrap(scrapEarned);
-    this.addGems(15 + stageId * 5);
+    if (scrapEarned > 0) this.addScrap(scrapEarned);
     this.addCommanderExp(50 + stageId * 25);
-    // 战役胜利奖励军备箱与随机零件
-    if (Math.random() < 0.75) this.addItem('supply_crate', 1);
     this.save();
     return { scrap: this.data.scrap, unlockedStage: this.data.unlockedStage, highestStageCleared: this.data.highestStageCleared };
   }

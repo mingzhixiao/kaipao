@@ -267,7 +267,13 @@ export class CombatSystem {
     enemy.active = false;
     const game = this.game;
     game.kills++;
-    gameEvents.emit('kill_changed', { kills: game.kills });
+    if (!game.battleLoot) {
+      game.battleLoot = { scrap: 0, gems: 0, items: {} };
+    }
+
+    // 怪物击杀经验直接注入指挥官战术升级，无需在地面生成掉落晶核
+    const expGained = enemy.expVal || (enemy.isBoss ? 80 : 6);
+    game.gainExp(expGained);
 
     let dropScrap = 0;
 
@@ -275,61 +281,45 @@ export class CombatSystem {
       sound.playExplosion();
       game.feedback.addTrauma(0.85);
       game.feedback.triggerHitStop(0.08);
-      dropScrap = 25 + Math.floor(Math.random() * 15);
+      dropScrap = 30 + Math.floor(Math.random() * 20);
 
-      for (let i = 0; i < 8; i++) {
-        const g = game.gemPool.get();
-        g.active = true;
-        g.x = enemy.x;
-        g.y = enemy.y;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 120 + Math.random() * 160;
-        g.vx = Math.cos(angle) * speed;
-        g.vy = Math.sin(angle) * speed;
-        g.val = Math.round(enemy.expVal / 8);
-        g.timer = 0;
-        g.color = '#ffaa00';
-        game.gems.push(g);
-      }
+      // Boss 额外掉落晶核、军备箱与专属武器零件
+      const bossGems = 6 + Math.floor(Math.random() * 6);
+      game.battleLoot.gems = (game.battleLoot.gems || 0) + bossGems;
+      game.battleLoot.items['supply_crate'] = (game.battleLoot.items['supply_crate'] || 0) + 1;
+      const rarePool = ['assault_part', 'gatling_part', 'gauss_part', 'plasma_part', 'fluffy_shard', 'dragon_shard', 'chip_rocket', 'chip_laser'];
+      const droppedItem = rarePool[Math.floor(Math.random() * rarePool.length)];
+      game.battleLoot.items[droppedItem] = (game.battleLoot.items[droppedItem] || 0) + 1;
 
       game.spawnParticles(enemy.x, enemy.y, '#ff0055', 45, 'fire');
       game.spawnParticles(enemy.x, enemy.y, '#ffaa00', 35, 'spark');
-      game.spawnDamageText(enemy.x, enemy.y - 30, '👑 首领击破!!', '#ffaa00', true, true);
+      game.spawnDamageText(enemy.x, enemy.y - 30, '👑 首领击破! 战利品已记录', '#ffaa00', true, true);
       game.activeBoss = null;
     } else {
       if (enemy.type === 'behemoth') {
         game.feedback.addTrauma(0.32);
         game.feedback.triggerHitStop(0.03);
-        dropScrap = 5 + Math.floor(Math.random() * 4);
+        dropScrap = 6 + Math.floor(Math.random() * 5);
+        if (Math.random() < 0.4) {
+          const matPool = ['assault_part', 'gatling_part', 'chip_truck', 'chip_freeze', 'fluffy_shard'];
+          const droppedItem = matPool[Math.floor(Math.random() * matPool.length)];
+          game.battleLoot.items[droppedItem] = (game.battleLoot.items[droppedItem] || 0) + 1;
+        }
       } else if (enemy.type === 'charger') {
         game.feedback.addTrauma(0.18);
-        dropScrap = 2 + Math.floor(Math.random() * 3);
+        dropScrap = 3 + Math.floor(Math.random() * 3);
       } else {
         game.feedback.addTrauma(0.12);
         dropScrap = Math.random() < 0.65 ? (1 + Math.floor(Math.random() * 2)) : 0;
       }
 
-      const g = game.gemPool.get();
-      g.active = true;
-      g.x = enemy.x;
-      g.y = enemy.y;
-      const angle = (Math.random() - 0.5) * Math.PI;
-      const speed = 60 + Math.random() * 80;
-      g.vx = Math.cos(angle) * speed;
-      g.vy = Math.sin(angle) * speed;
-      g.val = enemy.expVal || 5;
-      g.timer = 0;
-      g.color = enemy.type === 'behemoth' ? '#ffaa00' : (enemy.type === 'charger' ? '#f59e0b' : '#00f0ff');
-      game.gems.push(g);
-
       game.spawnParticles(enemy.x, enemy.y, enemy.color || '#ff2a5f', 8, 'spark');
     }
 
-    // 触发金币/碎片掉落与飘字飞入
+    // 战利品累计到游戏战利品仓库中（游戏结束后自动统一结算）
     if (dropScrap > 0) {
+      game.battleLoot.scrap = (game.battleLoot.scrap || 0) + dropScrap;
       game.scrap = (game.scrap || 0) + dropScrap;
-      saveManager.addScrap(dropScrap);
-      gameEvents.emit('scrap_gained', { amount: dropScrap, x: enemy.x, y: enemy.y });
       gameEvents.emit('scrap_changed', { scrap: game.scrap });
     }
   }

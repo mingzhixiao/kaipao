@@ -46,6 +46,42 @@ export function showStageClearModal(game) {
   if (scrapEl) scrapEl.textContent = `+${reward.scrap || 0}`;
   if (totalEl) totalEl.textContent = `${reward.totalScrap || saveManager.getScrap()}`;
 
+  // 渲染关卡结算物资列表
+  const lootGrid = document.getElementById('stage-clear-loot-grid');
+  if (lootGrid) {
+    const pills = [];
+    pills.push(`
+      <div class="loot-item-pill">
+        <img src="assets/icons/icon_coin.png" alt="Scrap">
+        <span>废料总计</span>
+        <span class="loot-cnt">+${reward.scrap || 0}</span>
+      </div>
+    `);
+    if (reward.gems && reward.gems > 0) {
+      pills.push(`
+        <div class="loot-item-pill">
+          <img src="assets/icons/icon_gem.png" alt="Gem">
+          <span>高能晶核</span>
+          <span class="loot-cnt">+${reward.gems}</span>
+        </div>
+      `);
+    }
+    if (reward.items) {
+      Object.entries(reward.items).forEach(([id, count]) => {
+        if (count <= 0) return;
+        const cfg = GAME_CONFIG.items[id] || { name: '物资', icon: 'assets/icons/icon_chip.png' };
+        pills.push(`
+          <div class="loot-item-pill">
+            <img src="${cfg.icon}" alt="${cfg.name}">
+            <span>${cfg.name}</span>
+            <span class="loot-cnt">+${count}</span>
+          </div>
+        `);
+      });
+    }
+    lootGrid.innerHTML = pills.join('');
+  }
+
   const choices = runeSystem.rollRewardChoices(3);
   const box = document.getElementById('stage-rune-choices');
   if (box) {

@@ -175,6 +175,9 @@ export class Game {
     this.skills.freeze = { level: equipped.includes('freeze') ? 1 : 0, cooldown: sk.freeze.cooldown, timer: 5.0, duration: sk.freeze.duration, activeTimer: 0, damagePerTick: sk.freeze.damagePerTick, slowRatio: sk.freeze.slowRatio, range: sk.freeze.range, coneAngle: sk.freeze.coneAngle };
     this.synergies = { thermalEngine: false, teslaCoil: false, fortressEmp: false, truckInferno: false, cryoShatter: false };
     this.kills = 0; this.totalDamage = 0; this.survivalTime = 0; this.rerollAvailable = 1; this.activeBoss = null;
+    this.scrap = 0;
+    this.battleLoot = { scrap: 0, gems: 0, items: {} };
+    this.lastGameOverReward = null;
     this.bulletPool.releaseAll(this.bullets); this.enemyPool.releaseAll(this.enemies);
     this.gemPool.releaseAll(this.gems); this.particlePool.releaseAll(this.particles);
     this.textPool.releaseAll(this.damageTexts); this.hitRingPool.releaseAll(this.hitRings);
@@ -188,7 +191,7 @@ export class Game {
     gameEvents.emit('exp_changed', { exp: this.hero.exp, expNeeded: this.hero.expNeeded, level: this.hero.level });
     gameEvents.emit('wave_changed', { wave: 1, stageId: this.stageId || 1 });
     gameEvents.emit('kill_changed', { kills: 0 });
-    gameEvents.emit('scrap_changed', { scrap: Number(this.scrap || this.feature?.account?.scrap || 0) });
+    gameEvents.emit('scrap_changed', { scrap: 0 });
     this.hud.updateSkillHUD(this);
   }
 
@@ -510,6 +513,8 @@ export class Game {
     if (this.fortress.hp <= 0) {
       this.fortress.hp = 0;
       this.isGameOver = true;
+      const settled = saveManager.settleBattleLoot(this.battleLoot, false, this.stageId || 1);
+      this.lastGameOverReward = settled;
       saveManager.recordRun({
         wave: this.waveSystem.wave, kills: this.kills,
         survivalTime: this.survivalTime, synergies: this.synergies

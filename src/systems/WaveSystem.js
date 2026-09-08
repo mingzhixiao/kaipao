@@ -132,13 +132,26 @@ export class WaveSystem {
     const base = this.stageConfig?.scrapReward || 50;
     const killBonus = Math.floor(this.game.kills * 0.4);
     const waveBonus = this.wave * 5;
-    const scrap = base + killBonus + waveBonus;
-    const result = saveManager.recordStageClear(this.stageId, scrap);
+    const stageClearScrap = base + killBonus + waveBonus;
+
+    // 将通关奖励与本局战利品统一结算
+    if (!this.game.battleLoot) this.game.battleLoot = { scrap: 0, gems: 0, items: {} };
+    this.game.battleLoot.scrap = (this.game.battleLoot.scrap || 0) + stageClearScrap;
+    this.game.battleLoot.gems = (this.game.battleLoot.gems || 0) + (15 + this.stageId * 5);
+    if (Math.random() < 0.75) {
+      this.game.battleLoot.items['supply_crate'] = (this.game.battleLoot.items['supply_crate'] || 0) + 1;
+    }
+
+    const settled = saveManager.settleBattleLoot(this.game.battleLoot, true, this.stageId);
+    const result = saveManager.recordStageClear(this.stageId, 0);
+
     this.game.lastStageReward = {
       stageId: this.stageId,
       stageName: this.stageConfig?.name || '',
-      scrap,
-      totalScrap: result.scrap,
+      scrap: settled.scrap,
+      gems: settled.gems,
+      items: settled.items,
+      totalScrap: saveManager.getScrap(),
       unlockedStage: result.unlockedStage
     };
     if (typeof sound.playLevelUp === 'function') sound.playLevelUp();
