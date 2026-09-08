@@ -33,25 +33,92 @@
       #game-container { max-width: 100%; max-height: 100%; border-radius: 0; }
     }
     canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+    canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+    
+    /* 顶部状态栏：分离“战斗进度”与“系统控制”，核心资源醒目居中 */
     #top-hud {
-      position: absolute; top: 0; left: 0; right: 0; padding: 10px 14px; pointer-events: none;
+      position: absolute; top: 0; left: 0; right: 0; padding: 10px 14px 6px;
       display: flex; flex-direction: column; gap: 6px;
-      background: linear-gradient(to bottom, rgba(5, 8, 16, 0.95) 0%, rgba(5, 8, 16, 0.5) 75%, transparent 100%);
-      z-index: 10;
+      background: linear-gradient(to bottom, rgba(5, 8, 16, 0.96) 0%, rgba(5, 8, 16, 0.6) 80%, transparent 100%);
+      z-index: 25; pointer-events: none;
     }
-    .hud-row { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
-    .badge-group { display: flex; align-items: center; gap: 8px; }
-    .hud-badge {
-      background: rgba(15, 23, 42, 0.88); border: 1px solid var(--panel-border);
-      border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 700;
+    .hud-top-bar {
+      display: flex; justify-content: space-between; align-items: center; pointer-events: auto;
     }
-    .hud-badge .val { color: var(--neon-cyan); }
-    .hud-badge.wave .val { color: var(--neon-cyan); }
-    .hud-buttons { display: flex; gap: 6px; }
-    .icon-btn {
-      background: rgba(15, 23, 42, 0.88); border: 1px solid var(--panel-border);
-      border-radius: 6px; color: #e2e8f0; padding: 4px 8px; font-size: 12px; cursor: pointer;
+    .battle-progress-group {
+      display: flex; align-items: center; gap: 6px;
     }
+    .prog-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1.5px solid rgba(0, 240, 255, 0.3);
+      border-radius: 8px; padding: 4px 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .prog-badge .badge-icon { font-size: 11px; }
+    .prog-badge .badge-label { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; }
+    .prog-badge .badge-val { font-size: 13px; font-weight: 900; color: #00f0ff; text-shadow: 0 0 6px rgba(0, 240, 255, 0.6); }
+    .wave-badge .badge-val { color: #facc15; text-shadow: 0 0 6px rgba(250, 204, 21, 0.6); }
+    .kills-badge .badge-val { color: #cbd5e1; font-size: 12px; }
+
+    /* 顶部核心资源 (金币/碎片) */
+    .core-resource-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(15, 23, 42, 0.92));
+      border: 1.5px solid rgba(251, 191, 36, 0.75);
+      border-radius: 12px; padding: 4px 12px;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+    }
+    .core-resource-badge .resource-icon { font-size: 15px; }
+    .core-resource-badge .resource-val {
+      font-size: 16px; font-weight: 900; color: #fef08a; letter-spacing: 0.5px;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.85); font-variant-numeric: tabular-nums;
+    }
+
+    /* 右上：系统控制 (齿轮设置及二级下拉) */
+    .sys-controls-group { position: relative; }
+    .settings-gear-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1.5px solid rgba(0, 240, 255, 0.35);
+      color: #e2e8f0; font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .settings-gear-btn:hover { border-color: #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.5); transform: rotate(30deg); }
+    .settings-gear-btn:active { transform: scale(0.92); }
+
+    .settings-dropdown {
+      position: absolute; top: 38px; right: 0; width: 175px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(8, 12, 22, 0.98));
+      border: 1.5px solid rgba(0, 240, 255, 0.4);
+      border-radius: 12px; padding: 10px 12px;
+      display: none; flex-direction: column; gap: 8px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85), 0 0 20px rgba(0, 240, 255, 0.25);
+      backdrop-filter: blur(12px); z-index: 60;
+      animation: dropFade 0.18s ease-out;
+    }
+    .settings-dropdown.open { display: flex; }
+    @keyframes dropFade { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .dropdown-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; font-weight: 800; color: #94a3b8; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 6px;
+    }
+    .dropdown-close { cursor: pointer; color: #64748b; font-size: 12px; font-weight: 900; }
+    .dropdown-close:hover { color: #fff; }
+    .dropdown-item {
+      display: flex; justify-content: space-between; align-items: center; font-size: 11.5px;
+    }
+    .dropdown-item .item-label { color: #cbd5e1; font-weight: 600; }
+    .setting-btn-pill {
+      background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(0, 240, 255, 0.35);
+      color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .setting-btn-pill:hover { background: rgba(0, 240, 255, 0.25); border-color: #00f0ff; }
+
     .exp-bar-container {
       height: 4px; background: rgba(30, 41, 59, 0.8); border-radius: 2px; overflow: hidden;
     }
@@ -64,6 +131,7 @@
     .boss-title { color: var(--neon-red); font-weight: 800; }
     .boss-bar-outer { height: 8px; background: rgba(30, 41, 59, 0.9); border-radius: 4px; overflow: hidden; }
     .boss-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2a5f, #ff7700); }
+    
     #emergency-overlay {
       position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 0;
       box-shadow: inset 0 0 80px rgba(255, 42, 95, 0.85); transition: opacity 0.3s ease;
@@ -81,18 +149,61 @@
       text-shadow: 0 0 20px rgba(0, 240, 255, 0.8); letter-spacing: 2px;
     }
     .banner-subtext { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+
+    /* 底部状态栏：横向高质感渐变血条与护盾条 (紧贴技能栏正上方) */
     #bottom-hud {
-      position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 14px 16px;
-      background: linear-gradient(to top, rgba(5, 8, 16, 0.95) 0%, rgba(5, 8, 16, 0.5) 80%, transparent 100%);
-      z-index: 10; pointer-events: none;
+      position: absolute; bottom: 68px; left: 0; right: 0; padding: 0 14px;
+      display: flex; flex-direction: column; align-items: center;
+      z-index: 20; pointer-events: none;
     }
-    .fortress-bars { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-    .bar-wrap { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; }
-    .bar-outer {
-      flex: 1; height: 10px; background: rgba(30, 41, 59, 0.9); border-radius: 5px; overflow: hidden;
+    .fortress-visual-bars {
+      width: 100%; max-width: 420px;
+      display: flex; flex-direction: column; gap: 4px;
+      background: rgba(10, 16, 28, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 10px; padding: 6px 12px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
     }
-    .bar-hp { height: 100%; width: 100%; background: linear-gradient(90deg, #ef4444, #f97316); }
-    .bar-shield { height: 100%; width: 100%; background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+    .bar-row {
+      display: flex; align-items: center; gap: 8px; width: 100%; font-size: 11px;
+    }
+    .bar-tag {
+      display: flex; align-items: center; gap: 3px; min-width: 46px; font-weight: 800;
+    }
+    .shield-row .bar-tag { color: #38bdf8; }
+    .hp-row .bar-tag { color: #f87171; }
+    .bar-track {
+      flex: 1; height: 8px; background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;
+    }
+    .hp-row .bar-track { height: 11px; }
+    .bar-fill-shield {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #00f0ff, #3b82f6);
+      transition: width 0.15s ease-out;
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+    }
+    .bar-fill-hp {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #ef4444, #f97316);
+      transition: width 0.15s ease-out;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+    .bar-numeric {
+      min-width: 76px; text-align: right; font-weight: 800; font-size: 11px;
+      color: #e2e8f0; font-variant-numeric: tabular-nums;
+    }
+    /* HP < 30% 紧急警报闪烁 */
+    .hp-row.critical .bar-numeric {
+      color: #ff2a5f; text-shadow: 0 0 8px rgba(255, 42, 95, 0.9);
+      animation: criticalNumberPulse 0.8s infinite alternate ease-in-out;
+    }
+    @keyframes criticalNumberPulse {
+      from { transform: scale(1.0); opacity: 0.85; }
+      to { transform: scale(1.06); opacity: 1.0; }
+    }
+
     #cheat-panel-toggle {
       position: absolute; top: 70px; right: 8px; z-index: 50;
       background: rgba(15, 23, 42, 0.9); border: 1px solid var(--panel-border);
@@ -287,16 +398,47 @@
 <body>
   <div id="game-container">
     <div id="top-hud">
-      <div class="hud-row">
-        <div class="badge-group">
-          <div class="hud-badge level">LV <span class="val" id="hud-level">1</span></div>
-          <div class="hud-badge wave">WAVE <span class="val" id="hud-wave">1</span></div>
-          <div class="hud-badge kills">💀 <span class="val" id="hud-kills">0</span></div>
+      <div class="hud-top-bar">
+        <div class="battle-progress-group">
+          <div class="prog-badge level">
+            <span class="badge-icon">⚔️</span>
+            <span class="badge-label">LV</span>
+            <span class="badge-val" id="hud-level">1</span>
+          </div>
+          <div class="prog-badge wave-badge">
+            <span class="badge-icon">☠️</span>
+            <span class="badge-label">WAVE</span>
+            <span class="badge-val" id="hud-wave">1</span>
+          </div>
+          <div class="prog-badge kills-badge">
+            <span class="badge-icon">💀</span>
+            <span class="badge-val" id="hud-kills">0</span>
+          </div>
         </div>
-        <div class="hud-buttons">
-          <button class="icon-btn" id="btn-speed" title="倍速">1x</button>
-          <button class="icon-btn" id="btn-sound" title="声音">🔊</button>
-          <button class="icon-btn" id="btn-pause" title="暂停">⏸️</button>
+        <div class="core-resource-badge" title="晶核/金币 (通关与强化资源)">
+          <span class="resource-icon">💰</span>
+          <span class="resource-val" id="hud-scrap">0</span>
+        </div>
+        <div class="sys-controls-group">
+          <button class="settings-gear-btn" id="btn-settings-toggle" title="系统设置">⚙️</button>
+          <div class="settings-dropdown" id="settings-dropdown-menu">
+            <div class="dropdown-header">
+              <span>系统控制</span>
+              <span class="dropdown-close" id="btn-settings-close" title="关闭">✕</span>
+            </div>
+            <div class="dropdown-item">
+              <span class="item-label">战斗倍速</span>
+              <button class="setting-btn-pill" id="btn-speed" title="倍速">1x</button>
+            </div>
+            <div class="dropdown-item">
+              <span class="item-label">音效设置</span>
+              <button class="setting-btn-pill" id="btn-sound" title="声音">🔊 开启</button>
+            </div>
+            <div class="dropdown-item">
+              <span class="item-label">战斗暂停</span>
+              <button class="setting-btn-pill" id="btn-pause" title="暂停">⏸️ 暂停</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="exp-bar-container"><div class="exp-bar-fill" id="exp-fill"></div></div>
@@ -315,16 +457,16 @@
       <div class="banner-subtext" id="banner-wave-sub">感染者大群正在接近！</div>
     </div>
     <div id="bottom-hud">
-      <div class="fortress-bars">
-        <div class="bar-wrap">
-          <span>HP</span>
-          <div class="bar-outer"><div class="bar-hp" id="hp-bar-fill"></div></div>
-          <span id="hp-text">1000/1000</span>
+      <div class="fortress-visual-bars" id="fortress-bars-container">
+        <div class="bar-row shield-row">
+          <div class="bar-tag"><span class="tag-icon">🛡️</span><span>SHD</span></div>
+          <div class="bar-track"><div class="bar-fill-shield" id="shield-bar-fill" style="width: 100%;"></div></div>
+          <div class="bar-numeric" id="shield-text">300/300</div>
         </div>
-        <div class="bar-wrap">
-          <span>SHD</span>
-          <div class="bar-outer"><div class="bar-shield" id="shield-bar-fill"></div></div>
-          <span id="shield-text">300/300</span>
+        <div class="bar-row hp-row" id="hp-row-container">
+          <div class="bar-tag"><span class="tag-icon">❤️</span><span>HP</span></div>
+          <div class="bar-track"><div class="bar-fill-hp" id="hp-bar-fill" style="width: 100%;"></div></div>
+          <div class="bar-numeric" id="hp-text">1000/1000</div>
         </div>
       </div>
     </div>

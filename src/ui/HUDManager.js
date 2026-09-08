@@ -10,7 +10,9 @@ export class HUDManager {
       level: document.getElementById('hud-level'),
       wave: document.getElementById('hud-wave'),
       kills: document.getElementById('hud-kills'),
+      scrap: document.getElementById('hud-scrap'),
       expFill: document.getElementById('exp-fill'),
+      hpRow: document.getElementById('hp-row-container'),
       hpFill: document.getElementById('hp-bar-fill'),
       hpText: document.getElementById('hp-text'),
       shieldFill: document.getElementById('shield-bar-fill'),
@@ -33,6 +35,9 @@ export class HUDManager {
       btnSpeed: document.getElementById('btn-speed'),
       btnSound: document.getElementById('btn-sound'),
       btnPause: document.getElementById('btn-pause'),
+      settingsToggle: document.getElementById('btn-settings-toggle'),
+      settingsMenu: document.getElementById('settings-dropdown-menu'),
+      settingsClose: document.getElementById('btn-settings-close'),
       skills: {
         rocket: { slot: document.getElementById('slot-skill-a'), mask: document.getElementById('mask-skill-a'), lvl: document.getElementById('lvl-skill-a') },
         truck: { slot: document.getElementById('slot-skill-b'), mask: document.getElementById('mask-skill-b'), lvl: document.getElementById('lvl-skill-b') },
@@ -40,8 +45,8 @@ export class HUDManager {
       }
     };
     this.cache = {
-      level: -1, wave: -1, stageId: -1, kills: -1, expRatio: -1,
-      hpRatio: -1, hpText: '', shieldRatio: -1, shieldText: '',
+      level: -1, wave: -1, stageId: -1, kills: -1, scrap: -1, expRatio: -1,
+      hpRatio: -1, hpText: '', criticalHp: false, shieldRatio: -1, shieldText: '',
       bossVisible: false, bossHpRatio: -1, emergencyActive: false,
       skills: {
         rocket: { level: -1, cdPercent: -1 },
@@ -68,6 +73,11 @@ export class HUDManager {
       this.cache.kills = game.kills;
       if (this.dom.kills) this.dom.kills.textContent = game.kills;
     }
+    const scrapVal = Number(game.scrap ?? game.feature?.account?.scrap ?? 0);
+    if (this.cache.scrap !== scrapVal) {
+      this.cache.scrap = scrapVal;
+      if (this.dom.scrap) this.dom.scrap.textContent = scrapVal;
+    }
     const expRatio = Math.min(100, Math.round((game.hero.exp / game.hero.expNeeded) * 100));
     if (this.cache.expRatio !== expRatio) {
       this.cache.expRatio = expRatio;
@@ -78,6 +88,12 @@ export class HUDManager {
     if (this.cache.hpRatio !== hpPct) {
       this.cache.hpRatio = hpPct;
       if (this.dom.hpFill) this.dom.hpFill.style.width = hpPct + '%';
+    }
+    const isCritical = hpPct < 30 && game.fortress.hp > 0;
+    if (this.cache.criticalHp !== isCritical) {
+      this.cache.criticalHp = isCritical;
+      if (this.dom.hpRow) this.dom.hpRow.classList.toggle('critical', isCritical);
+      if (this.dom.emergencyOverlay) this.dom.emergencyOverlay.classList.toggle('active', isCritical);
     }
     const hpText = `${Math.ceil(game.fortress.hp)}/${game.fortress.maxHp}`;
     if (this.cache.hpText !== hpText) {
@@ -299,6 +315,24 @@ export class HUDManager {
         });
       });
     }
+    if (this.dom.settingsToggle && this.dom.settingsMenu) {
+      this.dom.settingsToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.dom.settingsMenu.classList.toggle('open');
+      });
+      if (this.dom.settingsClose) {
+        this.dom.settingsClose.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.dom.settingsMenu.classList.remove('open');
+        });
+      }
+      document.addEventListener('click', (e) => {
+        if (!this.dom.settingsMenu.contains(e.target) && e.target !== this.dom.settingsToggle) {
+          this.dom.settingsMenu.classList.remove('open');
+        }
+      });
+    }
+
     if (this.dom.btnSpeed) {
       this.dom.btnSpeed.addEventListener('click', () => {
         if (game.timeScale === 1.0) { game.timeScale = 1.5; this.dom.btnSpeed.textContent = '1.5x'; }
@@ -309,13 +343,13 @@ export class HUDManager {
     if (this.dom.btnSound) {
       this.dom.btnSound.addEventListener('click', () => {
         const muted = sound.toggleMute();
-        this.dom.btnSound.textContent = muted ? '🔇' : '🔊';
+        this.dom.btnSound.textContent = muted ? '🔇 静音' : '🔊 开启';
       });
     }
     if (this.dom.btnPause) {
       this.dom.btnPause.addEventListener('click', () => {
         game.isPaused = !game.isPaused;
-        this.dom.btnPause.textContent = game.isPaused ? '▶️' : '⏸️';
+        this.dom.btnPause.textContent = game.isPaused ? '▶️ 继续' : '⏸️ 暂停';
       });
     }
   }

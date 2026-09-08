@@ -1,12 +1,12 @@
 // 战术技能 HUD：4 格战术技能面板 + 波次战术提示
 const SKILL_META = {
-  rocket: { id: 'rocket', name: '温压火箭', asset: 'assets/cards/icon_rocket.png', core: true },
-  truck: { id: 'truck', name: '装甲战车', asset: 'assets/cards/icon_truck.png', core: true },
-  freeze: { id: 'freeze', name: '极寒射线', asset: 'assets/cards/icon_frost.png', core: true },
-  tornado: { id: 'tornado', name: '裂风涡流', asset: 'assets/skills/tornado.png', group: 'tactical' },
-  boomerang: { id: 'boomerang', name: '回旋刃', asset: 'assets/skills/boomerang.png', group: 'tactical' },
-  laser: { id: 'laser', name: '湮灭射线', asset: 'assets/skills/laser.png', group: 'tactical' },
-  bomber: { id: 'bomber', name: '轨道轰炸', asset: 'assets/skills/bomber.png', group: 'tactical' }
+  rocket: { id: 'rocket', name: '温压火箭', icon: '🔥', asset: 'assets/cards/icon_rocket.png', desc: '全屏覆盖温压爆轰', core: true },
+  truck: { id: 'truck', name: '装甲战车', icon: '🚚', asset: 'assets/cards/icon_truck.png', desc: '重装战车碾压前线', core: true },
+  freeze: { id: 'freeze', name: '极寒射线', icon: '❄️', asset: 'assets/cards/icon_frost.png', desc: '绝对零度持续冻结', core: true },
+  tornado: { id: 'tornado', name: '裂风涡流', icon: '🌪️', asset: 'assets/skills/tornado.png', desc: '强效引力聚怪风暴', group: 'tactical' },
+  boomerang: { id: 'boomerang', name: '回旋飞刃', icon: '🪃', asset: 'assets/skills/boomerang.png', desc: '高频穿透弹射飞刃', group: 'tactical' },
+  laser: { id: 'laser', name: '湮灭射线', icon: '⚡', asset: 'assets/skills/laser.png', desc: '贯穿高能毁灭死光', group: 'tactical' },
+  bomber: { id: 'bomber', name: '轨道轰炸', icon: '🚀', asset: 'assets/skills/bomber.png', desc: '天基战术精确打击', group: 'tactical' }
 };
 
 const MAX_SKILL_SLOTS = 4;
@@ -77,81 +77,117 @@ function ensureStyle() {
 
     #kp-skill-hud {
       position: absolute;
-      right: 8px;
-      bottom: 148px;
+      left: 50%;
+      bottom: 8px;
+      transform: translateX(-50%);
       z-index: 35;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 5px;
-      pointer-events: none;
-      padding: 6px 5px 7px;
-      border: 1.5px solid rgba(56, 189, 248, 0.28);
-      border-radius: 14px;
-      background: linear-gradient(180deg, rgba(8, 15, 28, 0.9), rgba(3, 7, 18, 0.96));
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+      gap: 3px;
+      pointer-events: auto;
+      padding: 5px 8px;
+      border: 1.5px solid rgba(0, 240, 255, 0.35);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(8, 15, 28, 0.94), rgba(3, 7, 18, 0.98));
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.75), 0 0 16px rgba(0, 240, 255, 0.2);
       backdrop-filter: blur(10px);
       user-select: none;
     }
-    .kp-skill-header {
-      font-size: 7px;
-      line-height: 1.1;
-      color: #38bdf8;
-      letter-spacing: 0.6px;
-      font-weight: 900;
-      text-transform: uppercase;
-      opacity: 0.85;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1px;
-      margin-bottom: 1px;
-    }
     .kp-skill-slots-wrap {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
     .kp-skill-slot {
       position: relative;
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
       overflow: hidden;
       background: radial-gradient(circle at 50% 30%, #1e293b, #020617);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      border: 1.5px solid rgba(148, 163, 184, 0.28);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
       flex: none;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
     }
-    .kp-skill-slot img { width: 100%; height: 100%; object-fit: contain; display: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+    .kp-skill-slot img {
+      width: 100%; height: 100%; object-fit: contain; display: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+    }
     .kp-skill-slot.equipped img { display: block; }
-    .kp-skill-slot.empty { border: 1.5px dashed rgba(148, 163, 184, 0.3); background: rgba(15, 23, 42, 0.5); }
-    .kp-skill-slot.empty .kp-empty-mark { color: rgba(148, 163, 184, 0.4); font-size: 16px; font-weight: 900; }
-    .kp-skill-slot.equipped { border-color: rgba(56, 189, 248, 0.45); box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
-    .kp-skill-slot.ready { border-color: rgba(74, 222, 128, 0.9); box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.3), 0 0 16px rgba(74, 222, 128, 0.35); }
-    .kp-skill-slot.casting { transform: scale(1.06); border-color: rgba(250, 204, 21, 0.95); box-shadow: 0 0 18px rgba(250, 204, 21, 0.45); }
-    .kp-skill-cd { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(2, 6, 23, 0.2), rgba(2, 6, 23, 0.9)); height: 0; transition: height 0.08s linear; pointer-events: none; }
-    .kp-skill-time { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 900; text-shadow: 0 1px 5px #000; pointer-events: none; }
-    .kp-skill-level { position: absolute; left: 3px; bottom: 2px; color: #facc15; font-size: 9px; font-weight: 900; line-height: 1; text-shadow: 0 1px 4px #000; pointer-events: none; }
-    .kp-skill-key { position: absolute; right: 3px; top: 2px; color: rgba(255, 255, 255, 0.75); font-size: 8px; font-weight: 900; line-height: 1; text-shadow: 0 1px 3px #000; pointer-events: none; }
+    .kp-skill-slot.empty {
+      border: 1.5px dashed rgba(148, 163, 184, 0.3);
+      background: rgba(15, 23, 42, 0.45);
+    }
+    .kp-skill-slot.empty .kp-empty-mark {
+      color: rgba(148, 163, 184, 0.45); font-size: 16px; font-weight: 900;
+    }
+    .kp-skill-slot.equipped {
+      border-color: rgba(0, 240, 255, 0.5);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+    }
+    .kp-skill-slot.ready {
+      border-color: rgba(74, 222, 128, 0.95);
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.4), 0 0 16px rgba(74, 222, 128, 0.4);
+    }
+    .kp-skill-slot.casting {
+      transform: scale(1.08);
+      border-color: rgba(250, 204, 21, 0.95);
+      box-shadow: 0 0 18px rgba(250, 204, 21, 0.5);
+    }
+    .kp-skill-elem {
+      position: absolute; left: 2px; top: 1px; font-size: 11px; line-height: 1;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.85)); pointer-events: none; z-index: 5;
+    }
+    .kp-skill-cd {
+      position: absolute; inset: 0;
+      pointer-events: none; z-index: 4;
+      border-radius: inherit;
+      transition: background 0.08s linear;
+    }
+    .kp-skill-time {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 14px; font-weight: 900;
+      text-shadow: 0 1px 6px #000, 0 0 10px rgba(0, 240, 255, 0.6);
+      pointer-events: none; z-index: 6;
+    }
+    .kp-skill-level {
+      position: absolute; left: 3px; bottom: 2px; color: #facc15; font-size: 9px;
+      font-weight: 900; line-height: 1; text-shadow: 0 1px 4px #000;
+      pointer-events: none; z-index: 5;
+    }
+    .kp-skill-key {
+      position: absolute; right: 3px; top: 2px; color: rgba(255, 255, 255, 0.65);
+      font-size: 8px; font-weight: 900; line-height: 1; text-shadow: 0 1px 3px #000;
+      pointer-events: none; z-index: 5;
+    }
+    .kp-skill-dots-row {
+      display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 1px;
+    }
+    .kp-skill-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(148, 163, 184, 0.35); transition: all 0.2s ease;
+    }
+    .kp-skill-dot.active {
+      background: #00f0ff; box-shadow: 0 0 6px #00f0ff;
+    }
     @media (max-width: 470px) {
-      #kp-skill-hud { right: 6px; bottom: 135px; padding: 5px 4px 6px; gap: 4px; }
-      .kp-skill-slot { width: 36px; height: 36px; border-radius: 8px; }
-      .kp-skill-slots-wrap { gap: 5px; }
-      .kp-skill-time { font-size: 11px; }
+      #kp-skill-hud { bottom: 6px; padding: 4px 6px; }
+      .kp-skill-slot { width: 38px; height: 38px; border-radius: 10px; }
+      .kp-skill-slots-wrap { gap: 6px; }
+      .kp-skill-time { font-size: 12px; }
       .kp-skill-level { font-size: 8px; left: 2px; bottom: 2px; }
       #kp-wave-tactic { top: 48px; width: min(310px, calc(100% - 16px)); }
     }
     @media (max-width: 360px) {
-      #kp-skill-hud { right: 4px; bottom: 125px; }
-      .kp-skill-slot { width: 32px; height: 32px; }
+      .kp-skill-slot { width: 34px; height: 34px; }
       .kp-skill-slots-wrap { gap: 4px; }
-      #kp-wave-tactic-tip { font-size: 9px; }
     }
   `;
   document.head.appendChild(style);
@@ -192,20 +228,22 @@ export function installSkillsPetsHud(game) {
   hud.id = 'kp-skill-hud';
   hud.setAttribute('aria-label', 'Tactical skill deck');
   hud.innerHTML = `
-    <div class="kp-skill-header">
-      <span>SKILL</span>
-      <span id="kp-skill-count-badge" style="color:#94a3b8;font-size:7.5px;">(0/4)</span>
-    </div>
     <div class="kp-skill-slots-wrap">
       ${Array.from({ length: MAX_SKILL_SLOTS }).map((_, i) => `
         <div id="kp-slot-${i}" class="kp-skill-slot empty" title="战术槽位 ${i + 1}">
           <span class="kp-empty-mark">＋</span>
           <img src="" alt="" loading="eager">
+          <span class="kp-skill-elem"></span>
           <div class="kp-skill-cd"></div>
           <div class="kp-skill-time"></div>
           <div class="kp-skill-level"></div>
           <div class="kp-skill-key">${i + 1}</div>
         </div>
+      `).join('')}
+    </div>
+    <div class="kp-skill-dots-row" id="kp-skill-dots" title="战术技能槽位装配情况">
+      ${Array.from({ length: MAX_SKILL_SLOTS }).map((_, i) => `
+        <span class="kp-skill-dot" id="kp-skill-dot-${i}"></span>
       `).join('')}
     </div>`;
   game.container.appendChild(hud);
@@ -272,24 +310,28 @@ export function installSkillsPetsHud(game) {
       if (!slotMapping.includes(id) && slotMapping.length < MAX_SKILL_SLOTS) slotMapping.push(id);
     }
 
-    const badge = document.getElementById('kp-skill-count-badge');
-    if (badge) {
-      badge.textContent = `(${slotMapping.length}/${MAX_SKILL_SLOTS})`;
-      badge.style.color = slotMapping.length >= MAX_SKILL_SLOTS ? '#facc15' : '#94a3b8';
+    for (let i = 0; i < MAX_SKILL_SLOTS; i++) {
+      const dot = document.getElementById(`kp-skill-dot-${i}`);
+      if (dot) dot.classList.toggle('active', i < slotMapping.length);
     }
 
     for (let i = 0; i < MAX_SKILL_SLOTS; i++) {
       const slotEl = document.getElementById(`kp-slot-${i}`);
       if (!slotEl) continue;
       const skillId = slotMapping[i];
+      const elemEl = slotEl.querySelector('.kp-skill-elem');
       if (!skillId) {
         if (!slotEl.classList.contains('empty')) {
           slotEl.className = 'kp-skill-slot empty';
-          slotEl.querySelector('img').src = '';
+          const img = slotEl.querySelector('img');
+          img.src = '';
+          img.removeAttribute('data-skill');
           slotEl.querySelector('.kp-empty-mark').style.display = 'block';
+          if (elemEl) elemEl.textContent = '';
           slotEl.querySelector('.kp-skill-level').textContent = '';
           slotEl.querySelector('.kp-skill-time').textContent = '';
-          slotEl.querySelector('.kp-skill-cd').style.height = '0%';
+          slotEl.querySelector('.kp-skill-cd').style.background = 'transparent';
+          slotEl.title = `战术槽位 ${i + 1} (待装配)`;
         }
         continue;
       }
@@ -302,8 +344,9 @@ export function installSkillsPetsHud(game) {
         imgEl.src = meta.asset;
         imgEl.alt = meta.name;
         imgEl.setAttribute('data-skill', skillId);
-        slotEl.title = `${meta.name} (槽位 ${i + 1})`;
+        slotEl.title = `${meta.name}: ${meta.desc || ''}`;
         slotEl.querySelector('.kp-empty-mark').style.display = 'none';
+        if (elemEl) elemEl.textContent = meta.icon || '⚡';
       }
 
       const unlocked = state.level > 0;
@@ -312,8 +355,16 @@ export function installSkillsPetsHud(game) {
       const ready = unlocked && !casting && state.timer >= state.cooldown;
       slotEl.className = `kp-skill-slot equipped ${ready ? 'ready' : ''} ${casting ? 'casting' : ''}`;
       slotEl.querySelector('.kp-skill-level').textContent = unlocked ? `Lv.${state.level}` : '';
-      slotEl.querySelector('.kp-skill-cd').style.height = unlocked && !casting ? `${Math.max(0, 100 - progress * 100)}%` : '0%';
-      slotEl.querySelector('.kp-skill-time').textContent = unlocked && !casting && state.timer < state.cooldown ? `${Math.ceil(state.cooldown - state.timer)}` : '';
+
+      const cdEl = slotEl.querySelector('.kp-skill-cd');
+      if (unlocked && !casting && state.timer < state.cooldown) {
+        const remainingAngle = Math.round((1 - progress) * 360);
+        cdEl.style.background = `conic-gradient(rgba(3, 7, 18, 0.82) ${remainingAngle}deg, transparent 0deg)`;
+        slotEl.querySelector('.kp-skill-time').textContent = `${Math.ceil(state.cooldown - state.timer)}`;
+      } else {
+        cdEl.style.background = 'transparent';
+        slotEl.querySelector('.kp-skill-time').textContent = '';
+      }
     }
   };
 }

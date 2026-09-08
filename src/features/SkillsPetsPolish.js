@@ -22,8 +22,7 @@ const VECTOR_SKILL_ASSETS = {
 };
 
 function sanitizeText(value) {
-  if (typeof value !== 'string') return value;
-  return EMOJI_REPLACEMENTS.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), value);
+  return value;
 }
 
 function patchPetPrototype() {
@@ -80,7 +79,7 @@ function patchPetPrototype() {
 
     if (shieldBefore > 0 && this.shield <= 0 && !this.isCurled) {
       this.shield = 0;
-      game.spawnDamageText(this.x, this.y - 20, '[SHIELD] BREAK', '#38bdf8', true, true);
+      game.spawnDamageText(this.x, this.y - 20, '🛡️ 护盾破裂', '#38bdf8', true, true);
     }
 
     if (this.hp <= 0) {
@@ -88,7 +87,7 @@ function patchPetPrototype() {
       this.isCurled = true;
       this.curlTimer = this.curlMaxTime;
       this.shield = 0;
-      game.spawnDamageText(this.x, this.y - 20, '[PET] RECOVERING 10s', '#38bdf8', true, true);
+      game.spawnDamageText(this.x, this.y - 20, '🐾 宠物恢复中 10s', '#38bdf8', true, true);
     }
   };
 }
@@ -124,53 +123,7 @@ function syncRuntimeConfig() {
   }
 }
 
-function installTextSanitizer(game) {
-  if (game.__skillsPetsTextSanitized) return;
-  game.__skillsPetsTextSanitized = true;
-  const original = game.spawnDamageText?.bind(game);
-  if (original) {
-    game.spawnDamageText = function(x, y, text, ...rest) {
-      return original(x, y, sanitizeText(text), ...rest);
-    };
-  }
-
-  const replaceHudText = () => {
-    const soundButton = game.hud?.dom?.btnSound;
-    const pauseButton = game.hud?.dom?.btnPause;
-    if (soundButton && /[\u{1F300}-\u{1FAFF}]/u.test(soundButton.textContent || '')) soundButton.textContent = 'SFX';
-    if (pauseButton && /[\u{1F300}-\u{1FAFF}]/u.test(pauseButton.textContent || '')) pauseButton.textContent = game.isPaused ? 'RESUME' : 'PAUSE';
-  };
-  replaceHudText();
-  if (game.hud?.dom?.btnSound || game.hud?.dom?.btnPause) {
-    const observer = new MutationObserver(replaceHudText);
-    if (game.hud.dom.btnSound) observer.observe(game.hud.dom.btnSound, { childList: true, characterData: true, subtree: true });
-    if (game.hud.dom.btnPause) observer.observe(game.hud.dom.btnPause, { childList: true, characterData: true, subtree: true });
-    game.__skillsPetsTextObserver = observer;
-  }
-}
-
-function injectVisualPolish() {
-  if (document.getElementById('kp-skills-pets-polish')) return;
-  const style = document.createElement('style');
-  style.id = 'kp-skills-pets-polish';
-  style.textContent = `
-    #top-hud { padding: 8px 10px 0 !important; }
-    #top-hud .hud-badge { min-height: 34px; display: inline-flex; flex-direction: column; justify-content: center; gap: 1px; border-radius: 9px !important; padding: 4px 10px !important; background: rgba(7, 12, 22, .88) !important; border-color: rgba(0, 240, 255, .28) !important; box-shadow: 0 5px 18px rgba(0,0,0,.22); }
-    #top-hud .hud-buttons { gap: 5px !important; }
-    #top-hud .icon-btn { min-width: 42px; min-height: 34px; border-radius: 9px !important; font-size: 9px !important; letter-spacing: .5px; font-weight: 800; }
-    #bottom-hud { padding: 8px 10px calc(10px + env(safe-area-inset-bottom)) !important; }
-    #bottom-hud .fortress-bars { margin-bottom: 6px !important; }
-    #bottom-hud .bar-wrap { gap: 6px !important; font-size: 10px !important; }
-    #bottom-hud .bar-outer { height: 9px !important; border-radius: 5px !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
-  `;
-  document.head.appendChild(style);
-}
-
 export function installSkillsPetsPolish(game = null) {
   patchPetPrototype();
   syncRuntimeConfig();
-  if (game) {
-    injectVisualPolish();
-    installTextSanitizer(game);
-  }
 }
