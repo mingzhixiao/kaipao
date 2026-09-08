@@ -20,6 +20,35 @@
   overflow: hidden;
 }
 
+.ui-icon-inline {
+  width: 16px;
+  height: 16px;
+  vertical-align: -2px;
+  object-fit: contain;
+  display: inline-block;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.lobby-pill .ui-icon-inline {
+  width: 15px;
+  height: 15px;
+  vertical-align: -2px;
+}
+
+.lobby-avatar-wrap .ui-icon-inline {
+  width: 26px;
+  height: 26px;
+}
+
+.weapon-btn .ui-icon-inline,
+.rune-item-btn .ui-icon-inline {
+  width: 15px;
+  height: 15px;
+  margin-right: 2px;
+  vertical-align: -2.5px;
+}
+
 /* 顶部指挥官与资产栏 */
 .lobby-header {
   height: 64px;

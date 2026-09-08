@@ -3,6 +3,7 @@ import { sound } from '../systems/SoundEngine.js';
 import { ObjectPool } from '../systems/ObjectPool.js';
 import { GAME_CONFIG } from '../core/Config.js';
 import { gameEvents } from '../core/GameEventBus.js';
+import { saveManager } from '../systems/SaveManager.js';
 
 export class CombatSystem {
   constructor(game) {
@@ -227,8 +228,8 @@ export class CombatSystem {
 
     if (isCrit) {
       sound.playCritHit();
-      game.feedback.addTrauma(0.12);
-      game.feedback.triggerHitStop(0.025);
+      game.feedback.addTrauma(0.32); // 暴击强劲震颤
+      game.feedback.triggerHitStop(0.035);
       if (game.synergies.teslaCoil) {
         game.synergySystem.triggerTeslaChain(enemy, dmg);
       }
@@ -268,10 +269,13 @@ export class CombatSystem {
     game.kills++;
     gameEvents.emit('kill_changed', { kills: game.kills });
 
+    let dropScrap = 0;
+
     if (enemy.isBoss) {
       sound.playExplosion();
-      game.feedback.addTrauma(0.8);
+      game.feedback.addTrauma(0.85);
       game.feedback.triggerHitStop(0.08);
+      dropScrap = 25 + Math.floor(Math.random() * 15);
 
       for (let i = 0; i < 8; i++) {
         const g = game.gemPool.get();
@@ -293,6 +297,18 @@ export class CombatSystem {
       game.spawnDamageText(enemy.x, enemy.y - 30, '👑 首领击破!!', '#ffaa00', true, true);
       game.activeBoss = null;
     } else {
+      if (enemy.type === 'behemoth') {
+        game.feedback.addTrauma(0.32);
+        game.feedback.triggerHitStop(0.03);
+        dropScrap = 5 + Math.floor(Math.random() * 4);
+      } else if (enemy.type === 'charger') {
+        game.feedback.addTrauma(0.18);
+        dropScrap = 2 + Math.floor(Math.random() * 3);
+      } else {
+        game.feedback.addTrauma(0.12);
+        dropScrap = Math.random() < 0.65 ? (1 + Math.floor(Math.random() * 2)) : 0;
+      }
+
       const g = game.gemPool.get();
       g.active = true;
       g.x = enemy.x;
@@ -307,6 +323,14 @@ export class CombatSystem {
       game.gems.push(g);
 
       game.spawnParticles(enemy.x, enemy.y, enemy.color || '#ff2a5f', 8, 'spark');
+    }
+
+    // 触发金币/碎片掉落与飘字飞入
+    if (dropScrap > 0) {
+      game.scrap = (game.scrap || 0) + dropScrap;
+      saveManager.addScrap(dropScrap);
+      gameEvents.emit('scrap_gained', { amount: dropScrap, x: enemy.x, y: enemy.y });
+      gameEvents.emit('scrap_changed', { scrap: game.scrap });
     }
   }
 

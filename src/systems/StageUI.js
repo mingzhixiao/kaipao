@@ -8,14 +8,12 @@ export function showWaveBanner(waveNum, isBossWave, stageConfig = null, wavePlan
   const text = document.getElementById('banner-wave-text');
   const sub = document.getElementById('banner-wave-sub');
   if (!banner) return;
-  const stageName = stageConfig?.name || '';
   if (text) {
-    text.textContent = isBossWave ? `⚠ BOSS WAVE ${waveNum}` : `WAVE ${waveNum}`;
-    if (stageName) text.textContent = `${stageName} · ${text.textContent}`;
+    text.textContent = isBossWave ? `BOSS WAVE ${waveNum}` : `WAVE ${waveNum}`;
   }
   if (sub) {
     if (isBossWave) {
-      sub.textContent = '👑 极度危险！暴君突变体领主正在逼近防线！';
+      sub.textContent = '👑 极度危险！变异暴君领主正在逼近防线！';
     } else if (wavePlan?.intensity > 0.75) {
       sub.textContent = '⚡ 狂暴红潮！高密度集群疯狂扑击！';
     } else if (wavePlan?.bias?.charger > 0.35) {
@@ -27,10 +25,14 @@ export function showWaveBanner(waveNum, isBossWave, stageConfig = null, wavePlan
     }
   }
   banner.style.display = 'block';
-  banner.style.animation = 'none';
+  banner.classList.remove('active-banner');
   void banner.offsetWidth;
-  banner.style.animation = '';
-  setTimeout(() => { banner.style.display = 'none'; }, 2200);
+  banner.classList.add('active-banner');
+  if (banner._timer) clearTimeout(banner._timer);
+  banner._timer = setTimeout(() => {
+    banner.style.display = 'none';
+    banner.classList.remove('active-banner');
+  }, 950);
 }
 
 export function showStageClearModal(game) {

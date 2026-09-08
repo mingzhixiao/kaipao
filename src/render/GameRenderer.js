@@ -255,7 +255,9 @@ export class GameRenderer {
 
       ctx.translate(e.x + swayX + knockX + hitJitterX, e.y + bobY + knockY + hitJitterY);
       ctx.rotate(tiltAngle + hitAngleTilt);
-      ctx.scale(scaleX * (1 + hitSquash), scaleY * (1 - hitSquash));
+      // 受击瞬间放大 (持续约 80ms，瞬间放大 1.1 倍营造打击弹力)
+      const hitPop = e.hitFlash > 0.08 ? 1.1 : 1.0;
+      ctx.scale(scaleX * (1 + hitSquash) * hitPop, scaleY * (1 - hitSquash) * hitPop);
 
       // 纵深微弱透视缩放 (0.92x ~ 1.04x)
       const depthProgress = Math.max(0, Math.min(1, (e.y + 40) / (targetY + 40)));
@@ -312,11 +314,11 @@ export class GameRenderer {
       }
 
       if (sprite) {
-        // 受击与状态滤镜
-        if (e.hitFlash > 0.05) {
-          ctx.filter = 'brightness(1.5) contrast(1.3) saturate(1.3)';
+        // 受击与状态滤镜：80ms 内瞬间闪白 (brightness(2.2))
+        if (e.hitFlash > 0.08) {
+          ctx.filter = 'brightness(2.2) contrast(1.4)';
         } else if (e.hitFlash > 0) {
-          ctx.filter = 'brightness(1.25) saturate(2.0) hue-rotate(340deg)';
+          ctx.filter = 'brightness(1.3) saturate(1.8) hue-rotate(340deg)';
         } else if (e.freezeTimer > 0) {
           ctx.filter = 'hue-rotate(160deg) saturate(1.8) brightness(1.2)';
         } else {

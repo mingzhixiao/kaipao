@@ -20,6 +20,28 @@ export class HomeLobbyUI {
   }
 
   formatItemIcon(icon, alt = '', cls = 'backpack-item-img', itemId = null) {
+    const iconMap = {
+      '🔩': 'assets/icons/icon_part.png',
+      '💾': 'assets/icons/icon_chip.png',
+      '🧬': 'assets/icons/icon_shard.png',
+      '🪙': 'assets/icons/icon_coin.png',
+      '💰': 'assets/icons/icon_coin.png',
+      '💎': 'assets/icons/icon_gem.png',
+      '⚡': 'assets/icons/icon_stamina.png',
+      '🎖️': 'assets/icons/icon_rank.png',
+      '🏅': 'assets/icons/icon_rank.png',
+      '❤️': 'assets/icons/icon_hp.png',
+      '🛡️': 'assets/icons/icon_shield.png',
+      '⚔️': 'assets/icons/icon_level.png',
+      '💀': 'assets/icons/icon_kills.png',
+      '☠️': 'assets/icons/icon_kills.png',
+      '🎲': 'assets/icons/icon_reroll.png',
+      '⚙️': 'assets/icons/icon_settings.png',
+      '📦': 'assets/items/item_chip_rocket.png'
+    };
+    if (typeof icon === 'string' && iconMap[icon]) {
+      icon = iconMap[icon];
+    }
     const candidateId = itemId || (typeof icon === 'string' && GAME_CONFIG.items[icon] ? icon : null);
     if (candidateId && GAME_CONFIG.items[candidateId]?.icon) {
       icon = GAME_CONFIG.items[candidateId].icon;
@@ -53,7 +75,7 @@ export class HomeLobbyUI {
       <header class="lobby-header">
         <div class="lobby-commander-box">
           <div class="lobby-avatar-wrap">
-            <span>🎖️</span>
+            <img class="ui-icon-inline" src="assets/icons/icon_rank.png" alt="Rank">
             <span class="lobby-avatar-level" id="lobby-cmd-lvl">1</span>
           </div>
           <div class="lobby-commander-meta">
@@ -66,15 +88,15 @@ export class HomeLobbyUI {
 
         <div class="lobby-currencies">
           <div class="lobby-pill energy" title="作战体能">
-            <span>⚡</span>
+            <img class="ui-icon-inline" src="assets/icons/icon_stamina.png" alt="Energy">
             <span id="lobby-energy">50/50</span>
           </div>
           <div class="lobby-pill scrap" title="工业废料">
-            <span>🪙</span>
+            <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Scrap">
             <span id="lobby-scrap">0</span>
           </div>
           <div class="lobby-pill gems" title="高能晶核">
-            <span>💎</span>
+            <img class="ui-icon-inline" src="assets/icons/icon_gem.png" alt="Gems">
             <span id="lobby-gems">0</span>
           </div>
         </div>
@@ -85,7 +107,7 @@ export class HomeLobbyUI {
         <!-- Tab 1: 首页大厅 (Lobby) -->
         <div class="lobby-tab-view active" id="view-lobby">
           <div class="lobby-power-banner">
-            <span class="lobby-power-label">⚡ 综合战力评分</span>
+            <span class="lobby-power-label"><img class="ui-icon-inline" src="assets/icons/icon_stamina.png" alt="Power"> 综合战力评分</span>
             <span class="lobby-power-val" id="lobby-total-power">1280</span>
           </div>
 
@@ -108,7 +130,7 @@ export class HomeLobbyUI {
 
           <div class="lobby-battle-cta-wrap">
             <button class="lobby-battle-btn" id="btn-lobby-battle">
-              <span>⚔️</span>
+              <img class="ui-icon-inline" src="assets/icons/icon_level.png" alt="Battle" style="width:20px;height:20px;">
               <span>立即出击 BATTLE</span>
             </button>
           </div>
@@ -445,14 +467,14 @@ export class HomeLobbyUI {
           <div class="weapon-actions">
             ${state.unlocked ? `
               <button class="weapon-btn upgrade" data-action="upgrade-weapon" data-id="${id}" data-scost="${scrapCost}" data-pcost="${partCost}" ${!canUpgrade ? 'disabled' : ''}>
-                🪙 ${scrapCost} 强化
+                <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${scrapCost} 强化
               </button>
               <button class="weapon-btn primary" data-action="equip-weapon" data-id="${id}" ${isEquipped ? 'disabled' : ''}>
                 ${isEquipped ? '已出战' : '装备此枪'}
               </button>
             ` : `
               <button class="weapon-btn primary" data-action="unlock-weapon" data-id="${id}" data-cost="${unlockCost}" ${saveManager.getGems() < unlockCost ? 'disabled' : ''} style="background:#9333ea;border-color:#c084fc;">
-                💎 ${unlockCost} 晶核解锁
+                <img class="ui-icon-inline" src="assets/icons/icon_gem.png" alt="Gem"> ${unlockCost} 晶核解锁
               </button>
             `}
           </div>
@@ -552,7 +574,7 @@ export class HomeLobbyUI {
                 ${isEquipped ? '✓ 已佩戴 (点击卸下)' : '+ 佩戴出战'}
               </button>
               <button class="weapon-btn upgrade" data-action="upgrade-skill" data-id="${sk.id}" data-scost="${scrapCost}" data-ccost="${chipCost}" style="padding:6px 10px;font-size:11px;" ${!canUpgrade ? 'disabled' : ''}>
-                🪙 ${scrapCost} 强化
+                <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${scrapCost} 强化
               </button>
             </div>
           </div>
@@ -726,11 +748,11 @@ export class HomeLobbyUI {
       <div class="item-modal-overlay">
         <div class="crate-reward-card">
           <div class="crate-reward-title">✨ 军备箱物资开启 ✨</div>
-          <div style="font-size:13px;color:#facc15;font-weight:800;">🪙 额外获得废料 +${res.scrap}</div>
+          <div style="font-size:13px;color:#facc15;font-weight:800;"><img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> 额外获得废料 +${res.scrap}</div>
 
           <div class="crate-reward-items-grid">
             ${res.items.map(it => {
-              const cfg = GAME_CONFIG.items[it.id] || { name: '物资', icon: '📦' };
+              const cfg = GAME_CONFIG.items[it.id] || { name: '物资', icon: 'assets/icons/icon_chip.png' };
               return `
                 <div class="crate-reward-item">
                   <span class="crate-reward-item-icon">${this.formatItemIcon(cfg.icon, cfg.name, 'crate-item-icon-img')}</span>
@@ -767,7 +789,7 @@ export class HomeLobbyUI {
       const scrapCost = 50 + (saved.level - 1) * 50 + (saved.level >= 5 ? (saved.level - 4) * 60 : 0);
       const unlockCost = cfg.unlockCost || 200;
 
-      const shardItem = GAME_CONFIG.items[cfg.materialId] || { name: '基因碎片', icon: '🧬' };
+      const shardItem = GAME_CONFIG.items[cfg.materialId] || { name: '基因碎片', icon: 'assets/icons/icon_shard.png' };
       const heldShards = saveManager.getItemCount(cfg.materialId);
       const canAffordShards = heldShards >= shardCost;
       const canAffordScrap = saveManager.getScrap() >= scrapCost;
@@ -821,14 +843,14 @@ export class HomeLobbyUI {
           <div class="pet-card-actions">
             ${saved.unlocked ? `
               <button class="weapon-btn upgrade" data-action="upgrade-pet" data-id="${id}" data-scost="${scrapCost}" data-hcost="${shardCost}" ${!canUpgrade ? 'disabled' : ''}>
-                🪙 ${scrapCost} 升级
+                <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${scrapCost} 升级
               </button>
               <button class="weapon-btn primary" data-action="deploy-pet" data-id="${id}" ${isDeployed ? 'disabled' : ''}>
                 ${isDeployed ? '已出战' : '选此出战'}
               </button>
             ` : `
               <button class="weapon-btn primary" data-action="unlock-pet" data-id="${id}" data-cost="${unlockCost}" ${saveManager.getGems() < unlockCost ? 'disabled' : ''} style="background:#9333ea;border-color:#c084fc;">
-                💎 ${unlockCost} 晶核召唤
+                <img class="ui-icon-inline" src="assets/icons/icon_gem.png" alt="Gem"> ${unlockCost} 晶核召唤
               </button>
             `}
           </div>
@@ -882,7 +904,7 @@ export class HomeLobbyUI {
             </div>
           </div>
           <button class="rune-item-btn" data-action="upgrade-rune" data-id="${rune.id}" ${!canAfford ? 'disabled' : ''}>
-            ${isMax ? '已满级' : `🪙 ${cost} 强化`}
+            ${isMax ? '已满级' : `<img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${cost} 强化`}
           </button>
         </div>
       `;

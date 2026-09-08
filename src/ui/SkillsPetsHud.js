@@ -46,32 +46,44 @@ function ensureStyle() {
     #kp-wave-tactic {
       position: absolute;
       left: 50%;
-      top: 50px;
-      transform: translate(-50%, -10px);
-      width: min(340px, calc(100% - 24px));
+      top: 56px;
+      transform: translate(-50%, -15px) scale(0.95);
+      width: min(350px, calc(100% - 24px));
       box-sizing: border-box;
-      padding: 10px 14px 11px;
-      border: 1px solid var(--kp-wave-accent, rgba(56, 189, 248, 0.65));
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(8, 15, 28, 0.96), rgba(15, 23, 42, 0.94));
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 0 18px color-mix(in srgb, var(--kp-wave-accent, #38bdf8) 22%, transparent);
+      padding: 12px 16px 13px;
+      border: 1.5px solid var(--kp-wave-accent, rgba(56, 189, 248, 0.75));
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(8, 15, 28, 0.98), rgba(15, 23, 42, 0.96));
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), 0 0 22px color-mix(in srgb, var(--kp-wave-accent, #38bdf8) 35%, transparent);
       opacity: 0;
       pointer-events: none;
-      z-index: 50;
-      transition: opacity .22s ease, transform .22s ease;
+      z-index: 55;
+      transition: opacity .25s ease, transform .25s cubic-bezier(0.18, 1, 0.3, 1), box-shadow .25s ease;
       user-select: none;
     }
-    #kp-wave-tactic.visible { opacity: 1; transform: translate(-50%, 0); }
-    #kp-wave-tactic.boss { padding: 12px 14px; }
-    #kp-wave-tactic-head { display: flex; align-items: center; gap: 7px; }
-    #kp-wave-tactic-icon { color: var(--kp-wave-accent, #38bdf8); font-size: 14px; font-weight: 900; }
-    #kp-wave-tactic-title { color: #fff; font-size: 13px; font-weight: 900; letter-spacing: .5px; }
-    #kp-wave-tactic-wave { margin-left: auto; color: #94a3b8; font-size: 9px; font-weight: 800; }
-    #kp-wave-tactic-tip { margin-top: 5px; color: #cbd5e1; font-size: 10px; line-height: 1.45; }
-    #kp-wave-tactic-line { height: 2px; margin-top: 8px; border-radius: 2px; background: var(--kp-wave-accent, #38bdf8); opacity: .65; transform-origin: left; animation: kp-wave-line .7s ease-out; }
+    #kp-wave-tactic.visible {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1.0);
+      animation: tacticCardPulse 2s infinite alternate ease-in-out;
+    }
+    @keyframes tacticCardPulse {
+      0% { box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), 0 0 18px color-mix(in srgb, var(--kp-wave-accent, #38bdf8) 25%, transparent); }
+      100% { box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), 0 0 28px color-mix(in srgb, var(--kp-wave-accent, #38bdf8) 45%, transparent); }
+    }
+    #kp-wave-tactic.boss {
+      padding: 13px 16px;
+      border-width: 2px;
+    }
+    #kp-wave-tactic-head { display: flex; align-items: center; gap: 8px; }
+    #kp-wave-tactic-icon { color: var(--kp-wave-accent, #38bdf8); font-size: 15px; font-weight: 900; filter: drop-shadow(0 0 8px var(--kp-wave-accent)); }
+    #kp-wave-tactic-title { color: #fff; font-size: 14px; font-weight: 900; letter-spacing: .6px; text-shadow: 0 0 8px rgba(255,255,255,0.4); }
+    #kp-wave-tactic-wave { margin-left: auto; color: #94a3b8; font-size: 10px; font-weight: 800; background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 10px; }
+    #kp-wave-tactic-tip { margin-top: 6px; color: #e2e8f0; font-size: 11px; line-height: 1.5; font-weight: 600; }
+    #kp-wave-tactic-line { height: 2.5px; margin-top: 9px; border-radius: 2px; background: var(--kp-wave-accent, #38bdf8); opacity: .8; transform-origin: left; animation: kp-wave-line .7s ease-out; box-shadow: 0 0 10px var(--kp-wave-accent); }
     @keyframes kp-wave-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     @media (prefers-reduced-motion: reduce) {
       #kp-wave-tactic { transition: none; }
+      #kp-wave-tactic.visible { animation: none; }
       #kp-wave-tactic-line { animation: none; }
     }
 
@@ -367,13 +379,19 @@ export function installSkillsPetsHud(game) {
       slotEl.querySelector('.kp-skill-level').textContent = unlocked ? `Lv.${state.level}` : '';
 
       const cdEl = slotEl.querySelector('.kp-skill-cd');
+      const timeEl = slotEl.querySelector('.kp-skill-time');
       if (unlocked && !casting && state.timer < state.cooldown) {
-        const remainingAngle = Math.round((1 - progress) * 360);
-        cdEl.style.background = `conic-gradient(rgba(3, 7, 18, 0.82) ${remainingAngle}deg, transparent 0deg)`;
-        slotEl.querySelector('.kp-skill-time').textContent = `${Math.ceil(state.cooldown - state.timer)}`;
+        const cooledAngle = Math.round(progress * 360);
+        // 外层：顺时针扫过的半透明黑色扇形，扫过的角度代表已冷却比例
+        cdEl.style.background = `conic-gradient(transparent 0deg, transparent ${cooledAngle}deg, rgba(3, 7, 18, 0.78) ${cooledAngle}deg, rgba(3, 7, 18, 0.78) 360deg)`;
+        // 内层：中央剩余秒数（仅在剩余冷却 > 0.5s 时显示）
+        const remaining = state.cooldown - state.timer;
+        if (timeEl) {
+          timeEl.textContent = remaining > 0.5 ? (remaining >= 10 ? Math.ceil(remaining) : remaining.toFixed(1)) : '';
+        }
       } else {
         cdEl.style.background = 'transparent';
-        slotEl.querySelector('.kp-skill-time').textContent = '';
+        if (timeEl) timeEl.textContent = '';
       }
     }
   };

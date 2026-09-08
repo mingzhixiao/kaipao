@@ -17,10 +17,14 @@ export class HUDManager {
       scrap: document.getElementById('hud-scrap'),
       expFill: document.getElementById('exp-fill'),
       topHpCapsule: document.getElementById('top-hp-capsule'),
+      topHpFill: document.getElementById('top-hp-fill'),
       topHpText: document.getElementById('top-hp-text'),
       topShieldCapsule: document.getElementById('top-shield-capsule'),
+      topShieldFill: document.getElementById('top-shield-fill'),
       topShieldText: document.getElementById('top-shield-text'),
-      bossHud: document.getElementById('boss-hud'),
+      bossEncounter: document.getElementById('boss-encounter-container'),
+      bossWarningOverlay: document.getElementById('boss-warning-overlay'),
+      bossHpGhost: document.getElementById('boss-hp-ghost'),
       bossHpFill: document.getElementById('boss-hp-fill'),
       bossHpText: document.getElementById('boss-hp-text'),
       emergencyOverlay: document.getElementById('emergency-overlay'),
@@ -57,6 +61,8 @@ export class HUDManager {
         freeze: { level: -1, cdPercent: -1 }
       }
     };
+    this._animHpRaf = null;
+    this._animShieldRaf = null;
 
     // 订阅全局事件总线 (Event-Driven HUD)
     this.initEventSubscriptions();
@@ -67,8 +73,8 @@ export class HUDManager {
       const hpPct = Math.max(0, Math.round((hp / maxHp) * 100));
       const formatted = `${Math.ceil(hp)} (${hpPct}%)`;
       if (this.dom.topHpText) this.dom.topHpText.textContent = formatted;
+      this.updateHealthBar(hpPct);
       const isCritical = hpPct < 30 && hp > 0;
-      if (this.dom.topHpCapsule) this.dom.topHpCapsule.classList.toggle('critical', isCritical);
       if (this.dom.emergencyOverlay) this.dom.emergencyOverlay.classList.toggle('active', isCritical);
     });
 
@@ -76,6 +82,7 @@ export class HUDManager {
       const shPct = Math.max(0, Math.round((shield / maxShield) * 100));
       const formatted = `${Math.ceil(shield)} (${shPct}%)`;
       if (this.dom.topShieldText) this.dom.topShieldText.textContent = formatted;
+      this.updateShieldBar(shPct);
     });
 
     gameEvents.on('exp_changed', ({ exp, expNeeded, level }) => {
@@ -98,6 +105,130 @@ export class HUDManager {
     gameEvents.on('scrap_changed', ({ scrap }) => {
       if (this.dom.scrap) this.dom.scrap.textContent = scrap;
     });
+
+    // 监听资源掉落飞入动效
+    gameEvents.on('scrap_gained', ({ amount, x, y }) => {
+      this.spawnFloatingText(x, y, amount);
+    });
+  }
+
+  /**
+   * 顶部城防核心装甲血条缓动更新与三段色彩驱动
+   * >60% 绿色活力，30%-60% 黄色警示，<30% 红色危险并呼吸闪烁
+   */
+  updateHealthBar(hpPct) {
+    const fill = this.dom.topHpFill;
+    const capsule = this.dom.topHpCapsule;
+    const target = Math.max(0, Math.min(100, hpPct));
+
+    if (fill) {
+      if (this._animHpRaf) cancelAnimationFrame(this._animHpRaf);
+      let curr = parseFloat(fill.style.width);
+      if (isNaN(curr)) curr = target;
+      const step = () => {
+        const diff = target - curr;
+        if (Math.abs(diff) < 0.4) {
+          fill.style.width = target + '%';
+          return;
+        }
+        curr += diff * 0.15;
+        fill.style.width = curr + '%';
+        this._animHpRaf = requestAnimationFrame(step);
+      };
+      step();
+    }
+
+    if (capsule) {
+      capsule.classList.remove('hp-high', 'hp-mid', 'hp-low', 'critical');
+      if (target > 60) {
+        capsule.classList.add('hp-high');
+      } else if (target >= 30) {
+        capsule.classList.add('hp-mid');
+      } else {
+        capsule.classList.add('hp-low', 'critical');
+      }
+    }
+  }
+
+  /**
+   * 顶部能量护盾进度条缓动更新
+   */
+  updateShieldBar(shPct) {
+    const fill = this.dom.topShieldFill;
+    const target = Math.max(0, Math.min(100, shPct));
+    if (fill) {
+      if (this._animShieldRaf) cancelAnimationFrame(this._animShieldRaf);
+      let curr = parseFloat(fill.style.width);
+      if (isNaN(curr)) curr = target;
+      const step = () => {
+        const diff = target - curr;
+        if (Math.abs(diff) < 0.4) {
+          fill.style.width = target + '%';
+          return;
+        }
+        curr += diff * 0.15;
+        fill.style.width = curr + '%';
+        this._animShieldRaf = requestAnimationFrame(step);
+      };
+      step();
+    }
+  }
+
+  /**
+   * 击杀掉落晶核/金币飘字飞入顶部资源栏反馈
+   */
+  spawnFloatingText(x, y, amount) {
+    if (!amount) return;
+    const canvas = document.getElementById('gameCanvas');
+    let clientX = window.innerWidth / 2;
+    let clientY = window.innerHeight / 2;
+    if (canvas && typeof x === 'number' && typeof y === 'number') {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width / (canvas.width || rect.width);
+      const scaleY = rect.height / (canvas.height || rect.height);
+      clientX = rect.left + x * scaleX;
+      clientY = rect.top + y * scaleY;
+    }
+
+    const el = document.createElement('div');
+    el.className = 'floating-scrap-text';
+    el.innerHTML = `+${amount} <img class="ui-icon-inline" src="assets/icons/icon_coin.png" style="width:16px;height:16px;vertical-align:-2px;">`;
+    el.style.left = `${clientX}px`;
+    el.style.top = `${clientY}px`;
+    el.style.transform = 'translate(-50%, -50%) scale(0.65)';
+    el.style.opacity = '1';
+    document.body.appendChild(el);
+
+    // 向上跃起放大
+    requestAnimationFrame(() => {
+      el.style.transform = 'translate(-50%, -45px) scale(1.22)';
+    });
+
+    // 飞向顶部金币图标
+    setTimeout(() => {
+      const scrapIcon = this.dom.scrap || document.getElementById('hud-scrap');
+      if (scrapIcon) {
+        const targetRect = scrapIcon.getBoundingClientRect();
+        const tx = targetRect.left + targetRect.width / 2;
+        const ty = targetRect.top + targetRect.height / 2;
+        const dx = tx - clientX;
+        const dy = ty - (clientY - 45);
+        el.style.transform = `translate(${dx}px, ${dy}px) scale(0.65)`;
+        el.style.opacity = '0.25';
+      } else {
+        el.style.opacity = '0';
+      }
+    }, 320);
+
+    setTimeout(() => {
+      if (el.parentNode) el.remove();
+      const scrapBadge = document.querySelector('.core-resource-badge');
+      if (scrapBadge) {
+        scrapBadge.style.transition = 'transform 0.12s ease';
+        scrapBadge.style.transform = 'scale(1.22)';
+        setTimeout(() => { scrapBadge.style.transform = ''; }, 140);
+      }
+    }, 820);
   }
 
   updateHUD(game) {
@@ -133,11 +264,11 @@ export class HUDManager {
     if (this.cache.hpText !== hpText) {
       this.cache.hpText = hpText;
       if (this.dom.topHpText) this.dom.topHpText.textContent = hpText;
+      this.updateHealthBar(hpPct);
     }
     const isCritical = hpPct < 30 && game.fortress.hp > 0;
     if (this.cache.criticalHp !== isCritical) {
       this.cache.criticalHp = isCritical;
-      if (this.dom.topHpCapsule) this.dom.topHpCapsule.classList.toggle('critical', isCritical);
       if (this.dom.emergencyOverlay) this.dom.emergencyOverlay.classList.toggle('active', isCritical);
     }
     const shieldRatio = Math.max(0, game.fortress.shield / game.fortress.maxShield);
@@ -146,19 +277,27 @@ export class HUDManager {
     if (this.cache.shieldText !== shText) {
       this.cache.shieldText = shText;
       if (this.dom.topShieldText) this.dom.topShieldText.textContent = shText;
+      this.updateShieldBar(shPct);
     }
     const boss = game.activeBoss;
     const bossVisible = !!(boss && boss.active);
     if (this.cache.bossVisible !== bossVisible) {
       this.cache.bossVisible = bossVisible;
-      if (this.dom.bossHud) this.dom.bossHud.style.display = bossVisible ? 'flex' : 'none';
+      const bContainer = this.dom.bossEncounter || this.dom.bossHud;
+      if (bContainer) bContainer.style.display = bossVisible ? 'flex' : 'none';
+      if (this.dom.bossWarningOverlay) this.dom.bossWarningOverlay.style.display = bossVisible ? 'block' : 'none';
     }
     if (bossVisible) {
-      const bhp = Math.round((boss.hp / boss.maxHp) * 100);
+      const bhp = Math.max(0, Math.min(100, Math.round((boss.hp / boss.maxHp) * 100)));
       if (this.cache.bossHpRatio !== bhp) {
         this.cache.bossHpRatio = bhp;
         if (this.dom.bossHpFill) this.dom.bossHpFill.style.width = bhp + '%';
-        if (this.dom.bossHpText) this.dom.bossHpText.textContent = `${Math.ceil(boss.hp)} / ${boss.maxHp}`;
+        if (this.dom.bossHpGhost) {
+          setTimeout(() => {
+            if (this.dom.bossHpGhost) this.dom.bossHpGhost.style.width = bhp + '%';
+          }, 240);
+        }
+        if (this.dom.bossHpText) this.dom.bossHpText.textContent = `${bhp}% (${Math.ceil(boss.hp)}/${boss.maxHp})`;
       }
     }
   }
@@ -320,7 +459,24 @@ export class HUDManager {
       el.setAttribute('role', 'button');
       el.setAttribute('aria-label', `${card.name}: ${card.desc}`);
       const elemTag = card.element ? `<span class="card-elem-pill elem-${card.element}">${card.element.toUpperCase()}</span>` : '';
-      el.innerHTML = `<img class="card-icon-img" src="${card.img}" alt="${card.name}"><div class="card-info"><div class="card-header-row"><div class="card-name">${card.name}</div><div style="display:flex;gap:4px;align-items:center;">${elemTag}<div class="card-tag">${card.rarity}</div></div></div><div class="card-synergy">${card.synergy}</div><div class="card-desc">${card.desc}</div></div>`;
+      const synergyInfo = this.getCardSynergyInfo(game, card);
+      const synergyPill = synergyInfo ? `<div class="card-synergy-pill ${synergyInfo.active ? 'active' : ''}">${synergyInfo.text}</div>` : '';
+
+      el.innerHTML = `
+        <img class="card-icon-img" src="${card.img}" alt="${card.name}">
+        <div class="card-info">
+          <div class="card-header-row">
+            <div class="card-name">${card.name}</div>
+            <div style="display:flex;gap:4px;align-items:center;">
+              ${elemTag}
+              <div class="card-tag">${(card.rarity || 'common').toUpperCase()}</div>
+            </div>
+          </div>
+          <div class="card-synergy">${card.synergy}</div>
+          <div class="card-desc">${card.desc}</div>
+          ${synergyPill}
+        </div>
+      `;
       el.addEventListener('click', () => {
         this.applyUpgradeCard(card, game);
       });
@@ -333,6 +489,61 @@ export class HUDManager {
       container.appendChild(el);
     });
     focusManager.setupUpgradeCardFocus();
+  }
+
+  /**
+   * 辅助构筑决策：统计玩家当前流派的构筑数量
+   */
+  getCardSynergyInfo(game, card) {
+    if (!card || !card.element) return null;
+    const elem = card.element;
+    let count = 0;
+    let total = 3;
+    let name = '';
+    let icon = '🔥';
+
+    if (elem === 'fire') {
+      name = '火焰流派';
+      icon = '🔥';
+      total = 3;
+      if (game.skills?.rocket?.level > 0) count++;
+      if (game.feature?.skills?.bomber?.level > 0) count++;
+      if (game.synergies?.truckInferno || game.synergies?.thermalEngine) count++;
+    } else if (elem === 'ice') {
+      name = '冰霜流派';
+      icon = '❄️';
+      total = 3;
+      if (game.skills?.freeze?.level > 0) count++;
+      if (game.synergies?.cryoShatter) count++;
+      if (game.synergies?.thermalEngine) count++;
+    } else if (elem === 'thunder') {
+      name = '雷电感电';
+      icon = '⚡';
+      total = 3;
+      if (game.feature?.skills?.laser?.level > 0) count++;
+      if (game.synergies?.teslaCoil) count++;
+      if (game.synergies?.fortressEmp) count++;
+    } else if (elem === 'wind') {
+      name = '风暴扩散';
+      icon = '🌪️';
+      total = 2;
+      if (game.feature?.skills?.tornado?.level > 0) count++;
+      if (game.feature?.skills?.boomerang?.level > 0) count++;
+    } else if (elem === 'physical') {
+      name = '重装碾压';
+      icon = '🚚';
+      total = 2;
+      if (game.skills?.truck?.level > 0) count++;
+      if (game.feature?.skills?.boomerang?.level > 0) count++;
+    } else {
+      return null;
+    }
+
+    return {
+      icon,
+      text: `${icon} ${name} ${count}/${total}`,
+      active: count > 0
+    };
   }
 
   showGameOverModal(game) {
@@ -383,6 +594,7 @@ export class HUDManager {
             id: 'settings_menu',
             element: this.dom.settingsMenu,
             pauseGame: false,
+            defaultFocus: () => this.dom.btnSpeed || document.getElementById('btn-speed'),
             onClose: () => this.dom.settingsMenu.classList.remove('open')
           });
         }
@@ -398,6 +610,28 @@ export class HUDManager {
           if (this.dom.settingsMenu.classList.contains('open')) {
             uiStack.pop();
           }
+        }
+      });
+
+      // 设置菜单焦点循环与无障碍键盘导航 (Tab 与上下箭头循环)
+      this.dom.settingsMenu.addEventListener('keydown', (e) => {
+        const focusables = Array.from(this.dom.settingsMenu.querySelectorAll('button, .setting-btn-pill, .dropdown-close'));
+        if (!focusables.length) return;
+        const curIdx = focusables.indexOf(document.activeElement);
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const nextIdx = e.shiftKey
+            ? (curIdx - 1 + focusables.length) % focusables.length
+            : (curIdx + 1) % focusables.length;
+          focusables[nextIdx].focus();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextIdx = (curIdx + 1) % focusables.length;
+          focusables[nextIdx].focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const nextIdx = (curIdx - 1 + focusables.length) % focusables.length;
+          focusables[nextIdx].focus();
         }
       });
     }

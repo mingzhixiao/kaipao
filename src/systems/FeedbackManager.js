@@ -3,8 +3,8 @@ export class FeedbackManager {
   constructor(soundEngine) {
     this.sound = soundEngine;
     this.trauma = 0;             // 创伤指数 (0.0 ~ 1.0)
-    this.traumaDecay = 2.4;      // 创伤每秒衰减速率 (平滑快速归位)
-    this.maxShakeOffset = 3.8;   // Canvas 视口内平滑微震颤最大位移 (严格限制在 3.8px 以内，绝不露底或晃动 DOM)
+    this.traumaDecay = 2.2;      // 创伤每秒衰减速率 (平滑快速归位)
+    this.maxShakeOffset = 6.5;   // Canvas 视口内平滑微震颤最大位移 (保证打击感强烈且平滑)
     this.hitStopTimer = 0;       // 微顿帧 (HitStop) 时钟
     this._t = 0;                 // 连续平滑正弦采样时间戳
   }
