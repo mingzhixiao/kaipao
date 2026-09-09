@@ -2,6 +2,7 @@
 import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost } from './RuneSystem.js';
 import { saveManager } from './SaveManager.js';
 import { GAME_CONFIG } from '../core/Config.js';
+import { uiStack } from '../ui/UIStack.js';
 
 export function showWaveBanner(waveNum, isBossWave, stageConfig = null, wavePlan = null) {
   const banner = document.getElementById('wave-banner');
@@ -42,9 +43,15 @@ export function showStageClearModal(game) {
   const title = document.getElementById('stage-clear-title');
   const scrapEl = document.getElementById('stage-clear-scrap');
   const totalEl = document.getElementById('stage-clear-total-scrap');
+  const starEl = document.getElementById('stage-clear-stars');
+  const hpEl = document.getElementById('stage-clear-hp');
+  const ratingEl = document.getElementById('stage-clear-rating');
   if (title) title.textContent = `${reward.stageName || '关卡'} · 通关成功`;
   if (scrapEl) scrapEl.textContent = `+${reward.scrap || 0}`;
   if (totalEl) totalEl.textContent = `${reward.totalScrap || saveManager.getScrap()}`;
+  if (starEl) starEl.innerHTML = Array.from({ length: 5 }, (_, index) => `<span class="result-star${index < (reward.stars || 1) ? ' earned' : ''}">★</span>`).join('');
+  if (hpEl) hpEl.textContent = `基地生命 ${reward.fortressHp || 0}/${reward.fortressMaxHp || 0} · ${reward.fortressHpPercent || 0}%`;
+  if (ratingEl) ratingEl.textContent = `${reward.stars || 1} 星 · ${reward.ratingLabel || '险守成功'}`;
 
   // 渲染关卡结算物资列表
   const lootGrid = document.getElementById('stage-clear-loot-grid');
@@ -109,13 +116,32 @@ export function showStageClearModal(game) {
     });
     if (!choices.length) box.innerHTML = '<div class="rune-choice-empty">全部符文已满级</div>';
   }
-  modal.style.display = 'flex';
+  document.body.classList.add('battle-result-open');
+  uiStack.push({ id: 'stage_clear_modal', element: modal, pauseGame: true, defaultFocus: () => document.getElementById('btn-stage-next'), onClose: () => document.body.classList.remove('battle-result-open') });
 
-  const close = () => { modal.style.display = 'none'; };
+  const close = () => {
+    if (uiStack.top()?.id === 'stage_clear_modal') uiStack.pop();
+    else modal.style.display = 'none';
+  };
   const btnNext = document.getElementById('btn-stage-next');
   const btnForge = document.getElementById('btn-open-forge');
   const btnMenu = document.getElementById('btn-stage-menu');
-  if (btnNext) btnNext.onclick = () => { close(); game.startStage(Math.min(8, (reward.stageId || 1) + 1)); game.isPaused = false; };
+  if (btnNext) btnNext.dataset.busy = '0';
+  if (btnNext) btnNext.onclick = () => {
+    if (btnNext.dataset.busy === '1') return;
+    btnNext.dataset.busy = '1';
+    const maxStageId = GAME_CONFIG.stages?.length || reward.stageId || 1;
+    close();
+    try {
+      game.startStage(Math.min(maxStageId, (reward.stageId || 1) + 1));
+      game.isPaused = false;
+    } catch (error) {
+      console.error('[StageUI] 下一关启动失败:', error);
+      btnNext.dataset.busy = '0';
+      document.body.classList.add('battle-result-open');
+      uiStack.push({ id: 'stage_clear_modal', element: modal, pauseGame: true, defaultFocus: btnNext, onClose: () => document.body.classList.remove('battle-result-open') });
+    }
+  };
   if (btnForge) btnForge.onclick = () => {
     close();
     import('../ui/HomeLobbyUI.js').then(({ homeLobbyUI }) => {

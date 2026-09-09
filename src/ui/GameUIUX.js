@@ -22,6 +22,18 @@ function injectStyles() {
     button,[role="button"] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     button:focus-visible,[role="button"]:focus-visible { outline:2px solid var(--neon-cyan,#00f0ff); outline-offset:2px; }
     #top-hud { padding-top:var(--ui-safe-top)!important; padding-left:var(--ui-safe-left)!important; padding-right:var(--ui-safe-right)!important; }
+    #top-hud .hud-top-bar { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:7px; width:100%; }
+    #top-hud .battle-progress-group { min-width:0; gap:4px; }
+    #top-hud .prog-badge { min-width:0; padding:4px 6px; }
+    #top-hud .core-resource-badge { padding:4px 9px; }
+    #top-hud .sys-controls-group { display:flex; align-items:center; gap:5px; }
+    .battle-exit-btn { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1.5px solid rgba(251,113,133,.55); border-radius:8px; background:rgba(76,14,30,.78); color:#fda4af; font-size:19px; font-weight:900; cursor:pointer; }
+    .battle-exit-btn:active { transform:scale(.94); }
+    #top-hud .top-vitals-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; width:100%; padding-top:0; }
+    #top-hud .vital-capsule { min-width:0; min-height:28px; width:100%; justify-content:center; border-radius:8px; padding:4px 7px; gap:4px; }
+    #top-hud .vital-capsule.hp { grid-column:1 / -1; min-height:32px; border-width:2px; }
+    #top-hud .vital-label { position:relative; z-index:2; color:#cbd5e1; font-size:10px; font-weight:900; white-space:nowrap; }
+    #top-hud .vital-val { min-width:0; font-size:11px; white-space:nowrap; }
     #bottom-hud { padding-left:var(--ui-safe-left)!important; padding-right:var(--ui-safe-right)!important; padding-bottom:calc(10px + var(--ui-safe-bottom))!important; }
     .hud-badge,.icon-btn { min-height:var(--ui-touch); }
     .icon-btn { min-width:var(--ui-touch); display:inline-flex; align-items:center; justify-content:center; }
@@ -53,10 +65,39 @@ function injectStyles() {
     #home-lobby .filter-bar::-webkit-scrollbar { display:none; }
     #home-lobby .filter-pill { min-height:38px; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; padding:0 13px!important; }
     #home-lobby #lobby-item-modal,#home-lobby #lobby-crate-modal { position:fixed!important; inset:0!important; z-index:20; padding:16px var(--ui-safe-right) calc(16px + var(--ui-safe-bottom)) var(--ui-safe-left); display:none; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.62); backdrop-filter:blur(7px); }
-    #upgrade-modal,#gameover-modal,#stage-select-modal,#stage-clear-modal,#rune-forge-modal { padding:var(--ui-safe-top) var(--ui-safe-right) var(--ui-safe-bottom) var(--ui-safe-left)!important; overscroll-behavior:contain; }
+    #upgrade-modal,#gameover-modal,#retreat-confirm-modal,#stage-select-modal,#stage-clear-modal,#rune-forge-modal { padding:var(--ui-safe-top) var(--ui-safe-right) var(--ui-safe-bottom) var(--ui-safe-left)!important; overscroll-behavior:contain; }
     #upgrade-modal .cards-container,#gameover-modal .report-card,#stage-select-modal > *,#rune-forge-modal > * { max-height:calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - 24px); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
     #stage-clear-modal { padding:max(8px,var(--ui-safe-top)) max(8px,var(--ui-safe-right)) max(8px,var(--ui-safe-bottom)) max(8px,var(--ui-safe-left))!important; }
-    #stage-clear-modal .stage-clear-card { max-height:calc(100dvh - max(8px,var(--ui-safe-top)) - max(8px,var(--ui-safe-bottom)))!important; overflow:hidden; }
+    #stage-clear-modal .stage-clear-card { max-height:calc(100dvh - max(8px,var(--ui-safe-top)) - max(8px,var(--ui-safe-bottom)))!important; overflow-y:auto; overflow-x:hidden; padding:15px 14px 12px; border-radius:8px; scrollbar-width:thin; }
+    body.battle-result-open #kp-skill-hud,body.battle-result-open #kp-wave-tactic { display:none!important; }
+    .report-card { border-radius:8px!important; gap:11px!important; padding:18px 16px!important; }
+    .report-subtitle { margin-top:-7px; color:#94a3b8; font-size:11px; text-align:center; }
+    #retreat-confirm-modal { position:absolute; inset:0; z-index:145; display:none; align-items:center; justify-content:center; background:rgba(3,6,12,.82); backdrop-filter:blur(5px); }
+    .retreat-confirm-card { width:min(340px,calc(100% - 28px)); padding:20px 18px 16px; border:1px solid rgba(251,113,133,.5); border-radius:8px; background:linear-gradient(180deg,#151c2b,#090e18); box-shadow:0 16px 44px rgba(0,0,0,.65); text-align:center; }
+    .retreat-confirm-icon { color:#fb7185; font-size:29px; line-height:1; }
+    .retreat-confirm-title { margin-top:7px; color:#fff; font-size:18px; font-weight:900; }
+    .retreat-confirm-desc { margin-top:8px; color:#aeb9ca; font-size:12px; line-height:1.55; }
+    .retreat-confirm-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px; }
+    .retreat-cancel-btn,.retreat-confirm-btn { min-height:44px; border-radius:8px; font-size:13px; font-weight:900; cursor:pointer; }
+    .retreat-cancel-btn { border:1px solid rgba(148,163,184,.38); background:#1e293b; color:#e2e8f0; }
+    .retreat-confirm-btn { border:1px solid #fb7185; background:#881337; color:#fff; }
+    .stage-result-summary { margin:0 0 10px; padding:9px 10px; border:1px solid rgba(250,204,21,.28); border-radius:8px; background:rgba(30,41,59,.66); text-align:center; }
+    .stage-clear-stars { display:flex; justify-content:center; gap:4px; min-height:27px; }
+    .result-star { color:#334155; font-size:25px; line-height:1; text-shadow:none; }
+    .result-star.earned { color:#facc15; text-shadow:0 0 10px rgba(250,204,21,.65); }
+    .stage-clear-rating { margin-top:3px; color:#fef08a; font-size:12px; font-weight:900; }
+    .stage-clear-hp { margin-top:3px; color:#94a3b8; font-size:10px; }
+    #stage-clear-modal .stage-clear-title { margin-bottom:7px; font-size:19px; }
+    #stage-clear-modal .stage-clear-reward { margin-bottom:9px; }
+    #stage-clear-modal .loot-settle-container { padding:8px 9px; margin-bottom:9px!important; border-radius:8px; }
+    #stage-clear-modal #stage-rune-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin:8px 0 10px; }
+    #stage-clear-modal .rune-choice-card { min-width:0; flex-direction:column; gap:5px; padding:8px 5px; border-radius:8px; text-align:center; }
+    #stage-clear-modal .rune-icon { width:38px; height:38px; border-radius:8px; }
+    #stage-clear-modal .rune-choice-info { min-width:0; width:100%; }
+    #stage-clear-modal .rune-choice-name { min-height:34px; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1.35; }
+    #stage-clear-modal .rune-choice-desc { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; font-size:9px; line-height:1.35; }
+    #stage-clear-modal .stage-clear-actions { position:sticky; bottom:-12px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; padding:8px 0 0; background:linear-gradient(180deg,transparent,rgba(10,14,24,.99) 22%); }
+    #stage-clear-modal .stage-clear-btn { min-width:0; min-height:44px; padding:8px 4px; border-radius:8px; font-size:12px; }
     .primary-btn,.reroll-btn,.cheat-btn { min-height:44px; }
 
     /* 信息架构：七个并列入口收敛为“基地 / 构筑 / 养成 / 试炼 / 更多”。 */
@@ -79,6 +120,10 @@ function injectStyles() {
       #home-lobby .lobby-header,#home-lobby .lobby-bottom-nav { max-width:520px; width:100%; margin-left:auto; margin-right:auto; }
     }
     @media (max-width:380px) {
+      #top-hud .prog-badge .badge-label { display:none; }
+      #top-hud .prog-badge { padding-left:5px; padding-right:5px; }
+      #top-hud .core-resource-badge { padding-left:6px; padding-right:6px; }
+      #top-hud .vital-label { display:none; }
       #home-lobby .nav-tab-icon { font-size:17px!important; }
       #home-lobby .nav-tab-label { font-size:9px!important; }
       #home-lobby .lobby-pill { padding-left:7px!important; padding-right:7px!important; font-size:10px!important; }

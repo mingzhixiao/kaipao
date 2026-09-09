@@ -100,6 +100,10 @@ function initCheatPanel(game) {
   });
   const btnCheatBoss = document.getElementById('cheat-boss');
   if (btnCheatBoss) btnCheatBoss.addEventListener('click', () => game.spawnBoss(180));
+  const btnCheatFail = document.getElementById('cheat-fail');
+  if (btnCheatFail) btnCheatFail.addEventListener('click', () => game.damageFortress(game.fortress.hp + game.fortress.shield + 1));
+  const btnCheatClear = document.getElementById('cheat-clear');
+  if (btnCheatClear) btnCheatClear.addEventListener('click', () => game.waveSystem.onStageClear());
 }
 
 window.addEventListener('DOMContentLoaded', () => {

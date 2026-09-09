@@ -296,6 +296,7 @@ export class CombatSystem {
     enemy.active = false;
     const game = this.game;
     game.kills++;
+    gameEvents.emit('kill_changed', { kills: game.kills });
     if (!game.battleLoot) {
       game.battleLoot = { scrap: 0, gems: 0, items: {} };
     }

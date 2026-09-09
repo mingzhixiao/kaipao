@@ -4,6 +4,7 @@ import { sound } from './SoundEngine.js';
 import { saveManager } from './SaveManager.js';
 import { LevelDesignSystem } from './LevelDesignSystem.js';
 import { gameEvents } from '../core/GameEventBus.js';
+import { buildStageClearReward, getFortressStarRating } from './BattleRewardSystem.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -167,55 +168,19 @@ export class WaveSystem {
   }
 
   onStageClear() {
-    if (this.stageCleared) return;
+    if (this.stageCleared || this.game.battleSettled) return;
     this.stageCleared = true;
+    this.game.battleSettled = true;
     this.game.isPaused = true;
-    const modeCfg = this.modeConfig || GAME_CONFIG.modes.normal;
-    const base = Math.round((this.stageConfig?.scrapReward || 60) * (modeCfg.scrapMult || 1.0));
-    const killBonus = Math.floor(this.game.kills * 0.4 * (modeCfg.scrapMult || 1.0));
-    const waveBonus = this.wave * 5;
-    const stageClearScrap = base + killBonus + waveBonus;
+    const hpRatio = Math.max(0, Math.min(1, this.game.fortress.hp / this.game.fortress.maxHp));
+    const stars = getFortressStarRating(this.game.fortress.hp, this.game.fortress.maxHp);
+    const clearReward = buildStageClearReward({ stars, stageConfig: this.stageConfig, mode: this.mode, modeConfig: this.modeConfig || GAME_CONFIG.modes.normal, wave: this.wave });
 
+    // 击杀掉落和星级通关奖励分别累计，保证撤离逻辑不会误发通关物资。
     if (!this.game.battleLoot) this.game.battleLoot = { scrap: 0, gems: 0, items: {} };
-    this.game.battleLoot.scrap = (this.game.battleLoot.scrap || 0) + stageClearScrap;
-
-    // 定向专属芯片掉落 (如第 1 关掉落温压火箭芯片)
-    const featuredChip = this.stageConfig?.featuredChip;
-    if (featuredChip) {
-      const minChip = this.stageConfig.chipDropCount?.[0] || 2;
-      const maxChip = this.stageConfig.chipDropCount?.[1] || 4;
-      const baseChipCnt = minChip + Math.floor(Math.random() * (maxChip - minChip + 1));
-      const finalChipCnt = Math.round(baseChipCnt * (modeCfg.shardMult || 1.0));
-      this.game.battleLoot.items[featuredChip] = (this.game.battleLoot.items[featuredChip] || 0) + finalChipCnt;
-    }
-
-    // 强化碎片保底奖励 (力量/射速/攻速/弹匣)
-    const clearShards = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard', 'mag_shard'];
-    const shardDropTimes = this.mode === 'elite' ? 3 : 2;
-    for (let i = 0; i < shardDropTimes; i++) {
-      const dropShard = clearShards[Math.floor(Math.random() * clearShards.length)];
-      const num = this.mode === 'elite' ? 3 : 2;
-      this.game.battleLoot.items[dropShard] = (this.game.battleLoot.items[dropShard] || 0) + num;
-    }
-
-    // 精英模式高额晶核掉落几率
-    if (Math.random() < (modeCfg.gemChance || 0.15)) {
-      const gemReward = this.mode === 'elite' ? (5 + Math.floor(Math.random() * 8)) : 2;
-      this.game.battleLoot.gems = (this.game.battleLoot.gems || 0) + gemReward;
-    }
-
-    // 精英模式专属必掉：稀有军工枪械核心 (rare_weapon_shard)
-    if (this.mode === 'elite') {
-      const chId = this.stageConfig?.chapter || Math.min(5, Math.ceil((this.stageId || 1) / 10));
-      const isBoss = this.stageConfig?.isChapterBoss || this.stageConfig?.isMiniBoss;
-      const rareCount = Math.max(1, Math.round(1 + chId * 0.7 + (isBoss ? 2 : 0)));
-      this.game.battleLoot.items['rare_weapon_shard'] = (this.game.battleLoot.items['rare_weapon_shard'] || 0) + rareCount;
-    }
-
-    // 战略军备箱掉落
-    if (Math.random() < (this.mode === 'elite' ? 0.85 : 0.45)) {
-      this.game.battleLoot.items['supply_crate'] = (this.game.battleLoot.items['supply_crate'] || 0) + 1;
-    }
+    this.game.battleLoot.scrap = (this.game.battleLoot.scrap || 0) + clearReward.scrap;
+    this.game.battleLoot.gems = (this.game.battleLoot.gems || 0) + clearReward.gems;
+    Object.entries(clearReward.items).forEach(([itemId, count]) => { this.game.battleLoot.items[itemId] = (this.game.battleLoot.items[itemId] || 0) + count; });
 
     const settled = saveManager.settleBattleLoot(this.game.battleLoot, true, this.stageId);
     const result = saveManager.recordStageClear(this.stageId, 0, this.mode);
@@ -224,6 +189,11 @@ export class WaveSystem {
       stageId: this.stageId,
       stageName: this.stageConfig?.name || '',
       mode: this.mode,
+      stars,
+      ratingLabel: clearReward.ratingLabel,
+      fortressHp: Math.ceil(this.game.fortress.hp),
+      fortressMaxHp: this.game.fortress.maxHp,
+      fortressHpPercent: Math.round(hpRatio * 100),
       scrap: settled.scrap,
       gems: settled.gems,
       items: settled.items,
@@ -270,8 +240,7 @@ export class WaveSystem {
     enemy.color = cfg.color;
     enemy.expVal = cfg.expVal;
     const road = this.game.getRoadBounds(0);
-    const spawnIndex = this.waveSpawnedCount;
-    enemy.laneRatio = this.levelDesign.chooseLane(this.wavePlan, spawnIndex);
+    enemy.laneRatio = this.levelDesign.chooseLane(this.wavePlan, this.waveSpawnedCount);
     enemy.x = road.left + road.roadWidth * enemy.laneRatio;
     enemy.y = -enemy.radius - Math.random() * 20;
     enemy.vx = 0; enemy.vy = enemy.speed;
@@ -325,7 +294,7 @@ export class WaveSystem {
     boss.expVal = Math.round(cfg.expVal * bossTierMult);
 
     const road = this.game.getRoadBounds(0);
-    boss.laneRatio = 0.5; boss.x = road.center;
+    boss.laneRatio = this.levelDesign.chooseLane(this.wavePlan, this.waveSpawnedCount); boss.x = road.left + road.roadWidth * boss.laneRatio;
     boss.y = spawnY !== null ? spawnY : (-boss.radius - 15);
     boss.vx = 0; boss.vy = boss.speed;
     boss.hitFlash = 0; boss.hitStagger = 0; boss.burnTimer = 0;
