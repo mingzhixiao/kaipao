@@ -66,6 +66,7 @@ export class HUDManager {
     };
     this._animHpRaf = null;
     this._animShieldRaf = null;
+    this.isApplyingUpgrade = false;
 
     // 订阅全局事件总线 (Event-Driven HUD)
     this.initEventSubscriptions();
@@ -430,15 +431,27 @@ export class HUDManager {
   }
 
   applyUpgradeCard(card, game) {
+    if (!card || !game || !game.isUpgrading || this.isApplyingUpgrade) return;
     this.clearAutoSelectTimer();
-    card.apply();
-    uiStack.pop();
-    game.isUpgrading = false;
-    this.updateSkillHUD(game);
-    if (typeof this.onUpgradeComplete === 'function') {
-      const cb = this.onUpgradeComplete;
-      this.onUpgradeComplete = null;
-      cb();
+    this.isApplyingUpgrade = true;
+    const cardElements = Array.from(this.dom.cardsContainer?.querySelectorAll('.upgrade-card') || []);
+    cardElements.forEach(element => { element.disabled = true; });
+    try {
+      card.apply();
+      uiStack.pop();
+      game.isUpgrading = false;
+      this.updateSkillHUD(game);
+      if (typeof this.onUpgradeComplete === 'function') {
+        const cb = this.onUpgradeComplete;
+        this.onUpgradeComplete = null;
+        cb();
+      }
+    } catch (error) {
+      console.error('[HUDManager] 技能升级应用失败', error);
+      cardElements.forEach(element => { element.disabled = false; });
+      this.startAutoSelectCountdown(game);
+    } finally {
+      this.isApplyingUpgrade = false;
     }
   }
 
@@ -473,10 +486,9 @@ export class HUDManager {
     if (!container) return;
     container.innerHTML = '';
     selected.forEach(card => {
-      const el = document.createElement('div');
+      const el = document.createElement('button');
+      el.type = 'button';
       el.className = `upgrade-card rarity-${card.rarity}`;
-      el.setAttribute('tabindex', '0');
-      el.setAttribute('role', 'button');
       el.setAttribute('aria-label', `${card.name}: ${card.desc}`);
       const elemTag = card.element ? `<span class="card-elem-pill elem-${card.element}">${card.element.toUpperCase()}</span>` : '';
       const synergyInfo = this.getCardSynergyInfo(game, card);
@@ -499,12 +511,6 @@ export class HUDManager {
       `;
       el.addEventListener('click', () => {
         this.applyUpgradeCard(card, game);
-      });
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          this.applyUpgradeCard(card, game);
-        }
       });
       container.appendChild(el);
     });
