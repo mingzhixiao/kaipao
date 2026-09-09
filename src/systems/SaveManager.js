@@ -451,10 +451,10 @@ export class SaveManager {
     const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
     const w = this.data.weaponData.weapons[id] || { level: 1, attackSpeedLevel: 1 };
     const base = cfg.baseStats.fireInterval;
-    const levelFactor = Math.max(0.7, 1 - ((w.level || 1) - 1) * 0.002);
-    // 攻速强化采用几何递减指数，平滑逼近 0.04s（每秒 25 发超高频极限）
-    const shardFactor = Math.pow(0.996, (w.attackSpeedLevel || 1) - 1);
-    const finalInterval = Math.max(0.04, base * levelFactor * shardFactor);
+    const levelFactor = Math.max(0.75, 1 - ((w.level || 1) - 1) * 0.001);
+    // 攻速强化采用平滑几何衰减，硬下限 0.18s（避免攻速过快失去射击打击质感与音效重叠）
+    const shardFactor = Math.pow(0.998, (w.attackSpeedLevel || 1) - 1);
+    const finalInterval = Math.max(0.18, base * levelFactor * shardFactor);
     return parseFloat(finalInterval.toFixed(3));
   }
 

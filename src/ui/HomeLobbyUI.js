@@ -551,7 +551,7 @@ export class HomeLobbyUI {
 
       // 3. 攻速强化 (attackspeed_shard)
       const asLevel = saveManager.getWeaponAttackSpeedLevel(id);
-      const nextInterval = Math.max(0.04, fireInterval * 0.996).toFixed(3);
+      const nextInterval = Math.max(0.18, fireInterval * 0.998).toFixed(3);
       const asReq = GAME_CONFIG.getWeaponUpgradeRequirements(asLevel);
       const heldAsShards = saveManager.getItemCount('attackspeed_shard');
       const canUpgradeAttackSpeed = state.unlocked && asReq && heldAsShards >= asReq.basicShardCost && (asReq.rareShardCost === 0 || heldRare >= asReq.rareShardCost) && saveManager.getScrap() >= asReq.scrapCost;

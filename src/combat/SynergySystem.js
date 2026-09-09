@@ -49,11 +49,22 @@ export class SynergySystem {
 
   triggerThermalShock(enemy, x, y) { SynergySystem.triggerThermalShock(this.game, enemy, x, y); }
 
+  static applyDirectDamage(target, dmg) {
+    if (target.shield > 0) {
+      const abs = Math.min(target.shield, dmg);
+      target.shield -= abs;
+      dmg -= abs;
+    }
+    if (dmg > 0) {
+      target.hp -= dmg;
+    }
+  }
+
   static triggerThermalShock(game, enemy, x, y) {
     const mult = game.synergies.thermalEngine ? 2.2 : 1.5;
     const shockDmg = Math.round(game.skills.rocket.damage * mult);
     enemy.freezeTimer = 0;
-    enemy.hp -= shockDmg;
+    SynergySystem.applyDirectDamage(enemy, shockDmg);
     game.totalDamage += shockDmg;
     sound.playThermalShock();
     game.feedback.addTrauma(0.48);
@@ -64,7 +75,7 @@ export class SynergySystem {
     game.spawnDamageText(x, y - 25, `💥 殉爆! ${shockDmg}`, '#ff7700', true, true);
     SynergySystem.forEachInRadius(game, x, y, 90, (other) => {
       if (other === enemy) return;
-      other.hp -= Math.round(shockDmg * 0.45);
+      SynergySystem.applyDirectDamage(other, Math.round(shockDmg * 0.45));
       other.hitFlash = 0.12;
       if (other.hp <= 0) game.killEnemy(other);
     });
@@ -136,7 +147,7 @@ export class SynergySystem {
   static triggerOverload(game, enemy, x, y) {
     const overloadDmg = Math.round(game.weapon.damage * 2.4 + 90);
     enemy.burnTimer = 0;
-    enemy.hp -= overloadDmg;
+    SynergySystem.applyDirectDamage(enemy, overloadDmg);
     game.totalDamage += overloadDmg;
     sound.playExplosion();
     game.feedback.addTrauma(0.42);
@@ -147,7 +158,7 @@ export class SynergySystem {
     game.spawnDamageText(x, y - 24, `⚡ 超载 ${overloadDmg}`, '#e879f9', true, true);
     SynergySystem.forEachInRadius(game, x, y, 100, (other) => {
       if (other === enemy) return;
-      other.hp -= Math.round(overloadDmg * 0.4);
+      SynergySystem.applyDirectDamage(other, Math.round(overloadDmg * 0.4));
       other.hitFlash = 0.15;
       other.y -= 15;
       if (other.hp <= 0) game.killEnemy(other);

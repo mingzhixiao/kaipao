@@ -4,8 +4,8 @@ import { saveManager } from './SaveManager.js';
 export const RUNE_CATALOG = [
   { id: 'attack', name: '穿甲弹头', category: 'gun', desc: '主武器伤害 +8% / 级', icon: '⚔️', asset: 'assets/runes/rune_attack.png', maxLevel: 10, costBase: 20,
     apply(game, level) { game.weapon.damage = Math.round(game.weapon.damage * (1 + 0.08 * level)); } },
-  { id: 'firerate', name: '超频扳机', category: 'gun', desc: '射击间隔 -4% / 级', icon: '🔫', asset: 'assets/runes/rune_firerate.png', maxLevel: 8, costBase: 25,
-    apply(game, level) { game.hero.baseAttackInterval = Math.max(0.07, game.hero.baseAttackInterval * Math.pow(0.96, level)); } },
+  { id: 'firerate', name: '超频扳机', category: 'gun', desc: '射击间隔 -3% / 级', icon: '🔫', asset: 'assets/runes/rune_firerate.png', maxLevel: 8, costBase: 25,
+    apply(game, level) { game.hero.baseAttackInterval = Math.max(0.18, game.hero.baseAttackInterval * Math.pow(0.97, level)); } },
   { id: 'crit', name: '弱点标定', category: 'gun', desc: '暴击率 +3% / 级', icon: '🎯', asset: 'assets/runes/rune_crit.png', maxLevel: 10, costBase: 22,
     apply(game, level) { game.weapon.critChance = Math.min(0.75, game.weapon.critChance + 0.03 * level); } },
   { id: 'critDmg', name: '致命打击', category: 'gun', desc: '暴击伤害 +15% / 级', icon: '💥', asset: 'assets/runes/rune_critDmg.png', maxLevel: 6, costBase: 30,

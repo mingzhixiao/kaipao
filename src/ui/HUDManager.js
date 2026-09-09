@@ -310,15 +310,18 @@ export class HUDManager {
     }
     if (bossVisible) {
       const bhp = Math.max(0, Math.min(100, Math.round((boss.hp / boss.maxHp) * 100)));
-      if (this.cache.bossHpRatio !== bhp) {
+      const bShield = Math.ceil(boss.shield || 0);
+      if (this.cache.bossHpRatio !== bhp || this.cache.bossShield !== bShield) {
         this.cache.bossHpRatio = bhp;
+        this.cache.bossShield = bShield;
         if (this.dom.bossHpFill) this.dom.bossHpFill.style.width = bhp + '%';
         if (this.dom.bossHpGhost) {
           setTimeout(() => {
             if (this.dom.bossHpGhost) this.dom.bossHpGhost.style.width = bhp + '%';
           }, 240);
         }
-        if (this.dom.bossHpText) this.dom.bossHpText.textContent = `${bhp}% (${Math.ceil(boss.hp)}/${boss.maxHp})`;
+        const shieldStr = bShield > 0 ? ` · 🛡️ 护盾 ${bShield}` : '';
+        if (this.dom.bossHpText) this.dom.bossHpText.textContent = `${bhp}% (${Math.ceil(boss.hp)}/${boss.maxHp})${shieldStr}`;
       }
     }
   }

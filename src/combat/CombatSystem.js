@@ -252,10 +252,39 @@ export class CombatSystem {
     else if (type === 'truck') textColor = '#e11d48';
     else if (type === 'emp') textColor = '#00f0ff';
 
-    game.spawnDamageText(enemy.x, enemy.y - enemy.radius - 8, dmg, textColor, isCrit);
+    // 装甲护盾吸收与破盾机制
+    let dealtToShield = 0;
+    let dealtToHp = dmg;
+    const hadShield = (enemy.shield || 0) > 0;
 
-    enemy.hp -= dmg;
+    if (hadShield) {
+      dealtToShield = Math.min(enemy.shield, dmg);
+      enemy.shield -= dealtToShield;
+      dealtToHp = dmg - dealtToShield;
+
+      // 护盾青蓝电弧离子粒子反馈
+      game.spawnParticles(enemy.x, enemy.y, '#38bdf8', Math.min(8, 3 + Math.floor(dealtToShield / 25)), 'spark');
+
+      // 破盾击碎提示与强力正向反馈
+      if (enemy.shield <= 0) {
+        enemy.shield = 0;
+        if (typeof sound.playShieldBreak === 'function') sound.playShieldBreak();
+        game.spawnParticles(enemy.x, enemy.y, '#00f0ff', 15, 'spark');
+        game.spawnDamageText(enemy.x, enemy.y - enemy.radius - 20, '🛡️ 护盾击碎!', '#38bdf8', true, true);
+        game.feedback.addTrauma(0.15);
+      }
+    }
+
+    if (dealtToHp > 0) {
+      enemy.hp -= dealtToHp;
+    }
     game.totalDamage += dmg;
+
+    // 伤害飘字颜色适配 (若完全被护盾吸收显示高科技青蓝色)
+    if (hadShield && dealtToHp <= 0) {
+      textColor = '#38bdf8';
+    }
+    game.spawnDamageText(enemy.x, enemy.y - enemy.radius - 8, dmg, textColor, isCrit);
 
     if (enemy.hp <= 0) {
       this.onKill(enemy);
