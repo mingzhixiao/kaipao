@@ -204,6 +204,14 @@ export class WaveSystem {
       this.game.battleLoot.gems = (this.game.battleLoot.gems || 0) + gemReward;
     }
 
+    // 精英模式专属必掉：稀有军工枪械核心 (rare_weapon_shard)
+    if (this.mode === 'elite') {
+      const chId = this.stageConfig?.chapter || Math.min(5, Math.ceil((this.stageId || 1) / 10));
+      const isBoss = this.stageConfig?.isChapterBoss || this.stageConfig?.isMiniBoss;
+      const rareCount = Math.max(1, Math.round(1 + chId * 0.7 + (isBoss ? 2 : 0)));
+      this.game.battleLoot.items['rare_weapon_shard'] = (this.game.battleLoot.items['rare_weapon_shard'] || 0) + rareCount;
+    }
+
     // 战略军备箱掉落
     if (Math.random() < (this.mode === 'elite' ? 0.85 : 0.45)) {
       this.game.battleLoot.items['supply_crate'] = (this.game.battleLoot.items['supply_crate'] || 0) + 1;

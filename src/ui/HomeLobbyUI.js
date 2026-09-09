@@ -533,39 +533,37 @@ export class HomeLobbyUI {
       const canAffordScrap = saveManager.getScrap() >= scrapCost;
       const canUpgrade = state.unlocked && canAffordParts && canAffordScrap;
 
+      const heldRare = saveManager.getItemCount('rare_weapon_shard');
+
       // 1. 力量强化 (power_shard)
       const pLevel = saveManager.getWeaponPowerLevel(id);
-      const nextDmg = damage + (cfg.growth.damagePerPowerLevel || 4);
-      const pShardCost = 2 + Math.floor((pLevel - 1) * 1.5);
-      const pScrapCost = 35 + (pLevel - 1) * 25;
+      const nextDmg = damage + 3.5;
+      const pReq = GAME_CONFIG.getWeaponUpgradeRequirements(pLevel);
       const heldPShards = saveManager.getItemCount('power_shard');
-      const canUpgradePower = state.unlocked && heldPShards >= pShardCost && saveManager.getScrap() >= pScrapCost;
+      const canUpgradePower = state.unlocked && pReq && heldPShards >= pReq.basicShardCost && (pReq.rareShardCost === 0 || heldRare >= pReq.rareShardCost) && saveManager.getScrap() >= pReq.scrapCost;
 
       // 2. 射速强化 (bulletspeed_shard)
       const bsLevel = saveManager.getWeaponBulletSpeedLevel(id);
-      const nextSpd = bulletSpeed + (cfg.growth.bulletSpeedPerShardLevel || 25);
-      const bsShardCost = 2 + Math.floor((bsLevel - 1) * 1.5);
-      const bsScrapCost = 35 + (bsLevel - 1) * 25;
+      const nextSpd = Math.min(2000, bulletSpeed + 2);
+      const bsReq = GAME_CONFIG.getWeaponUpgradeRequirements(bsLevel);
       const heldBsShards = saveManager.getItemCount('bulletspeed_shard');
-      const canUpgradeBulletSpeed = state.unlocked && heldBsShards >= bsShardCost && saveManager.getScrap() >= bsScrapCost;
+      const canUpgradeBulletSpeed = state.unlocked && bsReq && heldBsShards >= bsReq.basicShardCost && (bsReq.rareShardCost === 0 || heldRare >= bsReq.rareShardCost) && saveManager.getScrap() >= bsReq.scrapCost;
 
       // 3. 攻速强化 (attackspeed_shard)
       const asLevel = saveManager.getWeaponAttackSpeedLevel(id);
-      const nextInterval = Math.max(0.06, fireInterval * (1 - (cfg.growth.attackSpeedPerShardRatio || 0.03))).toFixed(2);
-      const asShardCost = 2 + Math.floor((asLevel - 1) * 1.5);
-      const asScrapCost = 40 + (asLevel - 1) * 30;
+      const nextInterval = Math.max(0.04, fireInterval * 0.996).toFixed(3);
+      const asReq = GAME_CONFIG.getWeaponUpgradeRequirements(asLevel);
       const heldAsShards = saveManager.getItemCount('attackspeed_shard');
-      const canUpgradeAttackSpeed = state.unlocked && heldAsShards >= asShardCost && saveManager.getScrap() >= asScrapCost;
+      const canUpgradeAttackSpeed = state.unlocked && asReq && heldAsShards >= asReq.basicShardCost && (asReq.rareShardCost === 0 || heldRare >= asReq.rareShardCost) && saveManager.getScrap() >= asReq.scrapCost;
 
       // 4. 弹匣扩容 (mag_shard)
       const magLevel = saveManager.getWeaponMagazineLevel(id);
       const magCapacity = saveManager.getWeaponMagazineCapacity(id);
-      const nextMagCapacity = magCapacity + (cfg.growth.magazinePerLevel || 4);
+      const nextMagCapacity = magCapacity + 2;
       const reloadTime = (cfg.baseStats.reloadTime || 1.5).toFixed(1);
-      const magShardCost = 2 + Math.floor((magLevel - 1) * 1.5);
-      const magScrapCost = 40 + (magLevel - 1) * 30;
+      const magReq = GAME_CONFIG.getWeaponUpgradeRequirements(magLevel);
       const heldMagShards = saveManager.getItemCount('mag_shard');
-      const canUpgradeMag = state.unlocked && heldMagShards >= magShardCost && saveManager.getScrap() >= magScrapCost;
+      const canUpgradeMag = state.unlocked && magReq && heldMagShards >= magReq.basicShardCost && (magReq.rareShardCost === 0 || heldRare >= magReq.rareShardCost) && saveManager.getScrap() >= magReq.scrapCost;
 
       return `
         <div class="weapon-card ${isEquipped ? 'equipped' : ''}">
@@ -621,18 +619,21 @@ export class HomeLobbyUI {
               </div>
             </div>
 
-            <!-- 碎片升级专区 (力量、射速、攻速、弹匣) -->
+            <!-- 碎片升级专区 (理论上限 1000 级) -->
             <div class="weapon-modules-container">
               <!-- 力量强化 -->
               <div class="weapon-mod-card power">
                 <div class="weapon-mod-header">
-                  <span class="weapon-mod-title">💪 力量模组 (Lv.${pLevel})</span>
+                  <span class="weapon-mod-title">💪 力量模组 (Lv.${pLevel}/1000)</span>
                   <span class="weapon-mod-val">${damage} ➔ <b style="color:#fb923c;">${nextDmg}</b> 威力</span>
                 </div>
                 <div class="weapon-mod-body">
-                  <span class="weapon-mod-req">力量碎片 ${heldPShards}/${pShardCost}</span>
-                  <button class="weapon-mod-btn power" data-action="upgrade-power" data-id="${id}" data-scost="${pScrapCost}" data-hcost="${pShardCost}" ${!canUpgradePower ? 'disabled' : ''}>
-                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${pScrapCost} 强击
+                  <span class="weapon-mod-req">
+                    力量碎片 ${heldPShards}/${pReq ? pReq.basicShardCost : 'MAX'}
+                    ${pReq && pReq.rareShardCost > 0 ? ` · <span style="color:${heldRare >= pReq.rareShardCost ? '#38bdf8' : '#f43f5e'};font-weight:bold;">💎稀有核心 ${heldRare}/${pReq.rareShardCost}</span>` : '<span style="color:#34d399;font-size:10px;">(免稀有核心)</span>'}
+                  </span>
+                  <button class="weapon-mod-btn power" data-action="upgrade-power" data-id="${id}" ${!canUpgradePower ? 'disabled' : ''}>
+                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${pReq ? pReq.scrapCost : '-'} 强击
                   </button>
                 </div>
               </div>
@@ -640,13 +641,16 @@ export class HomeLobbyUI {
               <!-- 射速强化 -->
               <div class="weapon-mod-card bulletspeed">
                 <div class="weapon-mod-header">
-                  <span class="weapon-mod-title">🚀 射速模组 (Lv.${bsLevel})</span>
+                  <span class="weapon-mod-title">🚀 射速模组 (Lv.${bsLevel}/1000)</span>
                   <span class="weapon-mod-val">${bulletSpeed} ➔ <b style="color:#38bdf8;">${nextSpd}</b> 弹速</span>
                 </div>
                 <div class="weapon-mod-body">
-                  <span class="weapon-mod-req">射速碎片 ${heldBsShards}/${bsShardCost}</span>
-                  <button class="weapon-mod-btn bulletspeed" data-action="upgrade-bulletspeed" data-id="${id}" data-scost="${bsScrapCost}" data-hcost="${bsShardCost}" ${!canUpgradeBulletSpeed ? 'disabled' : ''}>
-                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${bsScrapCost} 提速
+                  <span class="weapon-mod-req">
+                    射速碎片 ${heldBsShards}/${bsReq ? bsReq.basicShardCost : 'MAX'}
+                    ${bsReq && bsReq.rareShardCost > 0 ? ` · <span style="color:${heldRare >= bsReq.rareShardCost ? '#38bdf8' : '#f43f5e'};font-weight:bold;">💎稀有核心 ${heldRare}/${bsReq.rareShardCost}</span>` : '<span style="color:#34d399;font-size:10px;">(免稀有核心)</span>'}
+                  </span>
+                  <button class="weapon-mod-btn bulletspeed" data-action="upgrade-bulletspeed" data-id="${id}" ${!canUpgradeBulletSpeed ? 'disabled' : ''}>
+                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${bsReq ? bsReq.scrapCost : '-'} 提速
                   </button>
                 </div>
               </div>
@@ -654,13 +658,16 @@ export class HomeLobbyUI {
               <!-- 攻速强化 -->
               <div class="weapon-mod-card attackspeed">
                 <div class="weapon-mod-header">
-                  <span class="weapon-mod-title">⚡ 攻速模组 (Lv.${asLevel})</span>
+                  <span class="weapon-mod-title">⚡ 攻速模组 (Lv.${asLevel}/1000)</span>
                   <span class="weapon-mod-val">${fireInterval}s ➔ <b style="color:#fde047;">${nextInterval}s</b> 间隔</span>
                 </div>
                 <div class="weapon-mod-body">
-                  <span class="weapon-mod-req">攻速碎片 ${heldAsShards}/${asShardCost}</span>
-                  <button class="weapon-mod-btn attackspeed" data-action="upgrade-attackspeed" data-id="${id}" data-scost="${asScrapCost}" data-hcost="${asShardCost}" ${!canUpgradeAttackSpeed ? 'disabled' : ''}>
-                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${asScrapCost} 频发
+                  <span class="weapon-mod-req">
+                    攻速碎片 ${heldAsShards}/${asReq ? asReq.basicShardCost : 'MAX'}
+                    ${asReq && asReq.rareShardCost > 0 ? ` · <span style="color:${heldRare >= asReq.rareShardCost ? '#38bdf8' : '#f43f5e'};font-weight:bold;">💎稀有核心 ${heldRare}/${asReq.rareShardCost}</span>` : '<span style="color:#34d399;font-size:10px;">(免稀有核心)</span>'}
+                  </span>
+                  <button class="weapon-mod-btn attackspeed" data-action="upgrade-attackspeed" data-id="${id}" ${!canUpgradeAttackSpeed ? 'disabled' : ''}>
+                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${asReq ? asReq.scrapCost : '-'} 频发
                   </button>
                 </div>
               </div>
@@ -668,13 +675,16 @@ export class HomeLobbyUI {
               <!-- 弹匣扩容 -->
               <div class="weapon-mod-card magazine">
                 <div class="weapon-mod-header">
-                  <span class="weapon-mod-title">🔋 弹匣扩容 (Lv.${magLevel})</span>
+                  <span class="weapon-mod-title">🔋 弹匣扩容 (Lv.${magLevel}/1000)</span>
                   <span class="weapon-mod-val">${magCapacity} ➔ <b style="color:#a855f7;">${nextMagCapacity} 发</b></span>
                 </div>
                 <div class="weapon-mod-body">
-                  <span class="weapon-mod-req">弹匣碎片 ${heldMagShards}/${magShardCost}</span>
-                  <button class="weapon-mod-btn magazine" data-action="upgrade-magazine" data-id="${id}" data-scost="${magScrapCost}" data-hcost="${magShardCost}" ${!canUpgradeMag ? 'disabled' : ''}>
-                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${magScrapCost} 扩容
+                  <span class="weapon-mod-req">
+                    弹匣碎片 ${heldMagShards}/${magReq ? magReq.basicShardCost : 'MAX'}
+                    ${magReq && magReq.rareShardCost > 0 ? ` · <span style="color:${heldRare >= magReq.rareShardCost ? '#38bdf8' : '#f43f5e'};font-weight:bold;">💎稀有核心 ${heldRare}/${magReq.rareShardCost}</span>` : '<span style="color:#34d399;font-size:10px;">(免稀有核心)</span>'}
+                  </span>
+                  <button class="weapon-mod-btn magazine" data-action="upgrade-magazine" data-id="${id}" ${!canUpgradeMag ? 'disabled' : ''}>
+                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${magReq ? magReq.scrapCost : '-'} 扩容
                   </button>
                 </div>
               </div>
@@ -711,21 +721,21 @@ export class HomeLobbyUI {
           const pcost = parseInt(btn.dataset.pcost, 10);
           if (saveManager.upgradeWeapon(id, scost, pcost)) this.render();
         } else if (action === 'upgrade-power') {
-          const scost = parseInt(btn.dataset.scost, 10);
-          const hcost = parseInt(btn.dataset.hcost, 10);
-          if (saveManager.upgradeWeaponPower(id, scost, hcost)) this.render();
+          const res = saveManager.upgradeWeaponPower(id);
+          if (!res.success) alert(res.message);
+          else this.render();
         } else if (action === 'upgrade-bulletspeed') {
-          const scost = parseInt(btn.dataset.scost, 10);
-          const hcost = parseInt(btn.dataset.hcost, 10);
-          if (saveManager.upgradeWeaponBulletSpeed(id, scost, hcost)) this.render();
+          const res = saveManager.upgradeWeaponBulletSpeed(id);
+          if (!res.success) alert(res.message);
+          else this.render();
         } else if (action === 'upgrade-attackspeed') {
-          const scost = parseInt(btn.dataset.scost, 10);
-          const hcost = parseInt(btn.dataset.hcost, 10);
-          if (saveManager.upgradeWeaponAttackSpeed(id, scost, hcost)) this.render();
+          const res = saveManager.upgradeWeaponAttackSpeed(id);
+          if (!res.success) alert(res.message);
+          else this.render();
         } else if (action === 'upgrade-magazine') {
-          const scost = parseInt(btn.dataset.scost, 10);
-          const hcost = parseInt(btn.dataset.hcost, 10);
-          if (saveManager.upgradeWeaponMagazine(id, scost, hcost)) this.render();
+          const res = saveManager.upgradeWeaponMagazine(id);
+          if (!res.success) alert(res.message);
+          else this.render();
         } else if (action === 'unlock-weapon') {
           const cost = parseInt(btn.dataset.cost, 10);
           if (saveManager.unlockWeapon(id, cost)) this.render();
@@ -1357,11 +1367,16 @@ export class HomeLobbyUI {
               </div>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;margin-left:8px;">
+          <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;margin-left:8px;gap:6px;">
             ${!isLocked ? `
               <button class="stage-flow-btn" data-action="pick-stage" data-id="${st.id}" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#f43f5e);border-color:#fb7185;color:#fff;' : (st.isChapterBoss ? 'background:linear-gradient(135deg,#d97706,#f59e0b);border-color:#fde047;color:#0f172a;font-weight:900;' : '')}">
                 ${isSelected ? (curMode === 'elite' ? '出击精英' : '出击此关') : '选定此关'}
               </button>
+              ${((curMode === 'normal' && isNormalCleared) || (curMode === 'elite' && isEliteCleared)) ? `
+                <button class="stage-sweep-btn ${curMode === 'elite' ? 'elite-sweep-btn' : ''}" data-action="sweep-stage" data-id="${st.id}" data-mode="${curMode}" title="快速消耗5点体能扫荡本关，瞬间获取对应物资掉落" style="padding:4px 10px;font-size:11px;font-weight:900;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:4px;border:1px solid ${curMode === 'elite' ? '#f43f5e' : '#38bdf8'};background:${curMode === 'elite' ? 'rgba(244,63,94,0.2)' : 'rgba(56,189,248,0.2)'};color:${curMode === 'elite' ? '#fecdd3' : '#bae6fd'};">
+                  ⚡ ${curMode === 'elite' ? '精英扫荡' : '极速扫荡'}
+                </button>
+              ` : ''}
             ` : `<span style="font-size:11px;color:#ef4444;background:rgba(239,68,68,0.15);padding:3px 6px;border-radius:4px;">${lockReason}</span>`}
           </div>
         </div>
@@ -1409,6 +1424,16 @@ export class HomeLobbyUI {
       };
     });
 
+    // 关卡扫荡
+    container.querySelectorAll('[data-action="sweep-stage"]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = parseInt(btn.dataset.id, 10);
+        const mode = btn.dataset.mode || 'normal';
+        this.handleSweepStage(id, mode);
+      };
+    });
+
     container.querySelectorAll('.stage-flow-card:not(.locked)').forEach(card => {
       card.onclick = () => {
         const id = parseInt(card.dataset.stageId, 10);
@@ -1416,6 +1441,167 @@ export class HomeLobbyUI {
         this.render();
       };
     });
+  }
+
+  // 扫荡已通关的关卡
+  handleSweepStage(stageId, mode = 'normal') {
+    const energy = saveManager.getEnergy();
+    if (energy < 5) {
+      alert('作战体能不足（扫荡需要 5 点能量）！请等待恢复或稍后再试。');
+      return;
+    }
+
+    const res = saveManager.sweepStage(stageId, mode);
+    if (!res.success) {
+      alert(res.message || '扫荡失败！');
+      return;
+    }
+
+    // 刷新大厅顶栏能量/货币与试炼界面
+    this.renderHeader();
+    this.renderTrials();
+
+    // 弹出炫酷的扫荡战利品清单
+    this.showSweepResultModal(res, stageId, mode);
+  }
+
+  // 展示扫荡战利品弹窗
+  showSweepResultModal(res, stageId, mode) {
+    const oldModal = document.getElementById('sweep-result-modal');
+    if (oldModal) oldModal.remove();
+
+    const isElite = mode === 'elite';
+    const curEnergy = saveManager.getEnergy();
+
+    const modal = document.createElement('div');
+    modal.id = 'sweep-result-modal';
+    modal.className = 'sweep-modal-backdrop';
+
+    const lootCards = [];
+
+    // 金币
+    lootCards.push(`
+      <div class="sweep-loot-card">
+        <span style="font-size:24px;">💰</span>
+        <div>
+          <div style="font-size:11px;color:#94a3b8;">废料金币</div>
+          <div style="font-size:15px;font-weight:900;color:#facc15;">+${res.scrapEarned}</div>
+        </div>
+      </div>
+    `);
+
+    // 军工芯片
+    if (res.gemsEarned > 0) {
+      lootCards.push(`
+        <div class="sweep-loot-card">
+          <span style="font-size:24px;">💎</span>
+          <div>
+            <div style="font-size:11px;color:#94a3b8;">军工核心晶石</div>
+            <div style="font-size:15px;font-weight:900;color:#38bdf8;">+${res.gemsEarned}</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // 定向技能芯片
+    if (res.chipsAwarded > 0 && res.targetChipItem) {
+      lootCards.push(`
+        <div class="sweep-loot-card">
+          <span style="font-size:24px;">🧩</span>
+          <div>
+            <div style="font-size:11px;color:#94a3b8;">${res.targetChipItem.name}</div>
+            <div style="font-size:15px;font-weight:900;color:#c084fc;">+${res.chipsAwarded} 碎片</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // 基础枪械碎片
+    if (res.regularShards > 0) {
+      lootCards.push(`
+        <div class="sweep-loot-card">
+          <span style="font-size:24px;">🔧</span>
+          <div>
+            <div style="font-size:11px;color:#94a3b8;">基础枪械强化碎片</div>
+            <div style="font-size:15px;font-weight:900;color:#fb923c;">+${res.regularShards} 碎片</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // 稀有军工枪械核心（精英专属）
+    if (res.rareShards > 0) {
+      lootCards.push(`
+        <div class="sweep-loot-card rare-highlight">
+          <span style="font-size:26px;">👑</span>
+          <div style="flex:1;">
+            <div style="font-size:11px;color:#f43f5e;font-weight:900;display:flex;align-items:center;gap:4px;">
+              <span>💎 稀有军工枪械核心</span>
+              <span style="background:rgba(244,63,94,0.25);border:1px solid #f43f5e;font-size:9px;padding:1px 5px;border-radius:4px;color:#fff;">精英战区专属特产</span>
+            </div>
+            <div style="font-size:15px;font-weight:900;color:#fda4af;">+${res.rareShards} 核心 (可用于突破强化 6~1000 级)</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // 指挥官经验
+    lootCards.push(`
+      <div class="sweep-loot-card">
+        <span style="font-size:24px;">🎖️</span>
+        <div>
+          <div style="font-size:11px;color:#94a3b8;">指挥官经验</div>
+          <div style="font-size:15px;font-weight:900;color:#4ade80;">+${res.expGained} EXP</div>
+        </div>
+      </div>
+    `);
+
+    modal.innerHTML = `
+      <div class="sweep-modal-dialog ${isElite ? 'elite-sweep-modal' : ''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:22px;">⚡</span>
+            <div>
+              <div style="font-size:16px;font-weight:900;color:${isElite ? '#f43f5e' : '#38bdf8'};">
+                第 ${stageId} 关 · ${isElite ? '💀 精英极限扫荡' : '🛡️ 战术极速扫荡'} 成功！
+              </div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">
+                战线肃清完毕 · 消耗能量 5 点 (剩余: ${curEnergy} ⚡)
+              </div>
+            </div>
+          </div>
+          <button id="close-sweep-x" style="background:transparent;border:none;color:#94a3b8;font-size:20px;cursor:pointer;padding:4px 8px;">✕</button>
+        </div>
+
+        <div class="sweep-loot-grid">
+          ${lootCards.join('')}
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+          <button id="btn-sweep-again" style="flex:1;padding:10px;border-radius:8px;border:1px solid ${isElite ? '#f43f5e' : '#38bdf8'};background:${isElite ? 'rgba(244,63,94,0.15)' : 'rgba(56,189,248,0.15)'};color:${isElite ? '#fda4af' : '#7dd3fc'};font-weight:bold;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:4px;">
+            ⚡ 再扫一次 (${curEnergy >= 5 ? '消耗 5 ⚡' : '能量不足'})
+          </button>
+          <button id="btn-sweep-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;font-weight:900;cursor:pointer;font-size:13px;box-shadow:0 0 10px rgba(2,132,199,0.5);">
+            确定收下
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('#close-sweep-x').onclick = closeModal;
+    modal.querySelector('#btn-sweep-confirm').onclick = closeModal;
+    modal.onclick = (e) => {
+      if (e.target === modal) closeModal();
+    };
+
+    const againBtn = modal.querySelector('#btn-sweep-again');
+    againBtn.onclick = () => {
+      closeModal();
+      this.handleSweepStage(stageId, mode);
+    };
   }
 
   // 发起战斗

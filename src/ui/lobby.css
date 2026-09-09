@@ -1705,4 +1705,77 @@
   transform: translateY(-1px);
 }
 
+/* 扫荡按钮与结算弹窗 */
+.stage-sweep-btn {
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.stage-sweep-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.25);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+.stage-sweep-btn.elite-sweep-btn:hover {
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.6);
+}
+
+.sweep-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.sweep-modal-dialog {
+  background: linear-gradient(145deg, #111827, #0b0f19);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 440px;
+  padding: 22px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.25);
+  animation: scaleUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+.sweep-modal-dialog.elite-sweep-modal {
+  border-color: rgba(244, 63, 94, 0.5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(244, 63, 94, 0.35);
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.sweep-loot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.sweep-loot-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sweep-loot-card.rare-highlight {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.4), rgba(136, 19, 55, 0.4));
+  border: 1px solid #f43f5e;
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+  grid-column: span 2;
+}
+
+
 

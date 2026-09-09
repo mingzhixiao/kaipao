@@ -186,9 +186,45 @@ export const GAME_CONFIG = {
     mag_shard: { id: 'mag_shard', name: '扩容弹匣碎片', category: 'weapon', rarity: 'rare', icon: 'assets/icons/icon_part.png', targetType: 'magazine', desc: '高密聚能微缩供弹匣扩展模组组件，用于在枪械库中不断升级扩充主武器弹匣容量。', usage: '用于枪械【弹匣扩容】升级提升载弹量' },
     rune_shard: { id: 'rune_shard', name: '远古符文碎片', category: 'rune', rarity: 'epic', icon: 'assets/icons/icon_shard.png', targetType: 'rune', desc: '铭刻着古老战术共鸣铭文的高能晶体碎片，是符文工坊中强化永久战斗符文的关键素材。', usage: '用于【符文工坊】中强化各类永久战术符文' },
 
+    // 精英模式专属稀有枪械核心 (用于 6 级以上千级突破强化)
+    rare_weapon_shard: { id: 'rare_weapon_shard', name: '稀有军工枪械核心', category: 'weapon', rarity: 'epic', icon: 'assets/items/item_assault_part.png', targetType: 'weapon', desc: '军工级精密稀土超导合金核心，仅在【精英模式】击破狂暴感染者或扫荡精英关卡产出。用于枪械 6 级以上千级强化突破！', usage: '用于枪械 Lv.6 后的千级强化突破' },
+
     // 军备补给与消耗道具
     energy_potion: { id: 'energy_potion', name: '高能战术能量剂', category: 'consumable', rarity: 'rare', icon: 'assets/items/item_energy_potion.png', targetType: 'energy', desc: '军工高纯度神经活性复合营养剂，使用后可立即恢复 25 点前线作战体能。', usage: '直接在背包中使用可恢复 25 点体能' },
     supply_crate: { id: 'supply_crate', name: '前线战略军备箱', category: 'consumable', rarity: 'epic', icon: 'assets/items/item_supply_crate.png', targetType: 'crate', desc: '前线空投的高规格密封物资箱，开启可随机获得多种枪械零件、技能芯片与稀有宠物基因。', usage: '直接在背包中开启抽取战术物资' }
+  },
+
+  // 枪械千级强化体系配置与消耗曲线 (理论上限 1000 级)
+  MAX_WEAPON_STAT_LEVEL: 1000,
+  getWeaponUpgradeRequirements(curLevel = 1) {
+    if (curLevel >= 1000) return null;
+    let scrapCost = 30;
+    let basicShardCost = 1;
+    let rareShardCost = 0;
+
+    if (curLevel <= 5) {
+      scrapCost = 30 + (curLevel - 1) * 25;
+      basicShardCost = 1 + Math.floor((curLevel - 1) * 0.5);
+      rareShardCost = 0; // 前 5 级无需稀有核心，轻松快速升级
+    } else if (curLevel <= 15) {
+      scrapCost = 150 + Math.floor(Math.pow(curLevel, 1.25) * 16);
+      basicShardCost = 2 + Math.floor(curLevel * 0.35);
+      rareShardCost = 1; // 6~15 级每次需要 1 个稀有核心
+    } else if (curLevel <= 50) {
+      scrapCost = 450 + Math.floor(Math.pow(curLevel, 1.35) * 20);
+      basicShardCost = 3 + Math.floor(curLevel * 0.45);
+      rareShardCost = 2 + Math.floor((curLevel - 15) / 12);
+    } else if (curLevel <= 200) {
+      scrapCost = 1600 + Math.floor(Math.pow(curLevel, 1.45) * 24);
+      basicShardCost = 8 + Math.floor(curLevel * 0.55);
+      rareShardCost = Math.min(25, 5 + Math.floor(curLevel / 20));
+    } else {
+      scrapCost = Math.min(500000, 8000 + Math.floor(Math.pow(curLevel, 1.5) * 28));
+      basicShardCost = Math.min(200, 15 + Math.floor(curLevel * 0.6));
+      rareShardCost = Math.min(50, 12 + Math.floor(curLevel / 35));
+    }
+
+    return { scrapCost, basicShardCost, rareShardCost };
   },
 
   // 怪物基础数值体系 (平滑初期第 1 关难度)
