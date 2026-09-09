@@ -1,4 +1,4 @@
-// ---------------- 本地持久化：战报 + 关卡进度 + 符文 + 宠物 + 枪械 + 背包素材 + 指挥官 ----------------
+// ---------------- 本地持久化：战报 + 关卡进度 + 符文 + 僚机 + 枪械 + 背包素材 + 指挥官 ----------------
 import { GAME_CONFIG } from '../core/Config.js';
 
 const SAVE_KEY = 'starcore_vanguard_save_v6';
@@ -24,9 +24,9 @@ export class SaveManager {
         regenLevel: 1,
         armorLevel: 1
       },
-      // 宠物系统 (通关第3关解锁，需收集基因碎片合成)
+      // 伴飞僚机系统 (通关第6关解锁，需收集专属核心合成)
       petData: {
-        selected: null, // 初始无出战宠物
+        selected: null, // 初始无出战僚机
         pets: {
           fluffy: { unlocked: false, level: 1, unlockCost: 10 },
           dragon: { unlocked: false, level: 1, unlockCost: 10 }
@@ -367,7 +367,7 @@ export class SaveManager {
   getEquippedStage() { return this.data.equippedStage || 1; }
   setEquippedStage(stageId) { this.data.equippedStage = Math.max(1, stageId); this.save(); }
 
-  // 宠物 (消耗专属基因碎片 + 废料)
+  // 伴飞僚机 (消耗专属核心 + 废料)
   getPetData() { return this.data.petData; }
   setSelectedPet(id) { this.data.petData.selected = id || null; this.save(); }
   upgradePet(id, scrapCost, shardCost = 2) {
@@ -745,7 +745,7 @@ export class SaveManager {
     return true;
   }
 
-  // 综合战力评分 (综合计算武器、城防科技、符文、宠物、已解锁技能)
+  // 综合战力评分 (综合计算武器、城防科技、符文、伴飞僚机、已解锁技能)
   calcCombatPower() {
     let power = 800 + (this.getCommanderLevel() - 1) * 80;
     const equippedW = this.getEquippedWeapon();
@@ -767,7 +767,7 @@ export class SaveManager {
     const runeLevels = this.getRuneLevels();
     for (const lv of Object.values(runeLevels)) power += lv * 40;
 
-    // 宠物评分
+    // 伴飞僚机评分
     const selectedPet = this.data.petData.selected;
     if (selectedPet && this.data.petData.pets[selectedPet]?.unlocked) {
       const pLevel = this.data.petData.pets[selectedPet]?.level || 1;

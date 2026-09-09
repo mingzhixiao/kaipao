@@ -10,12 +10,12 @@ export const SKILL_CONFIG = {
 
 export const PET_TYPES = {
   fluffy: {
-    id: 'fluffy', name: '小毛球', asset: 'assets/pets/fluffy.png', description: '发射多重连发弹幕，并用护盾抵挡前线敌人冲击',
+    id: 'fluffy', name: '智械侦察机·光球', asset: 'assets/pets/fluffy.png', description: '发射多重连发高能弹幕，并用偏振护盾抵挡前线敌对目标冲击',
     baseStats: { hp: 70, attack: 14, attackSpeed: 1.1, moveSpeed: 210, range: 320, shield: 70 },
     skill: 'BULLET_SPRAY', skillParams: { bulletCount: 3, spread: 0.32 }
   },
   dragon: {
-    id: 'dragon', name: '幼龙', asset: 'assets/pets/dragon.png', description: '喷吐扇形炽烈龙炎，造成持续火焰灼烧并引燃战场',
+    id: 'dragon', name: '突击先锋机·炽焰', asset: 'assets/pets/dragon.png', description: '喷射扇形炽烈等离子射流，造成持续等离子灼烧并覆盖战场',
     baseStats: { hp: 100, attack: 22, attackSpeed: 0.85, moveSpeed: 160, range: 260, shield: 100 },
     skill: 'FIRE_BREATH', skillParams: { duration: 1.0, angle: Math.PI / 3 }
   }
@@ -271,7 +271,7 @@ function updateSkills(game, dt) {
     const target = f.target || nearestEnemy(game, game.hero.x, game.hero.y);
     if (!target && id !== 'laser') continue;
 
-    // 1. 裂风涡流 (风属性 · 触发元素扩散)
+    // 1. 微型引力奇点 (场能引力 · 触发元素扩散)
     if (id === 'tornado') {
       f.tornadoes.push({
         x: target.x,
@@ -280,10 +280,10 @@ function updateSkills(game, dt) {
         maxLife: SKILL_CONFIG.tornado.duration,
         tick: 0
       });
-      game.spawnDamageText(target.x, target.y - 15, '🌪️ 裂风涡流!', '#34d399', true, false);
+      game.spawnDamageText(target.x, target.y - 15, '🌀 微型引力奇点!', '#34d399', true, false);
     }
 
-    // 2. 回旋刃 (物理属性 · 高额暴击 · 无锁阶段去重)
+    // 2. 高周波磁旋刃 (动能物理 · 高额暴击 · 无锁阶段去重)
     if (id === 'boomerang') {
       const angle = Math.atan2(target.y - game.hero.y, target.x - game.hero.x);
       f.boomerangs.push({
@@ -299,7 +299,7 @@ function updateSkills(game, dt) {
       });
     }
 
-    // 3. 湮灭射线 (雷属性 · 触发感电与火焰超载爆轰)
+    // 3. 粒子歼灭切割器 (脉冲雷系 · 触发感电与超载爆轰)
     if (id === 'laser') {
       const angle = target ? Math.atan2(target.y - game.hero.y, target.x - game.hero.x) : -Math.PI / 2;
       f.lasers.push({
@@ -321,7 +321,7 @@ function updateSkills(game, dt) {
       }
     }
 
-    // 4. 轨道轰炸 (火属性 · 预瞄红圈指示器 + 连续连投)
+    // 4. 天基动能天谴打击 (天基高爆 · 预瞄红圈指示器 + 连续连投)
     if (id === 'bomber') {
       // 钳制落点在玩家防线 300px 内
       let aimX = target.x;
@@ -356,7 +356,7 @@ function updateSkills(game, dt) {
 function updateCombat(game, dt) {
   const f = game.feature;
 
-  // 1. 回旋刃：无锁时间/阶段戳去重 (杜绝 Set 野指针 Bug)
+  // 1. 高周波磁旋刃：无锁时间/阶段戳去重 (杜绝 Set 野指针 Bug)
   for (let i = f.boomerangs.length - 1; i >= 0; i--) {
     const b = f.boomerangs[i];
     if (b.outbound && distance(b, { x: b.sx, y: b.sy }) >= SKILL_CONFIG.boomerang.maxRange) {
@@ -381,7 +381,7 @@ function updateCombat(game, dt) {
       const enemy = game.enemies[j];
       if (!enemy.active || enemy.hp <= 0) continue;
 
-      // 阶段戳判定：如果本回旋刃在当前阶段已命中过该怪，则跳过
+      // 阶段戳判定：如果本高周波磁旋刃在当前阶段已命中过该怪，则跳过
       if (enemy._lastBoomerangId === b.id && enemy._lastBoomerangPhase === b.phase) continue;
 
       const r = enemy.radius + SKILL_CONFIG.boomerang.width / 2;
@@ -397,7 +397,7 @@ function updateCombat(game, dt) {
     }
   }
 
-  // 2. 裂风涡流：阻尼平滑牵引 + 击退状态互斥
+  // 2. 微型引力奇点：阻尼平滑牵引 + 击退状态互斥
   for (let i = f.tornadoes.length - 1; i >= 0; i--) {
     const t = f.tornadoes[i];
     t.life -= dt;
@@ -458,7 +458,7 @@ function updateCombat(game, dt) {
     if (f.bomberReticle.life <= 0) f.bomberReticle = null;
   }
 
-  // 4. 轨道轰炸投掷循环
+  // 4. 天基动能打击投掷循环
   if (f.bomber) {
     f.bomber.timer += dt;
     if (f.bomber.dropped < SKILL_CONFIG.bomber.bombCount && f.bomber.timer >= SKILL_CONFIG.bomber.bombInterval) {
@@ -612,7 +612,7 @@ function renderFeature(game) {
     ctx.restore();
   }
 
-  // 3. 回旋刃渲染 (高清合金等离子飞刃 + 高速旋转流光拖尾)
+  // 3. 高周波磁旋刃渲染 (高清合金等离子飞刃 + 高速旋转流光拖尾)
   for (const b of f.boomerangs) {
     ctx.save();
     ctx.translate(b.x, b.y);
@@ -671,7 +671,7 @@ function renderFeature(game) {
     ctx.restore();
   }
 
-  // 5. 轨道轰炸战术战机与航弹
+  // 5. 天基动能天谴打击战术卫星与动能弹
   if (f.bomber) {
     // 掠过战场的隐身轰炸巡航机
     ctx.save();

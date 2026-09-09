@@ -56,7 +56,7 @@ console.log('Testing Gamedev System Optimizations...');
 // 3. Tower Defense - Wave Telegraph logic
 {
   // Mock DOM
-  const banner = { style: {} };
+  const banner = { style: {}, classList: { add: () => {}, remove: () => {} } };
   const text = { textContent: '' };
   const sub = { textContent: '' };
   global.document = {
@@ -69,20 +69,20 @@ console.log('Testing Gamedev System Optimizations...');
   };
 
   // Normal wave
-  showWaveBanner(1, false, { name: '废土公路' }, { intensity: 0.4, bias: {} });
+  showWaveBanner(1, false, { name: '小行星前哨' }, { intensity: 0.4, bias: {} });
   assert.ok(text.textContent.includes('WAVE 1'));
   assert.ok(sub.textContent.includes('坚守'));
 
   // Charger rush wave
-  showWaveBanner(3, false, { name: '废土公路' }, { intensity: 0.5, bias: { charger: 0.45 } });
+  showWaveBanner(3, false, { name: '小行星前哨' }, { intensity: 0.5, bias: { charger: 0.45 } });
   assert.ok(sub.textContent.includes('冲锋') || sub.textContent.includes('裂变者'));
 
   // Behemoth tank wave
-  showWaveBanner(5, false, { name: '废土公路' }, { intensity: 0.5, bias: { behemoth: 0.35 } });
+  showWaveBanner(5, false, { name: '小行星前哨' }, { intensity: 0.5, bias: { behemoth: 0.35 } });
   assert.ok(sub.textContent.includes('巨型') || sub.textContent.includes('重甲'));
 
   // Boss wave
-  showWaveBanner(10, true, { name: '废土公路' });
+  showWaveBanner(10, true, { name: '小行星前哨' });
   assert.ok(text.textContent.includes('BOSS'));
   assert.ok(sub.textContent.includes('暴君'));
 

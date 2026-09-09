@@ -193,7 +193,7 @@ export class HomeLobbyUI {
         <div class="lobby-tab-view" id="view-backpack">
           <div class="section-header">
             <div class="section-title">🎒 军备战术背包</div>
-            <div class="section-subtitle">管理各类枪械配件、技能芯片与宠物基因碎片</div>
+            <div class="section-subtitle">管理各类枪械配件、技能芯片与伴飞僚机核心</div>
           </div>
           <div class="backpack-summary-bar">
             <span class="backpack-count-tag" id="backpack-total-held">物资种类: 0 种</span>
@@ -203,17 +203,17 @@ export class HomeLobbyUI {
             <div class="filter-pill active" data-bfilter="all">全部物资</div>
             <div class="filter-pill" data-bfilter="weapon">枪械配件</div>
             <div class="filter-pill" data-bfilter="skill">技能芯片</div>
-            <div class="filter-pill" data-bfilter="pet">宠物基因</div>
+            <div class="filter-pill" data-bfilter="pet">僚机核心</div>
             <div class="filter-pill" data-bfilter="consumable">军备补给</div>
           </div>
           <div class="backpack-grid" id="backpack-items-list"></div>
         </div>
 
-        <!-- Tab 5: 宠物乐园 (Pets) -->
+        <!-- Tab 5: 伴飞战术僚机 (Pets) -->
         <div class="lobby-tab-view" id="view-pets">
           <div class="section-header">
-            <div class="section-title">🐾 战术宠物乐园</div>
-            <div class="section-subtitle">携带伴飞伙伴助阵（消耗专属基因碎片升级）</div>
+            <div class="section-title">🛸 伴飞战术僚机</div>
+            <div class="section-subtitle">配置伴飞突击僚机协同作战（消耗专属核心升级）</div>
           </div>
           <div class="pets-showcase-grid" id="pets-list"></div>
         </div>
@@ -266,8 +266,8 @@ export class HomeLobbyUI {
           <span class="nav-tab-label">背包</span>
         </button>
         <button class="nav-tab-btn" data-tab="pets">
-          <span class="nav-tab-icon">🐾</span>
-          <span class="nav-tab-label">宠物</span>
+          <span class="nav-tab-icon">🛸</span>
+          <span class="nav-tab-label">僚机</span>
         </button>
         <button class="nav-tab-btn" data-tab="runes">
           <span class="nav-tab-icon">💠</span>
@@ -373,11 +373,11 @@ export class HomeLobbyUI {
 
   switchTab(tabId) {
     if (tabId === 'runes' && !saveManager.isSystemUnlocked('runes')) {
-      alert('🔒【符文矩阵工坊】尚未解锁！\n通关第 2 关【锈蚀公路】后开放。');
+      alert('🔒【符文矩阵工坊】尚未解锁！\n通关第 3 关【环形山断层】后开放。');
       return;
     }
     if (tabId === 'pets' && !saveManager.isSystemUnlocked('pets')) {
-      alert('🔒【战术宠物乐园】尚未解锁！\n通关第 3 关【断裂立交】后开放。');
+      alert('🔒【伴飞僚机机库】尚未解锁！\n通关第 6 关【陨石风蚀巨壁】后开放。');
       return;
     }
     this.activeTab = tabId;
@@ -430,7 +430,7 @@ export class HomeLobbyUI {
     if (elGems) elGems.textContent = saveManager.getGems();
 
     // 动态同步底部导航栏锁定角标
-    const navLabels = { lobby: '基地', weapons: '枪械', skills: '技能', backpack: '背包', pets: '宠物', runes: '符文', trials: '试炼' };
+    const navLabels = { lobby: '基地', weapons: '枪械', skills: '技能', backpack: '背包', pets: '僚机', runes: '符文', trials: '试炼' };
     this.dom.root.querySelectorAll('.nav-tab-btn').forEach(btn => {
       const tab = btn.dataset.tab;
       let locked = false;
@@ -508,7 +508,7 @@ export class HomeLobbyUI {
       if (badge) badge.textContent = '🔒 未解锁';
       grid.innerHTML = `
         <div style="grid-column:1/-1;text-align:center;padding:12px;background:rgba(15,23,42,0.6);border:1px dashed rgba(100,116,139,0.3);border-radius:8px;font-size:11px;color:#94a3b8;">
-          🔒 通关第 1 关【废土前哨】后解锁城防加固工程
+          🔒 通关第 1 关【小行星前哨】后解锁城防加固工程
         </div>
       `;
       return;
@@ -1031,7 +1031,7 @@ export class HomeLobbyUI {
     } else if (item.targetType === 'rune') {
       actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往符文矩阵</button>`;
     } else if (item.targetType === 'pet') {
-      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往培养宠物</button>`;
+      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往整备僚机</button>`;
     } else if (item.targetType === 'skill') {
       actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往技能专精</button>`;
     } else if (item.targetType === 'crate') {
@@ -1138,7 +1138,7 @@ export class HomeLobbyUI {
     };
   }
 
-  // 5. 宠物乐园 (专属基因 + 废料)
+  // 5. 伴飞战术僚机 (专属核心 + 废料)
   renderPets() {
     const container = document.getElementById('pets-list');
     if (!container) return;
@@ -1152,13 +1152,14 @@ export class HomeLobbyUI {
       const scrapCost = 50 + (saved.level - 1) * 50 + (saved.level >= 5 ? (saved.level - 4) * 60 : 0);
       const unlockCost = cfg.unlockCost || 200;
 
-      const shardItem = GAME_CONFIG.items[cfg.materialId] || { name: '基因碎片', icon: 'assets/icons/icon_shard.png' };
+      const shardItem = GAME_CONFIG.items[cfg.materialId] || { name: '僚机核心', icon: 'assets/icons/icon_shard.png' };
       const heldShards = saveManager.getItemCount(cfg.materialId);
       const canAffordShards = heldShards >= shardCost;
       const canAffordScrap = saveManager.getScrap() >= scrapCost;
       const canUpgrade = saved.unlocked && canAffordShards && canAffordScrap;
 
-      const tierTitle = saved.level >= 10 ? '三阶·终极霸者' : (saved.level >= 5 ? '二阶·觉醒进阶' : '一阶·幼生形态');
+      const curEvo = (cfg.evolutions || []).slice().reverse().find(e => saved.level >= e.level);
+      const tierTitle = curEvo?.title || (saved.level >= 10 ? '三阶·重装机' : (saved.level >= 5 ? '二阶·突击机' : '一阶·侦察机'));
       const tierBadgeColor = saved.level >= 10 ? '#f59e0b' : (saved.level >= 5 ? '#a855f7' : '#38bdf8');
 
       const stats = {

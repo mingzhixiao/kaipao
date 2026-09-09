@@ -214,7 +214,7 @@ function createLobbyMorePanel() {
     <div class="kp-more-sheet" role="dialog" aria-modal="true" aria-label="更多管理">
       <div class="kp-more-head"><div class="kp-more-title">更多管理</div><button class="kp-more-close" type="button" aria-label="关闭">×</button></div>
       <div class="kp-more-group"><div class="kp-more-group-title">养成与资源</div><div class="kp-more-grid">
-        <button class="kp-more-action" data-more-tab="pets"><span>🐾</span><span><strong>宠物</strong><small>伙伴、等级与出战</small></span></button>
+        <button class="kp-more-action" data-more-tab="pets"><span>🛸</span><span><strong>僚机</strong><small>伴飞、等级与出战</small></span></button>
         <button class="kp-more-action" data-more-tab="backpack"><span>🎒</span><span><strong>背包</strong><small>材料与军备物资</small></span></button>
       </div></div>
       <div class="kp-more-group"><div class="kp-more-group-title">构筑管理</div><div class="kp-more-grid">

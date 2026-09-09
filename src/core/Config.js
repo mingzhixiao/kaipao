@@ -41,7 +41,7 @@ export const GAME_CONFIG = {
   systemUnlocks: {
     fortification: { stage: 1, name: '城防加固', icon: '🛡️', desc: '通关第 1 关解锁：强化城防生命、能量护盾与自愈系统' },
     runes: { stage: 3, name: '符文矩阵', icon: '💠', desc: '通关第 3 关解锁：镶嵌永久战术符文，大幅拓展全维属性' },
-    pets: { stage: 6, name: '战术宠物', icon: '🐾', desc: '通关第 6 关解锁：伴飞战术宠物助战与强力弹幕支援' },
+    pets: { stage: 6, name: '伴飞僚机', icon: '🛸', desc: '通关第 6 关解锁：智能伴飞僚机协同作战与高能弹幕支援' },
     advancedWeapons: { stage: 10, name: '进阶军械', icon: '⚡', desc: '通关第 10 关解锁：解锁毁灭加特林、高斯狙击与等离子爆能枪研发' }
   },
 
@@ -130,13 +130,13 @@ export const GAME_CONFIG = {
     teleportThreshold: 300,
     types: {
       fluffy: {
-        id: 'fluffy', name: '小毛球', asset: 'assets/pets/fluffy.png',
+        id: 'fluffy', name: '智械侦察机·光球', asset: 'assets/pets/fluffy.png',
         tag: '速射护盾', materialId: 'fluffy_shard',
-        description: '发射高能量连发弹幕打击敌方，并用护盾抵挡怪群冲击',
+        description: '发射高能量连发弹幕打击敌方，并用偏振护盾抵挡怪群冲击',
         baseStats: { hp: 70, attack: 14, attackSpeed: 1.1, moveSpeed: 210, range: 320, shield: 70 },
         skill: 'BULLET_SPRAY', skillParams: { bulletCount: 3, spread: 0.32 },
         evolutions: [
-          { level: 1, title: '一阶·幼生毛球', bulletCount: 3, desc: '发射 3 连速射高能弹幕' },
+          { level: 1, title: '一阶·光球侦察机', bulletCount: 3, desc: '发射 3 连速射高能弹幕' },
           { level: 5, title: '二阶·脉冲突击僚机', bulletCount: 5, desc: '发射 5 连贯穿弹幕，附带减速' },
           { level: 10, title: '三阶·星界矩阵重装机', bulletCount: 7, desc: '发射 7 连爆轰弹幕，护盾强化' }
         ]

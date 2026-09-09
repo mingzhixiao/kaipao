@@ -164,7 +164,7 @@ window.addEventListener('DOMContentLoaded', () => {
       homeLobbyUI.init(gameInstance);
       // HomeLobbyUI 在这里才真正创建底部导航，因此 UI/UX 导航增强必须随后执行。
       installGameUIUX(gameInstance);
-      console.log('[Kaipao] UI/UX + gameplay polish + performance optimization + build identity ready');
+      console.log('[Starcore] UI/UX + gameplay polish + performance optimization + build identity ready');
     }, 280);
   });
 });

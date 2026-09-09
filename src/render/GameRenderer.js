@@ -28,7 +28,7 @@ export class GameRenderer {
       ctx.translate(shake.x, shake.y);
     }
 
-    // 1. 废土公路原画背景 (离屏 Canvas 预缓存)
+    // 1. 星河要塞前哨星轨背景 (离屏 Canvas 预缓存)
     this.renderBattlefield(ctx, game);
 
     // 2. 全屏冲击波 / EMP 光环
@@ -43,7 +43,7 @@ export class GameRenderer {
     // 5. 怪物与突变暴君
     this.renderEnemies(ctx, game);
 
-    // 6. 装甲战车
+    // 6. 磁浮重装扫荡舰
     this.renderTrucks(ctx, game);
 
     // 7. 特斯拉高压跳跃电弧
@@ -63,7 +63,7 @@ export class GameRenderer {
       this.renderMuzzleFlash(ctx, game);
     }
 
-    // 12. 极寒射线扇形光锥
+    // 12. 绝对零度射线扇形光锥
     if (game.skills.freeze.activeTimer > 0) {
       this.renderFreezeCone(ctx, game);
     }
@@ -106,7 +106,7 @@ export class GameRenderer {
       bctx.fillRect(0, 0, w, h);
     }
 
-    // 废土远景灰霾层 (破桥远处纵深空气透视)
+    // 深空远景星云层 (纵深空间空气透视)
     const skyHaze = bctx.createLinearGradient(0, 0, 0, 180);
     skyHaze.addColorStop(0, amb.haze || 'rgba(15, 23, 42, 0.55)');
     skyHaze.addColorStop(0.7, 'rgba(20, 30, 48, 0.15)');
@@ -114,7 +114,7 @@ export class GameRenderer {
     bctx.fillStyle = skyHaze;
     bctx.fillRect(0, 0, w, 180);
 
-    // 电影级暗角 Vignette (聚焦中央公路与战斗核心区)
+    // 电影级暗角 Vignette (聚焦中央星轨防线与战斗核心区)
     const vig = bctx.createRadialGradient(
       w / 2, h / 2, w * 0.42,
       w / 2, h / 2, w * 0.92
@@ -604,7 +604,7 @@ export class GameRenderer {
       ctx.ellipse(0, 10, t.width * 0.65, t.height * 0.55, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 尾部双重火箭喷射烈焰
+      // 尾部双重离子推进喷射光焰
       const flameH = 40 + Math.sin(t.timer * 50) * 18;
       const flameGrad = ctx.createLinearGradient(0, t.height * 0.42, 0, t.height * 0.42 + flameH);
       flameGrad.addColorStop(0, '#ffffff');
@@ -615,7 +615,7 @@ export class GameRenderer {
       ctx.fillRect(-t.width * 0.34, t.height * 0.42, 16, flameH);
       ctx.fillRect(t.width * 0.34 - 16, t.height * 0.42, 16, flameH);
 
-      // 装甲战车原画动态 Sprite
+      // 磁浮重装扫荡舰动态 Sprite
       const truckSprite = assets.getTruck(t.timer * 12);
       if (truckSprite) {
         ctx.shadowColor = '#00f0ff';

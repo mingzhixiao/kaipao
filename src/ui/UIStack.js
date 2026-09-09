@@ -113,6 +113,7 @@ export class UIStackManager {
   }
 
   initKeyboardListener() {
+    if (typeof window === 'undefined') return;
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
         if (this.stack.length > 0) {
@@ -126,4 +127,6 @@ export class UIStackManager {
 }
 
 export const uiStack = new UIStackManager();
-window.uiStack = uiStack;
+if (typeof window !== 'undefined') {
+  window.uiStack = uiStack;
+}
