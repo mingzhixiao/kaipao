@@ -5,6 +5,8 @@ import { GAME_CONFIG } from '../core/Config.js';
 import { gameEvents } from '../core/GameEventBus.js';
 import { saveManager } from '../systems/SaveManager.js';
 
+const ENEMY_COMBAT_ENTRY_Y = 64;
+
 export class CombatSystem {
   constructor(game) {
     this.game = game;
@@ -25,7 +27,7 @@ export class CombatSystem {
 
     for (let i = 0; i < this.game.enemies.length; i++) {
       const e = this.game.enemies[i];
-      if (!e.active) continue;
+      if (!e.active || e.y - e.radius < ENEMY_COMBAT_ENTRY_Y) continue;
 
       const dx = e.x - hero.x;
       const dy = e.y - hero.y;
@@ -202,7 +204,7 @@ export class CombatSystem {
   }
 
   onHit(enemy, dmg, isCrit = false, type = 'normal', knockVx = 0, knockVy = 0) {
-    if (!enemy.active || enemy.hp <= 0) return;
+    if (!enemy.active || enemy.hp <= 0 || enemy.y - enemy.radius < ENEMY_COMBAT_ENTRY_Y) return;
     const game = this.game;
     // 统一元素协同与反应调用
     let elem = null;
@@ -407,7 +409,7 @@ export class CombatSystem {
 
       for (let j = 0; j < game.enemies.length; j++) {
         const e = game.enemies[j];
-        if (!e.active) continue;
+        if (!e.active || e.y - e.radius < ENEMY_COMBAT_ENTRY_Y) continue;
 
         const hitR = b.radius + e.radius;
         if (Math.abs(b.y - e.y) > hitR || Math.abs(b.x - e.x) > hitR) continue;

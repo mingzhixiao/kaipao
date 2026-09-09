@@ -21,19 +21,24 @@ function injectStyles() {
     #game-container { isolation: isolate; padding: 0; }
     button,[role="button"] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     button:focus-visible,[role="button"]:focus-visible { outline:2px solid var(--neon-cyan,#00f0ff); outline-offset:2px; }
-    #top-hud { padding-top:var(--ui-safe-top)!important; padding-left:var(--ui-safe-left)!important; padding-right:var(--ui-safe-right)!important; }
+    #top-hud { gap:2px!important; padding-top:var(--ui-safe-top)!important; padding-right:var(--ui-safe-right)!important; padding-bottom:4px!important; padding-left:var(--ui-safe-left)!important; background:linear-gradient(180deg,rgba(3,7,15,.93),rgba(3,7,15,.58) 74%,transparent)!important; }
     #top-hud .hud-top-bar { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:7px; width:100%; }
     #top-hud .battle-progress-group { min-width:0; gap:4px; }
-    #top-hud .prog-badge { min-width:0; padding:4px 6px; }
-    #top-hud .core-resource-badge { padding:4px 9px; }
+    #top-hud .prog-badge { min-width:0; min-height:30px; padding:3px 6px; border-radius:6px; }
+    #top-hud .core-resource-badge { min-height:30px; padding:3px 8px; border-radius:8px; }
     #top-hud .sys-controls-group { display:flex; align-items:center; gap:5px; }
-    .battle-exit-btn { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1.5px solid rgba(251,113,133,.55); border-radius:8px; background:rgba(76,14,30,.78); color:#fda4af; font-size:19px; font-weight:900; cursor:pointer; }
+    .battle-exit-btn { width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border:1px solid rgba(251,113,133,.55); border-radius:6px; background:rgba(76,14,30,.78); color:#fda4af; font-size:18px; font-weight:900; cursor:pointer; }
     .battle-exit-btn:active { transform:scale(.94); }
-    #top-hud .top-vitals-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; width:100%; padding-top:0; }
-    #top-hud .vital-capsule { min-width:0; min-height:28px; width:100%; justify-content:center; border-radius:8px; padding:4px 7px; gap:4px; }
-    #top-hud .vital-capsule.hp { grid-column:1 / -1; min-height:32px; border-width:2px; }
-    #top-hud .vital-label { position:relative; z-index:2; color:#cbd5e1; font-size:10px; font-weight:900; white-space:nowrap; }
-    #top-hud .vital-val { min-width:0; font-size:11px; white-space:nowrap; }
+    #top-hud .settings-gear-btn { width:30px; height:30px; border-radius:6px; }
+    #top-hud .hud-ammo { min-width:54px; min-height:30px; justify-content:center; padding:3px 6px; gap:3px; border-radius:6px; }
+    #top-hud .hud-ammo .vital-val { font-size:10px; }
+    #top-hud .exp-bar-container { height:3px; margin-top:1px; }
+    #defense-status { position:absolute; right:var(--ui-safe-right); bottom:calc(105px + var(--ui-safe-bottom)); left:var(--ui-safe-left); z-index:34; pointer-events:none; }
+    #defense-status .top-vitals-row { display:grid; grid-template-columns:minmax(0,2.2fr) minmax(0,1fr); align-items:stretch; gap:5px; width:100%; padding:0; pointer-events:none; }
+    #defense-status .vital-capsule { min-width:0; min-height:30px; width:100%; justify-content:center; gap:5px; padding:4px 8px; border-radius:6px; border-width:1px; background:rgba(4,9,18,.88); backdrop-filter:blur(7px); }
+    #defense-status .vital-bar-fill { opacity:.68; }
+    #defense-status .vital-label { position:relative; z-index:2; color:#e2e8f0; font-size:9px; font-weight:900; white-space:nowrap; }
+    #defense-status .vital-val { min-width:0; font-size:10px; white-space:nowrap; }
     #bottom-hud { padding-left:var(--ui-safe-left)!important; padding-right:var(--ui-safe-right)!important; padding-bottom:calc(10px + var(--ui-safe-bottom))!important; }
     .hud-badge,.icon-btn { min-height:var(--ui-touch); }
     .icon-btn { min-width:var(--ui-touch); display:inline-flex; align-items:center; justify-content:center; }
@@ -66,7 +71,7 @@ function injectStyles() {
     #home-lobby .filter-pill { min-height:38px; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; padding:0 13px!important; }
     #home-lobby #lobby-item-modal,#home-lobby #lobby-crate-modal { position:fixed!important; inset:0!important; z-index:20; padding:16px var(--ui-safe-right) calc(16px + var(--ui-safe-bottom)) var(--ui-safe-left); display:none; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.62); backdrop-filter:blur(7px); }
     #upgrade-modal,#gameover-modal,#retreat-confirm-modal,#stage-select-modal,#stage-clear-modal,#rune-forge-modal { padding:var(--ui-safe-top) var(--ui-safe-right) var(--ui-safe-bottom) var(--ui-safe-left)!important; overscroll-behavior:contain; }
-    #upgrade-modal .cards-container,#gameover-modal .report-card,#stage-select-modal > *,#rune-forge-modal > * { max-height:calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - 24px); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
+    #gameover-modal .report-card,#stage-select-modal > *,#rune-forge-modal > * { max-height:calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - 24px); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
     #stage-clear-modal { padding:max(8px,var(--ui-safe-top)) max(8px,var(--ui-safe-right)) max(8px,var(--ui-safe-bottom)) max(8px,var(--ui-safe-left))!important; }
     #stage-clear-modal .stage-clear-card { max-height:calc(100dvh - max(8px,var(--ui-safe-top)) - max(8px,var(--ui-safe-bottom)))!important; overflow-y:auto; overflow-x:hidden; padding:15px 14px 12px; border-radius:8px; scrollbar-width:thin; }
     body.battle-result-open #kp-skill-hud,body.battle-result-open #kp-wave-tactic { display:none!important; }
@@ -100,6 +105,28 @@ function injectStyles() {
     #stage-clear-modal .stage-clear-btn { min-width:0; min-height:44px; padding:8px 4px; border-radius:8px; font-size:12px; }
     .primary-btn,.reroll-btn,.cheat-btn { min-height:44px; }
 
+    /* 波间强化保持战场可辨识，三项并排用于快速横向比较。 */
+    #upgrade-modal { justify-content:center!important; gap:13px; padding:calc(var(--ui-safe-top) + 10px) max(8px,var(--ui-safe-right)) calc(var(--ui-safe-bottom) + 10px) max(8px,var(--ui-safe-left))!important; background:rgba(2,6,12,.82)!important; backdrop-filter:blur(2px) brightness(.55); }
+    #upgrade-modal .modal-title-box { flex:none; margin:0!important; text-align:center; }
+    #upgrade-modal .modal-subtitle { color:#fbbf24; font-size:9px; letter-spacing:1.8px; }
+    #upgrade-modal .modal-title { display:inline-block; margin-top:4px; padding:7px 24px; border-right:2px solid #fb923c; border-left:2px solid #fb923c; background:linear-gradient(90deg,transparent,rgba(234,88,12,.86) 18%,rgba(249,115,22,.92) 82%,transparent); color:#fff; font-size:20px; line-height:1.1; text-shadow:0 2px 5px rgba(0,0,0,.75); }
+    #upgrade-modal .cards-container { flex:none; width:min(680px,100%); max-width:none; max-height:none; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:stretch; gap:8px; padding:2px; overflow:visible; }
+    #upgrade-modal .upgrade-card { min-width:0; min-height:310px; height:min(42dvh,370px); display:flex; flex-direction:column; justify-content:flex-start; gap:9px; padding:9px 8px 11px; border-radius:5px; text-align:center; background:linear-gradient(180deg,rgba(239,232,208,.98),rgba(214,204,177,.98)); color:#172033; box-shadow:0 12px 28px rgba(0,0,0,.62); }
+    #upgrade-modal .upgrade-card:hover { transform:translateY(-3px); }
+    #upgrade-modal .upgrade-card:active { transform:scale(.98); }
+    #upgrade-modal .card-icon-img { flex:none; width:68px; height:68px; margin:8px auto 2px; border:2px solid rgba(15,23,42,.3); border-radius:50%; }
+    #upgrade-modal .card-info { width:100%; display:flex; flex:1; flex-direction:column; align-items:center; min-width:0; }
+    #upgrade-modal .card-header-row { width:100%; flex-direction:column; justify-content:flex-start; gap:5px; }
+    #upgrade-modal .card-header-row > div:last-child { justify-content:center; flex-wrap:wrap; }
+    #upgrade-modal .card-name { width:100%; min-height:36px; display:flex; align-items:center; justify-content:center; color:#172033; font-size:14px; line-height:1.28; }
+    #upgrade-modal .card-tag { color:#713f12!important; text-shadow:none!important; }
+    #upgrade-modal .card-synergy { min-height:27px; margin-top:4px; color:#9a3412; font-size:10px; line-height:1.35; }
+    #upgrade-modal .card-desc { margin-top:8px; color:#263348; font-size:11px; font-weight:700; line-height:1.45; }
+    #upgrade-modal .card-synergy-pill { margin-top:auto; align-self:center; max-width:100%; border-color:rgba(71,85,105,.35); background:rgba(255,255,255,.36); color:#475569; white-space:normal; }
+    #upgrade-modal .modal-footer { flex:none; margin:0; }
+    #upgrade-modal .reroll-btn { min-height:40px; padding:8px 18px; border-color:#22d3ee; background:rgba(8,47,73,.88); color:#cffafe; }
+    #upgrade-modal #upgrade-auto-badge { margin-top:6px!important; padding:4px 12px!important; border-radius:6px!important; font-size:10px!important; }
+
     /* 信息架构：七个并列入口收敛为“基地 / 构筑 / 养成 / 试炼 / 更多”。 */
     #kp-lobby-more-panel { position:fixed; inset:0; z-index:190; display:none; align-items:flex-end; justify-content:center; padding:16px var(--ui-safe-right) calc(12px + var(--ui-safe-bottom)) var(--ui-safe-left); background:rgba(0,0,0,.62); backdrop-filter:blur(8px); }
     #kp-lobby-more-panel.open { display:flex; }
@@ -124,10 +151,22 @@ function injectStyles() {
       #top-hud .prog-badge { padding-left:5px; padding-right:5px; }
       #top-hud .core-resource-badge { padding-left:6px; padding-right:6px; }
       #top-hud .vital-label { display:none; }
+      #top-hud .hud-ammo { min-width:48px; padding-left:4px; padding-right:4px; }
+      #defense-status { right:6px; left:6px; }
+      #defense-status .vital-label { display:none; }
       #home-lobby .nav-tab-icon { font-size:17px!important; }
       #home-lobby .nav-tab-label { font-size:9px!important; }
       #home-lobby .lobby-pill { padding-left:7px!important; padding-right:7px!important; font-size:10px!important; }
       #home-lobby .lobby-battle-btn { min-height:48px; font-size:14px!important; }
+      #upgrade-modal { gap:9px; }
+      #upgrade-modal .modal-title { font-size:18px; padding:6px 19px; }
+      #upgrade-modal .cards-container { gap:5px; }
+      #upgrade-modal .upgrade-card { min-height:285px; height:min(41dvh,340px); padding:7px 5px 9px; gap:6px; }
+      #upgrade-modal .card-icon-img { width:58px; height:58px; }
+      #upgrade-modal .card-name { min-height:34px; font-size:12px; }
+      #upgrade-modal .card-synergy { min-height:26px; font-size:9px; }
+      #upgrade-modal .card-desc { font-size:10px; }
+      #upgrade-modal .card-synergy-pill { padding:2px 4px; font-size:8px; }
     }
     @media (orientation:landscape) and (max-height:520px) {
       #home-lobby .lobby-header { min-height:48px; padding-bottom:5px!important; }

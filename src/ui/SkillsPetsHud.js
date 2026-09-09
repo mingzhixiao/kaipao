@@ -46,7 +46,7 @@ function ensureStyle() {
     #kp-wave-tactic {
       position: absolute;
       left: 50%;
-      top: calc(112px + var(--ui-safe-top, 0px));
+      top: calc(46px + var(--ui-safe-top, 0px));
       transform: translate(-50%, -15px) scale(0.95);
       width: min(350px, calc(100% - 24px));
       box-sizing: border-box;
@@ -195,7 +195,7 @@ function ensureStyle() {
       .kp-skill-slots-wrap { gap: 6px; }
       .kp-skill-time { font-size: 12px; }
       .kp-skill-level { font-size: 8px; left: 2px; bottom: 2px; }
-      #kp-wave-tactic { top: calc(106px + var(--ui-safe-top, 0px)); width: min(310px, calc(100% - 16px)); }
+      #kp-wave-tactic { top: calc(44px + var(--ui-safe-top, 0px)); width: min(310px, calc(100% - 16px)); }
     }
     @media (max-width: 360px) {
       .kp-skill-slot { width: 34px; height: 34px; }
