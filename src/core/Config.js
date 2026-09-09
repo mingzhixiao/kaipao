@@ -40,17 +40,17 @@ export const GAME_CONFIG = {
   // 系统阶梯解锁关卡
   systemUnlocks: {
     fortification: { stage: 1, name: '城防加固', icon: '🛡️', desc: '通关第 1 关解锁：强化城防生命、能量护盾与自愈系统' },
-    runes: { stage: 2, name: '符文矩阵', icon: '💠', desc: '通关第 2 关解锁：镶嵌永久战术符文，大幅拓展全维属性' },
-    pets: { stage: 3, name: '战术宠物', icon: '🐾', desc: '通关第 3 关解锁：伴飞战术宠物助战与强力弹幕支援' },
-    advancedWeapons: { stage: 4, name: '进阶军械', icon: '⚡', desc: '通关第 4 关解锁：解锁高斯狙击炮与等离子爆能枪研发' }
+    runes: { stage: 3, name: '符文矩阵', icon: '💠', desc: '通关第 3 关解锁：镶嵌永久战术符文，大幅拓展全维属性' },
+    pets: { stage: 6, name: '战术宠物', icon: '🐾', desc: '通关第 6 关解锁：伴飞战术宠物助战与强力弹幕支援' },
+    advancedWeapons: { stage: 10, name: '进阶军械', icon: '⚡', desc: '通关第 10 关解锁：解锁毁灭加特林、高斯狙击与等离子爆能枪研发' }
   },
 
   // 城防加固科技树配置
   fortressUpgrades: {
-    hp: { id: 'hp', name: '复合装甲壁', icon: 'assets/icons/icon_hp.png', baseVal: 1000, addPerLvl: 160, maxLevel: 25, costBase: 80, costGrowth: 1.32, unit: '点生命', desc: '加装重型高密度复合防护钢板，显著提升基地城墙最大承伤生命值。' },
-    shield: { id: 'shield', name: '能量屏障', icon: 'assets/icons/icon_shield.png', baseVal: 300, addPerLvl: 60, maxLevel: 25, costBase: 90, costGrowth: 1.34, unit: '点护盾', desc: '部署高频磁约束偏转能量屏障，为防线提供抵挡尸潮冲击的第一道护盾。' },
-    regen: { id: 'regen', name: '纳米自愈', icon: 'assets/icons/icon_stamina.png', baseVal: 25, addPerLvl: 8, maxLevel: 25, costBase: 100, costGrowth: 1.36, unit: '点/秒', desc: '植入智能自修复微型纳米阵列，大幅加快脱战后护盾与屏障的充能恢复效率。' },
-    armor: { id: 'armor', name: '反伤尖刺', icon: 'assets/icons/icon_part.png', baseVal: 0, addPerLvl: 6, maxLevel: 25, costBase: 120, costGrowth: 1.40, unit: '点反伤', desc: '在城防外围部署电磁反应荆棘，任何贴身攻击城防的感染者均会受到高额物理反弹震荡！' }
+    hp: { id: 'hp', name: '复合装甲壁', icon: 'assets/icons/icon_hp.png', baseVal: 1000, addPerLvl: 160, maxLevel: 30, costBase: 80, costGrowth: 1.30, unit: '点生命', desc: '加装重型高密度复合防护钢板，显著提升基地城墙最大承伤生命值。' },
+    shield: { id: 'shield', name: '能量屏障', icon: 'assets/icons/icon_shield.png', baseVal: 300, addPerLvl: 60, maxLevel: 30, costBase: 90, costGrowth: 1.32, unit: '点护盾', desc: '部署高频磁约束偏转能量屏障，为防线提供抵挡尸潮冲击的第一道护盾。' },
+    regen: { id: 'regen', name: '纳米自愈', icon: 'assets/icons/icon_stamina.png', baseVal: 25, addPerLvl: 8, maxLevel: 30, costBase: 100, costGrowth: 1.34, unit: '点/秒', desc: '植入智能自修复微型纳米阵列，大幅加快脱战后护盾与屏障的充能恢复效率。' },
+    armor: { id: 'armor', name: '反伤尖刺', icon: 'assets/icons/icon_part.png', baseVal: 0, addPerLvl: 6, maxLevel: 30, costBase: 120, costGrowth: 1.36, unit: '点反伤', desc: '在城防外围部署电磁反应荆棘，任何贴身攻击城防的感染者均会受到高额物理反弹震荡！' }
   },
 
   // 双模式配置 (普通 vs 精英)
@@ -58,6 +58,40 @@ export const GAME_CONFIG = {
     normal: { id: 'normal', name: '普通模式', tag: '标准探索', color: '#38bdf8', hpMult: 1.0, atkMult: 1.0, countMult: 1.0, scrapMult: 1.0, shardMult: 1.0, gemChance: 0.15, desc: '标准的尸潮进攻强度，适合开荒推进与稳步收集素材。' },
     elite: { id: 'elite', name: '精英模式', tag: '极度凶险', color: '#f43f5e', hpMult: 1.6, atkMult: 1.85, countMult: 1.35, scrapMult: 2.2, shardMult: 2.0, gemChance: 0.70, desc: '极度高危作战！感染者数量与破坏力大幅攀升，所有战利品掉落与稀有芯片翻倍！' }
   },
+
+  // 五大递进战区 (5 大主题战区 x 10 关 = 50 关 + 无尽终极深渊)
+  chapters: [
+    {
+      id: 1, name: '第一战区 · 废土边境', shortName: '废土边境', stages: [1, 10], color: '#38bdf8', icon: '🏜️',
+      desc: '人类最后防线初建，遭遇普通感染者与初期冲锋尸潮',
+      ambience: { filter: 'brightness(0.92) contrast(1.04)', tint: 'rgba(56, 189, 248, 0.08)', haze: 'rgba(15, 23, 42, 0.55)' }
+    },
+    {
+      id: 2, name: '第二战区 · 剧毒废墟', shortName: '剧毒废墟', stages: [11, 20], color: '#10b981', icon: '☣️',
+      desc: '被生化腐蚀的废弃工业带，酸液突变体与极速冲锋者集群',
+      ambience: { filter: 'brightness(0.86) contrast(1.12) hue-rotate(55deg) saturate(1.25)', tint: 'rgba(16, 185, 129, 0.12)', haze: 'rgba(6, 78, 59, 0.65)' }
+    },
+    {
+      id: 3, name: '第三战区 · 熔岩裂谷', shortName: '熔岩裂谷', stages: [21, 30], color: '#f97316', icon: '🌋',
+      desc: '地幔崩裂的熔岩地狱，狂暴重装巨尸与熔核巨兽',
+      ambience: { filter: 'brightness(0.88) contrast(1.16) hue-rotate(335deg) saturate(1.4)', tint: 'rgba(249, 115, 22, 0.14)', haze: 'rgba(124, 45, 18, 0.7)' }
+    },
+    {
+      id: 4, name: '第四战区 · 机械遗迹', shortName: '机械遗迹', stages: [31, 40], color: '#06b6d4', icon: '🦾',
+      desc: '失控自动化要塞，赛博机甲哨卫与重型电磁风暴',
+      ambience: { filter: 'brightness(0.9) contrast(1.22) hue-rotate(185deg) saturate(1.35)', tint: 'rgba(6, 182, 212, 0.12)', haze: 'rgba(22, 78, 99, 0.65)' }
+    },
+    {
+      id: 5, name: '第五战区 · 虚空深渊', shortName: '虚空深渊', stages: [41, 50], color: '#a855f7', icon: '🌌',
+      desc: '空间裂隙深处的母体巢穴，决战终极支配者暴君',
+      ambience: { filter: 'brightness(0.82) contrast(1.28) hue-rotate(250deg) saturate(1.5)', tint: 'rgba(168, 85, 247, 0.15)', haze: 'rgba(88, 28, 135, 0.75)' }
+    },
+    {
+      id: 6, name: '终极战区 · 无尽深渊', shortName: '无尽深渊', stages: [51, 51], color: '#eab308', icon: '♾️',
+      desc: '无极限防御实战模拟，极限检验指挥官终极科技',
+      ambience: { filter: 'brightness(0.95) contrast(1.15)', tint: 'rgba(234, 179, 8, 0.12)', haze: 'rgba(30, 41, 59, 0.6)' }
+    }
+  ],
 
   skills: {
     rocket: { element: 'fire', cooldown: 5.5, minCooldown: 2.8, damage: 280, radius: 120, burnDuration: 4.5, burnDps: 45, flightDuration: 0.52 },
@@ -70,13 +104,13 @@ export const GAME_CONFIG = {
   },
 
   skillCatalog: [
-    { id: 'rocket', name: '温压火箭', element: 'fire', asset: 'assets/cards/icon_rocket.png', rarity: 'legendary', type: '火系 · 范围爆破', desc: '部署温压重型火箭，定点引发大范围爆轰核爆与持续烈火灼烧区。', cooldown: 5.5, materialId: 'chip_rocket', unlockHint: '在第 1 关【废土前哨】收集碎片合成' },
-    { id: 'freeze', name: '极寒射线', element: 'ice', asset: 'assets/cards/icon_frost.png', rarity: 'rare', type: '冰系 · 控场霜冻', desc: '向前喷射大范围超低温冰雾，附带霜冻伤害并极速削减敌人移速。', cooldown: 7.0, materialId: 'chip_freeze', unlockHint: '在第 2 关【锈蚀公路】收集碎片合成' },
-    { id: 'truck', name: '装甲战车', element: 'physical', asset: 'assets/cards/icon_truck.png', rarity: 'legendary', type: '物理 · 直线碾压', desc: '呼叫突击重型装甲车，自防线冲撞碾压沿途所有敌人并造成高额击退！', cooldown: 8.0, materialId: 'chip_truck', unlockHint: '在第 3 关【断裂立交】收集碎片合成' },
-    { id: 'tornado', name: '裂风涡流', element: 'wind', asset: 'assets/skills/tornado.png', rarity: 'epic', type: '风系 · 元素扩散', desc: '生成持续 4 秒的风暴漩涡，平滑阻尼牵引敌人并使火与冰状态向外大范围扩散！', cooldown: 8.0, materialId: 'chip_tornado', unlockHint: '在第 4 关【黑雾峡谷】收集碎片合成' },
-    { id: 'boomerang', name: '回旋刃', element: 'physical', asset: 'assets/skills/boomerang.png', rarity: 'rare', type: '物理 · 往返高暴', desc: '高速发射合金穿透飞刃，往返切割穿透，自带 35% 额外暴击率！', cooldown: 5.0, materialId: 'chip_boomerang', unlockHint: '在第 4 关【黑雾峡谷】收集碎片合成' },
-    { id: 'laser', name: '湮灭射线', element: 'thunder', asset: 'assets/skills/laser.png', rarity: 'legendary', type: '雷系 · 感电超载', desc: '释放贯穿全屏的高能雷电射线，对直线目标造成感电，并能引燃超载大爆轰！', cooldown: 3.0, materialId: 'chip_laser', unlockHint: '在第 5 关【尸潮大坝】收集碎片合成' },
-    { id: 'bomber', name: '轨道轰炸', element: 'fire', asset: 'assets/skills/bomber.png', rarity: 'epic', type: '火系 · 集群轰炸', desc: '战术红圈预瞄战区，呼叫轨道轰炸机连投 3 发烈火集束重弹！', cooldown: 12.0, materialId: 'chip_bomber', unlockHint: '在第 6 关【暴君领地】收集碎片合成' }
+    { id: 'rocket', name: '温压火箭', element: 'fire', asset: 'assets/cards/icon_rocket.png', rarity: 'legendary', type: '火系 · 范围爆破', desc: '部署温压重型火箭，定点引发大范围爆轰核爆与持续烈火灼烧区。', cooldown: 5.5, materialId: 'chip_rocket', unlockHint: '在第 1 战区收集碎片合成' },
+    { id: 'freeze', name: '极寒射线', element: 'ice', asset: 'assets/cards/icon_frost.png', rarity: 'rare', type: '冰系 · 控场霜冻', desc: '向前喷射大范围超低温冰雾，附带霜冻伤害并极速削减敌人移速。', cooldown: 7.0, materialId: 'chip_freeze', unlockHint: '在第 1~2 战区收集碎片合成' },
+    { id: 'truck', name: '装甲战车', element: 'physical', asset: 'assets/cards/icon_truck.png', rarity: 'legendary', type: '物理 · 直线碾压', desc: '呼叫突击重型装甲车，自防线冲撞碾压沿途所有敌人并造成高额击退！', cooldown: 8.0, materialId: 'chip_truck', unlockHint: '在第 2~3 战区收集碎片合成' },
+    { id: 'tornado', name: '裂风涡流', element: 'wind', asset: 'assets/skills/tornado.png', rarity: 'epic', type: '风系 · 元素扩散', desc: '生成持续 4 秒的风暴漩涡，平滑阻尼牵引敌人并使火与冰状态向外大范围扩散！', cooldown: 8.0, materialId: 'chip_tornado', unlockHint: '在第 3~4 战区收集碎片合成' },
+    { id: 'boomerang', name: '回旋刃', element: 'physical', asset: 'assets/skills/boomerang.png', rarity: 'rare', type: '物理 · 往返高暴', desc: '高速发射合金穿透飞刃，往返切割穿透，自带 35% 额外暴击率！', cooldown: 5.0, materialId: 'chip_boomerang', unlockHint: '在第 2~4 战区收集碎片合成' },
+    { id: 'laser', name: '湮灭射线', element: 'thunder', asset: 'assets/skills/laser.png', rarity: 'legendary', type: '雷系 · 感电超载', desc: '释放贯穿全屏的高能雷电射线，对直线目标造成感电，并能引燃超载大爆轰！', cooldown: 3.0, materialId: 'chip_laser', unlockHint: '在第 4~5 战区收集碎片合成' },
+    { id: 'bomber', name: '轨道轰炸', element: 'fire', asset: 'assets/skills/bomber.png', rarity: 'epic', type: '火系 · 集群轰炸', desc: '战术红圈预瞄战区，呼叫轨道轰炸机连投 3 发烈火集束重弹！', cooldown: 12.0, materialId: 'chip_bomber', unlockHint: '在第 3~5 战区收集碎片合成' }
   ],
 
   synergyCatalog: [
@@ -172,93 +206,152 @@ export const GAME_CONFIG = {
     getWaveSpawnInterval(wave) { return Math.max(0.35, 1.5 - Math.log2(wave + 1) * 0.35); }
   },
 
-  // 关卡体系配置 (包含差异化定向掉落、怪物梯度与首通奖励)
-  stages: [
-    {
-      id: 1, name: '废土前哨', clearWaves: 5, scrapReward: 80, bossEvery: 5, difficulty: 0.85,
-      featuredChip: 'chip_rocket', chipDropCount: [3, 5],
-      allowedEnemies: ['runner'],
-      desc: '防线初建之地，仅有轻度普通感染者出没。纯枪械防守即可通关！',
-      targetDrops: [
-        { id: 'chip_rocket', name: '温压弹火控芯片', icon: 'assets/items/item_chip_rocket.png', highlight: true },
-        { id: 'power_shard', name: '力量碎片', icon: 'assets/icons/icon_level.png' },
-        { id: 'attackspeed_shard', name: '攻速碎片', icon: 'assets/cards/icon_firerate.png' }
-      ]
-    },
-    {
-      id: 2, name: '锈蚀公路', clearWaves: 7, scrapReward: 120, bossEvery: 5, difficulty: 1.05,
-      featuredChip: 'chip_freeze', chipDropCount: [2, 4],
-      allowedEnemies: ['runner', 'charger'],
-      desc: '废弃干线路段，速度极快的冲锋者首次现身！通关解锁符文工坊。',
-      targetDrops: [
-        { id: 'chip_freeze', name: '极寒射线致冷核心', icon: 'assets/items/item_chip_freeze.png', highlight: true },
-        { id: 'gatling_part', name: '加特林配件', icon: 'assets/items/item_gatling_part.png' },
-        { id: 'bulletspeed_shard', name: '射速碎片', icon: 'assets/cards/icon_pierce.png' },
-        { id: 'rune_shard', name: '远古符文碎片', icon: 'assets/icons/icon_shard.png' }
-      ]
-    },
-    {
-      id: 3, name: '断裂立交', clearWaves: 8, scrapReward: 160, bossEvery: 4, difficulty: 1.22,
-      featuredChip: 'chip_truck', chipDropCount: [2, 4],
+  // 关卡体系配置 (包含差异化定向掉落、怪物梯度与首通奖励，全量 50 关 + 无尽模式)
+  stages: (() => {
+    // 50 关详尽关卡名录与特色设定
+    const STAGE_NAMES = [
+      // 战区 1 (1-10)：废土边境
+      '废土前哨', '锈蚀干道', '断裂立交', '黄沙驿站', '哨站死斗',
+      '风蚀巨壁', '荒芜工业园', '破败加油站', '铁丝网隘口', '边境处决场',
+      // 战区 2 (11-20)：剧毒废墟
+      '化工厂外围', '毒沼潜流', '腐蚀排水管', '生化储罐区', '毒核收容所',
+      '酸蚀居民区', '菌丝地铁口', '变异苗圃', '重度污染渠', '腐化母体之心',
+      // 战区 3 (21-30)：熔岩裂谷
+      '黑曜石裂缝', '滚烫火山道', '地热通风塔', '赤红熔岩河', '炎魔前哨',
+      '硫磺矿脉', '崩解悬崖', '熔核钻井站', '沸腾熔岩湖', '炎魔领主王座',
+      // 战区 4 (31-40)：机械遗迹
+      '失控安防闸', '机械装配线', '高压电网廊', '自动化兵工厂', '雷暴中枢塔',
+      '伺服阵列群', '超导磁轨桥', '纳米合成车间', '重巡机甲库', '机械歼灭者座驾',
+      // 战区 5 (41-50)：虚空深渊
+      '裂隙视界', '虚空侵蚀带', '反物质断层', '黯淡星火台', '深渊裂口',
+      '暗能共鸣腔', '湮灭漩涡区', '母巢神经节', '终焉倒悬塔', '母巢支配者·终末'
+    ];
+
+    const stagesList = [];
+    for (let id = 1; id <= 50; id++) {
+      const chapterId = Math.min(5, Math.ceil(id / 10));
+      const posInCh = ((id - 1) % 10) + 1; // 1 to 10
+      const isMiniBoss = posInCh === 5;
+      const isChapterBoss = posInCh === 10;
+      const name = STAGE_NAMES[id - 1] || `防线关卡 ${id}`;
+
+      // 递增波次设计：前 10 关 5~8 波，中间 8~12 波，末期 12~16 波，第 50 关 18 波
+      let clearWaves = 5;
+      if (id <= 3) clearWaves = 5 + (id - 1);
+      else if (id <= 10) clearWaves = 6 + Math.floor((id - 4) / 2);
+      else if (id <= 20) clearWaves = 8 + Math.floor((id - 11) / 3);
+      else if (id <= 30) clearWaves = 9 + Math.floor((id - 21) / 3);
+      else if (id <= 40) clearWaves = 11 + Math.floor((id - 31) / 3);
+      else if (id < 50) clearWaves = 13 + Math.floor((id - 41) / 3);
+      else clearWaves = 18; // 终极决战 18 波次
+
+      // 难度系数平滑幂次增长：0.85 -> 4.60
+      const difficulty = parseFloat((0.85 + (id - 1) * 0.065 + Math.pow((id - 1) / 10, 1.25) * 0.08).toFixed(2));
+      // 废料奖励增长
+      const scrapReward = 80 + (id - 1) * 22 + Math.floor(Math.pow(id, 1.15) * 4);
+
+      // 关卡准入怪物门禁
+      let allowedEnemies = ['runner'];
+      if (id >= 2 && id < 5) allowedEnemies = ['runner', 'charger'];
+      else if (id >= 5) allowedEnemies = ['runner', 'charger', 'behemoth'];
+
+      // 特色战术芯片与战利品定向掉落轮转
+      let featuredChip = 'chip_rocket';
+      let chipDropCount = [2, 4];
+      if (chapterId === 1) {
+        featuredChip = id <= 5 ? 'chip_rocket' : 'chip_freeze';
+      } else if (chapterId === 2) {
+        featuredChip = id <= 15 ? 'chip_freeze' : 'chip_boomerang';
+      } else if (chapterId === 3) {
+        featuredChip = id <= 25 ? 'chip_truck' : 'chip_bomber';
+      } else if (chapterId === 4) {
+        featuredChip = id <= 35 ? 'chip_tornado' : 'chip_laser';
+      } else {
+        const cChips = ['chip_laser', 'chip_bomber', 'chip_tornado', 'chip_truck', 'chip_rocket'];
+        featuredChip = cChips[(id - 41) % cChips.length];
+        chipDropCount = [3, 5];
+      }
+
+      // 定向掉落池
+      const targetDrops = [];
+      const chipNames = {
+        chip_rocket: '温压弹火控芯片', chip_freeze: '极寒致冷核心', chip_truck: '装甲战车推进模组',
+        chip_tornado: '裂风涡流导流核', chip_boomerang: '回旋合金谐振片', chip_laser: '湮灭偏振聚焦镜',
+        chip_bomber: '轨道轰炸定位密钥'
+      };
+      targetDrops.push({
+        id: featuredChip,
+        name: chipNames[featuredChip] || '战术芯片',
+        icon: `assets/items/item_${featuredChip}.png`,
+        highlight: true
+      });
+
+      // 搭配武器配件与三维碎片
+      if (chapterId === 1) {
+        targetDrops.push({ id: 'power_shard', name: '力量碎片', icon: 'assets/icons/icon_level.png' });
+        targetDrops.push({ id: 'attackspeed_shard', name: '攻速碎片', icon: 'assets/cards/icon_firerate.png' });
+        if (id >= 3) targetDrops.push({ id: 'gatling_part', name: '加特林配件', icon: 'assets/items/item_gatling_part.png' });
+      } else if (chapterId === 2) {
+        targetDrops.push({ id: 'bulletspeed_shard', name: '射速碎片', icon: 'assets/cards/icon_pierce.png' });
+        targetDrops.push({ id: 'rune_shard', name: '远古符文碎片', icon: 'assets/icons/icon_shard.png' });
+        targetDrops.push({ id: 'fluffy_shard', name: '小毛球基因', icon: 'assets/items/item_fluffy_shard.png' });
+      } else if (chapterId === 3) {
+        targetDrops.push({ id: 'mag_shard', name: '扩容弹匣碎片', icon: 'assets/icons/icon_part.png' });
+        targetDrops.push({ id: 'plasma_part', name: '等离子磁环', icon: 'assets/items/item_plasma_part.png' });
+        targetDrops.push({ id: 'dragon_shard', name: '幼龙火核', icon: 'assets/items/item_dragon_shard.png' });
+      } else if (chapterId === 4) {
+        targetDrops.push({ id: 'gauss_part', name: '高斯强磁导轨', icon: 'assets/items/item_gauss_part.png' });
+        targetDrops.push({ id: 'power_shard', name: '高阶力量晶体', icon: 'assets/icons/icon_level.png' });
+        targetDrops.push({ id: 'supply_crate', name: '战略军备箱', icon: 'assets/items/item_supply_crate.png' });
+      } else {
+        targetDrops.push({ id: 'supply_crate', name: '前线战略军备箱', icon: 'assets/items/item_supply_crate.png', highlight: true });
+        targetDrops.push({ id: 'rune_shard', name: '高级符文精华', icon: 'assets/icons/icon_shard.png' });
+        targetDrops.push({ id: 'mag_shard', name: '聚能弹匣超模组', icon: 'assets/icons/icon_part.png' });
+      }
+
+      let bossTitle = '';
+      if (isChapterBoss) bossTitle = `【战区第${chapterId}霸主守关】`;
+      else if (isMiniBoss) bossTitle = '【精英中首领突袭】';
+
+      stagesList.push({
+        id,
+        chapter: chapterId,
+        posInChapter: posInCh,
+        name,
+        clearWaves,
+        scrapReward,
+        bossEvery: isChapterBoss ? 4 : (isMiniBoss ? 4 : 5),
+        isMiniBoss,
+        isChapterBoss,
+        difficulty,
+        featuredChip,
+        chipDropCount,
+        allowedEnemies,
+        desc: `${bossTitle}抵御 ${clearWaves} 波感染者进攻，肃清战区据点！产出【${chipNames[featuredChip]}】与强化素材。`,
+        targetDrops
+      });
+    }
+
+    // 终极无尽关卡 (Stage 51)
+    stagesList.push({
+      id: 51,
+      chapter: 6,
+      posInChapter: 1,
+      name: '无尽深渊防线',
+      clearWaves: 0,
+      scrapReward: 0,
+      bossEvery: 5,
+      difficulty: 1.50,
+      endless: true,
       allowedEnemies: ['runner', 'charger', 'behemoth'],
-      desc: '立体交错废墟，高血量重装巨兽现身！通关解锁伴飞宠物小毛球。',
+      desc: '无穷无尽的极限生存考验，尸潮生生不息，检验终极指挥官防线！',
       targetDrops: [
-        { id: 'chip_truck', name: '装甲战车推进模组', icon: 'assets/items/item_chip_truck.png', highlight: true },
-        { id: 'fluffy_shard', name: '小毛球基因碎片', icon: 'assets/items/item_fluffy_shard.png', highlight: true },
-        { id: 'mag_shard', name: '扩容弹匣碎片', icon: 'assets/icons/icon_part.png' }
-      ]
-    },
-    {
-      id: 4, name: '黑雾峡谷', clearWaves: 10, scrapReward: 210, bossEvery: 5, difficulty: 1.38,
-      featuredChip: 'chip_tornado', chipDropCount: [2, 4],
-      allowedEnemies: ['runner', 'charger', 'behemoth'],
-      desc: '浓重迷雾笼罩，狂暴集群进攻！通关解锁高斯穿甲狙与等离子重炮研发。',
-      targetDrops: [
-        { id: 'chip_tornado', name: '裂风涡流导流核', icon: 'assets/items/item_chip_tornado.png', highlight: true },
-        { id: 'chip_boomerang', name: '回旋合金谐振片', icon: 'assets/items/item_chip_boomerang.png', highlight: true },
-        { id: 'gauss_part', name: '高斯强磁导轨', icon: 'assets/items/item_gauss_part.png' }
-      ]
-    },
-    {
-      id: 5, name: '尸潮大坝', clearWaves: 12, scrapReward: 270, bossEvery: 4, difficulty: 1.55,
-      featuredChip: 'chip_laser', chipDropCount: [2, 4],
-      allowedEnemies: ['runner', 'charger', 'behemoth'],
-      desc: '决口大坝决死防御，无休止尸潮狂涌！产出湮灭射线与幼龙火核。',
-      targetDrops: [
-        { id: 'chip_laser', name: '湮灭偏振聚焦镜', icon: 'assets/items/item_chip_laser.png', highlight: true },
-        { id: 'dragon_shard', name: '幼龙烈焰晶核', icon: 'assets/items/item_dragon_shard.png', highlight: true },
-        { id: 'supply_crate', name: '前线战略军备箱', icon: 'assets/items/item_supply_crate.png' }
-      ]
-    },
-    {
-      id: 6, name: '暴君领地', clearWaves: 14, scrapReward: 340, bossEvery: 5, difficulty: 1.75,
-      featuredChip: 'chip_bomber', chipDropCount: [3, 5],
-      allowedEnemies: ['runner', 'charger', 'behemoth'],
-      desc: '变异霸主老巢，多头巨型首领连续震荡！产出全套高阶战术芯片。',
-      targetDrops: [
-        { id: 'chip_bomber', name: '轨道轰炸定位密钥', icon: 'assets/items/item_chip_bomber.png', highlight: true },
-        { id: 'plasma_part', name: '等离子约束磁环', icon: 'assets/items/item_plasma_part.png' },
-        { id: 'rune_shard', name: '远古符文碎片', icon: 'assets/icons/icon_shard.png' }
-      ]
-    },
-    {
-      id: 7, name: '末日核心', clearWaves: 16, scrapReward: 420, bossEvery: 4, difficulty: 1.95,
-      featuredChip: 'chip_laser', chipDropCount: [3, 5],
-      allowedEnemies: ['runner', 'charger', 'behemoth'],
-      desc: '直面母体感染源，极端烈度考验防线极境科技！',
-      targetDrops: [
-        { id: 'chip_laser', name: '湮灭射线芯片', icon: 'assets/items/item_chip_laser.png' },
-        { id: 'chip_bomber', name: '轨道轰炸芯片', icon: 'assets/items/item_chip_bomber.png' },
+        { id: 'power_shard', name: '终焉力量碎片', icon: 'assets/icons/icon_level.png', highlight: true },
+        { id: 'rune_shard', name: '远古符文精华', icon: 'assets/icons/icon_shard.png', highlight: true },
         { id: 'supply_crate', name: '战略军备箱', icon: 'assets/items/item_supply_crate.png' }
       ]
-    },
-    {
-      id: 8, name: '无尽防线', clearWaves: 0, scrapReward: 0, bossEvery: 5, difficulty: 1.30, endless: true,
-      desc: '无极限生存考验，尸潮生生不息，检验终极指挥官防线！',
-      targetDrops: [
-        { id: 'power_shard', name: '力量碎片', icon: 'assets/icons/icon_level.png' },
-        { id: 'rune_shard', name: '远古符文碎片', icon: 'assets/icons/icon_shard.png' }
-      ]
-    }
-  ]
+    });
+
+    return stagesList;
+  })()
 };

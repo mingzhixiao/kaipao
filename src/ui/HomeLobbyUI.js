@@ -7,6 +7,7 @@ export class HomeLobbyUI {
   constructor() {
     this.game = null;
     this.activeTab = 'lobby';
+    this.selectedChapter = 1;
     this.runeFilter = 'all';
     this.backpackFilter = 'all';
     this.dom = {};
@@ -1223,7 +1224,7 @@ export class HomeLobbyUI {
     });
   }
 
-  // 7. 试炼之路 (普通模式 & 精英模式双难度)
+  // 7. 试炼之路 (5 大主题战区切换 & 普通/精英双难度)
   renderTrials() {
     const container = document.getElementById('stages-list');
     if (!container) return;
@@ -1231,6 +1232,60 @@ export class HomeLobbyUI {
     const unlocked = saveManager.getUnlockedStage();
     const equipped = saveManager.getEquippedStage();
 
+    const equippedStage = GAME_CONFIG.stages.find(s => s.id === equipped) || GAME_CONFIG.stages[0];
+    const equippedChapter = equippedStage?.chapter || 1;
+    if (!this.selectedChapter) {
+      this.selectedChapter = equippedChapter;
+    }
+
+    const chapters = GAME_CONFIG.chapters || [];
+
+    // 1. 战区选择器选项卡 (Chapters Tabs)
+    const chapterTabsHtml = `
+      <div class="lobby-chapter-nav" style="grid-column: 1 / -1; display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px; -webkit-overflow-scrolling:touch;">
+        ${chapters.map(ch => {
+          const isActive = ch.id === this.selectedChapter;
+          const isChLocked = curMode === 'normal' && ch.stages[0] > unlocked && ch.id !== 6;
+          return `
+            <button class="chapter-tab-btn ${isActive ? 'active-chapter' : ''}" data-action="switch-chapter" data-chapter-id="${ch.id}" style="flex:0 0 auto; display:flex; align-items:center; gap:5px; padding:7px 12px; border-radius:10px; border:1px solid ${isActive ? ch.color : 'rgba(59,130,246,0.25)'}; background:${isActive ? `linear-gradient(135deg, ${ch.color}22, rgba(15,23,42,0.95))` : 'rgba(15,23,42,0.75)'}; color:${isActive ? '#fff' : '#94a3b8'}; cursor:pointer; font-size:12px; font-weight:700; transition:all 0.2s ease; box-shadow:${isActive ? `0 0 14px ${ch.color}44` : 'none'};">
+              <span>${ch.icon}</span>
+              <span>${ch.shortName}</span>
+              <span style="font-size:10px; opacity:0.75;">(${ch.stages[0] === ch.stages[1] ? ch.stages[0] : `${ch.stages[0]}-${ch.stages[1]}`})</span>
+              ${isChLocked ? '<span style="font-size:10px;">🔒</span>' : ''}
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    // 2. 当前选中战区的信息横幅
+    const curChapter = chapters.find(c => c.id === this.selectedChapter) || chapters[0];
+    const chStages = GAME_CONFIG.stages.filter(s => s.chapter === this.selectedChapter);
+    const chClearedCount = chStages.filter(s => (saveManager.getHighestStageCleared() || 0) >= s.id).length;
+    
+    const chapterBannerHtml = `
+      <div style="grid-column: 1 / -1; margin-bottom:10px; padding:10px 14px; border-radius:12px; background:linear-gradient(135deg, rgba(30,41,59,0.75), rgba(15,23,42,0.95)); border:1px solid ${curChapter.color}44; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div>
+          <div style="font-size:14px; font-weight:900; color:${curChapter.color}; display:flex; align-items:center; gap:6px;">
+            <span>${curChapter.icon}</span>
+            <span>${curChapter.name}</span>
+          </div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:3px;">${curChapter.desc}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:11px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,0.06); color:#cbd5e1;">
+            战区进度: <b style="color:${curChapter.color};">${chClearedCount} / ${chStages.length}</b>
+          </span>
+          ${equippedChapter !== this.selectedChapter ? `
+            <button class="quick-jump-btn" data-action="jump-current" style="font-size:11px; padding:4px 9px; border-radius:6px; border:1px solid rgba(56,189,248,0.4); background:rgba(2,132,199,0.25); color:#38bdf8; cursor:pointer;">
+              🎯 直达当前防线 (S${equipped})
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+
+    // 3. 难度模式选择栏
     const modeSelectorHtml = `
       <div style="grid-column: 1 / -1; margin-bottom: 8px;">
         <div style="display:flex; gap:8px; background:rgba(15,23,42,0.8); padding:4px; border-radius:10px; border:1px solid rgba(59,130,246,0.3);">
@@ -1249,7 +1304,8 @@ export class HomeLobbyUI {
       </div>
     `;
 
-    const stagesHtml = GAME_CONFIG.stages.map(st => {
+    // 4. 当前战区的关卡卡片
+    const stagesHtml = chStages.map(st => {
       let isLocked = false;
       let lockReason = '';
       if (curMode === 'normal') {
@@ -1263,6 +1319,7 @@ export class HomeLobbyUI {
 
       const isSelected = st.id === equipped;
       const isEliteCleared = curMode === 'elite' && saveManager.isEliteCleared(st.id);
+      const isNormalCleared = (saveManager.getHighestStageCleared() || 0) >= st.id;
       const goal = st.endless ? '无尽尸潮极限模式' : `防守 ${st.clearWaves} 波次`;
 
       const lootBadges = (st.targetDrops || []).map(drop => `
@@ -1272,15 +1329,23 @@ export class HomeLobbyUI {
         </span>
       `).join('');
 
+      let bossBadge = '';
+      if (st.isChapterBoss) {
+        bossBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:linear-gradient(135deg,#e11d48,#be123c);color:#fff;font-weight:900;letter-spacing:0.5px;box-shadow:0 0 8px rgba(225,29,72,0.6);">👑 战区霸主</span>';
+      } else if (st.isMiniBoss) {
+        bossBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(249,115,22,0.2);color:#fb923c;border:1px solid rgba(249,115,22,0.5);font-weight:800;">💀 中阶首领</span>';
+      }
+
       return `
-        <div class="stage-flow-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''} ${curMode === 'elite' ? 'elite-stage-card' : ''}" data-stage-id="${st.id}" style="${curMode === 'elite' && !isLocked ? 'border-color:rgba(244,63,94,0.4);background:linear-gradient(135deg, rgba(30,10,20,0.8), rgba(15,23,42,0.9));' : ''}">
+        <div class="stage-flow-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''} ${curMode === 'elite' ? 'elite-stage-card' : ''} ${st.isChapterBoss ? 'chapter-boss-card' : ''}" data-stage-id="${st.id}" style="${curMode === 'elite' && !isLocked ? 'border-color:rgba(244,63,94,0.4);background:linear-gradient(135deg, rgba(30,10,20,0.8), rgba(15,23,42,0.9));' : ''}">
           <div class="stage-flow-left" style="flex:1;">
-            <div class="stage-flow-badge" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#be123c);color:#fff;' : ''}">${st.id}</div>
+            <div class="stage-flow-badge" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#be123c);color:#fff;' : (st.isChapterBoss ? 'background:linear-gradient(135deg,#eab308,#f59e0b);color:#0f172a;' : '')}">${st.id}</div>
             <div style="flex:1;">
-              <div class="stage-flow-title" style="display:flex;align-items:center;gap:6px;">
-                <span>${st.name}</span>
+              <div class="stage-flow-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-weight:800;">${st.name}</span>
+                ${bossBadge}
                 ${curMode === 'elite' ? '<span style="font-size:10px;color:#f43f5e;font-weight:900;background:rgba(244,63,94,0.15);padding:1px 4px;border-radius:4px;">ELITE</span>' : ''}
-                ${isEliteCleared ? '<span style="font-size:10px;color:#22c55e;">★已通关</span>' : ''}
+                ${isEliteCleared ? '<span style="font-size:10px;color:#22c55e;">★已通关</span>' : (isNormalCleared && curMode === 'normal' ? '<span style="font-size:10px;color:#38bdf8;">✓ 已通关</span>' : '')}
                 ${isLocked ? '🔒' : ''}
               </div>
               <div class="stage-flow-sub" style="margin-top:2px;">${goal} · 难度系数 x${(st.difficulty * (curMode === 'elite' ? 1.6 : 1.0)).toFixed(2)}</div>
@@ -1294,7 +1359,7 @@ export class HomeLobbyUI {
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;margin-left:8px;">
             ${!isLocked ? `
-              <button class="stage-flow-btn" data-action="pick-stage" data-id="${st.id}" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#f43f5e);border-color:#fb7185;color:#fff;' : ''}">
+              <button class="stage-flow-btn" data-action="pick-stage" data-id="${st.id}" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#f43f5e);border-color:#fb7185;color:#fff;' : (st.isChapterBoss ? 'background:linear-gradient(135deg,#d97706,#f59e0b);border-color:#fde047;color:#0f172a;font-weight:900;' : '')}">
                 ${isSelected ? (curMode === 'elite' ? '出击精英' : '出击此关') : '选定此关'}
               </button>
             ` : `<span style="font-size:11px;color:#ef4444;background:rgba(239,68,68,0.15);padding:3px 6px;border-radius:4px;">${lockReason}</span>`}
@@ -1303,8 +1368,28 @@ export class HomeLobbyUI {
       `;
     }).join('');
 
-    container.innerHTML = modeSelectorHtml + stagesHtml;
+    container.innerHTML = chapterTabsHtml + chapterBannerHtml + modeSelectorHtml + stagesHtml;
 
+    // 战区切换
+    container.querySelectorAll('[data-action="switch-chapter"]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        this.selectedChapter = parseInt(btn.dataset.chapterId, 10);
+        this.renderTrials();
+      };
+    });
+
+    // 直达当前防线
+    const jumpBtn = container.querySelector('[data-action="jump-current"]');
+    if (jumpBtn) {
+      jumpBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.selectedChapter = equippedChapter;
+        this.renderTrials();
+      };
+    }
+
+    // 模式切换
     container.querySelectorAll('[data-action="switch-mode"]').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -1314,6 +1399,7 @@ export class HomeLobbyUI {
       };
     });
 
+    // 出击与选定
     container.querySelectorAll('[data-action="pick-stage"]').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();

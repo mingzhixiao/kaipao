@@ -153,7 +153,8 @@ export class SaveManager {
       }
     } else {
       if (stageId > (this.data.highestStageCleared || 0)) this.data.highestStageCleared = stageId;
-      if (stageId >= (this.data.unlockedStage || 1)) this.data.unlockedStage = Math.min(8, stageId + 1);
+      const maxStages = GAME_CONFIG.stages?.length || 51;
+      if (stageId >= (this.data.unlockedStage || 1)) this.data.unlockedStage = Math.min(maxStages, stageId + 1);
     }
     if (scrapEarned > 0) this.addScrap(scrapEarned);
     this.addCommanderExp(mode === 'elite' ? (80 + stageId * 40) : (50 + stageId * 25));
@@ -351,6 +352,7 @@ export class SaveManager {
 
   // 关卡
   getUnlockedStage() { return this.data.unlockedStage || 1; }
+  getHighestStageCleared() { return this.data.highestStageCleared || 0; }
   getEquippedStage() { return this.data.equippedStage || 1; }
   setEquippedStage(stageId) { this.data.equippedStage = Math.max(1, stageId); this.save(); }
 

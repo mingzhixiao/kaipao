@@ -269,14 +269,37 @@ export class WaveSystem {
     if (this.game.activeBoss && this.game.activeBoss.active) return;
     const boss = this.game.enemyPool.get();
     boss.active = true; boss.isBoss = true; boss.type = 'boss_overlord';
-    const bossScale = GAME_CONFIG.difficulty.getBossWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0);
+
+    const chId = this.stageConfig?.chapter || Math.min(5, Math.ceil((this.stageConfig?.id || 1) / 10));
+    const isChapterBoss = !!this.stageConfig?.isChapterBoss;
+    const isMiniBoss = !!this.stageConfig?.isMiniBoss;
+
+    // 战区首领专属名称与主题色
+    const BOSS_THEMES = {
+      1: { name: isChapterBoss ? '废土处决霸主' : '哨站行刑官', color: '#ff2a5f', auraColor: '#ff2a5f' },
+      2: { name: isChapterBoss ? '剧毒腐化母体' : '酸蚀突变先锋', color: '#10b981', auraColor: '#059669' },
+      3: { name: isChapterBoss ? '熔核炎魔统领' : '炽热爆裂巨兽', color: '#f97316', auraColor: '#ea580c' },
+      4: { name: isChapterBoss ? '机械歼灭神机' : '赛博要塞哨兵', color: '#06b6d4', auraColor: '#0891b2' },
+      5: { name: isChapterBoss ? '母巢支配者·终末' : '深渊虚空行者', color: '#a855f7', auraColor: '#9333ea' },
+      6: { name: '无尽终焉守望者', color: '#eab308', auraColor: '#ca8a04' }
+    };
+    const theme = BOSS_THEMES[chId] || BOSS_THEMES[1];
+    boss.bossTitle = theme.name;
+    boss.bossColor = theme.color;
+
+    // 首领倍率调整：中首领 1.2x，大首领 1.5x
+    const bossTierMult = isChapterBoss ? 1.5 : (isMiniBoss ? 1.2 : 1.0);
+    const bossScale = GAME_CONFIG.difficulty.getBossWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0) * bossTierMult;
     const cfg = GAME_CONFIG.enemies.boss_overlord;
-    boss.radius = cfg.radius;
+
+    boss.radius = isChapterBoss ? Math.round(cfg.radius * 1.15) : cfg.radius;
     boss.maxHp = boss.hp = Math.round(cfg.baseHp * bossScale);
     boss.speed = cfg.speed;
-    boss.attackPower = Math.round(cfg.attackPower * (this.modeConfig?.atkMult || 1.0) * (this.stageConfig?.difficulty || 1.0));
+    boss.attackPower = Math.round(cfg.attackPower * (this.modeConfig?.atkMult || 1.0) * (this.stageConfig?.difficulty || 1.0) * (isChapterBoss ? 1.25 : 1.0));
     boss.attackCooldown = cfg.attackCooldown;
-    boss.color = cfg.color; boss.expVal = cfg.expVal;
+    boss.color = theme.color;
+    boss.expVal = Math.round(cfg.expVal * bossTierMult);
+
     const road = this.game.getRoadBounds(0);
     boss.laneRatio = 0.5; boss.x = road.center;
     boss.y = spawnY !== null ? spawnY : (-boss.radius - 15);
@@ -287,8 +310,8 @@ export class WaveSystem {
     this.game.enemies.push(boss);
     this.game.activeBoss = boss;
     sound.playBossAlert();
-    this.game.feedback.addTrauma(0.65);
-    this.game.spawnParticles(boss.x, 80, '#ff2a5f', 30, 'fire');
+    this.game.feedback.addTrauma(isChapterBoss ? 0.85 : 0.65);
+    this.game.spawnParticles(boss.x, 80, theme.auraColor, 36, 'fire');
   }
 }
 

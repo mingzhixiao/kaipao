@@ -1680,3 +1680,29 @@
   50% { box-shadow: 0 0 18px rgba(234, 179, 8, 0.75); transform: scale(1.02); }
 }
 
+/* 战区导航卡与霸主卡片样式 */
+.chapter-tab-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+
+.chapter-boss-card {
+  border-color: rgba(234, 179, 8, 0.45) !important;
+  background: linear-gradient(135deg, rgba(30, 25, 15, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  box-shadow: 0 0 16px rgba(234, 179, 8, 0.2);
+}
+
+.chapter-boss-card:hover {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4) !important;
+}
+
+.quick-jump-btn {
+  transition: all 0.2s ease;
+}
+.quick-jump-btn:hover {
+  background: rgba(2, 132, 199, 0.45) !important;
+  transform: translateY(-1px);
+}
+
+

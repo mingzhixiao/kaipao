@@ -1,4 +1,5 @@
 import { assets } from '../systems/AssetManager.js';
+import { GAME_CONFIG } from '../core/Config.js';
 
 // ---------------- 视觉渲染系统 (Canvas 2D + 高清图素) ----------------
 
@@ -8,6 +9,7 @@ export class GameRenderer {
     this.bgCanvas = document.createElement('canvas');
     this.bgCtx = this.bgCanvas.getContext('2d');
     this.bgDirty = true;
+    this.cachedStageId = -1;
   }
 
   // 标记背景需要重绘 (例如屏幕尺寸改变时)
@@ -74,18 +76,23 @@ export class GameRenderer {
     ctx.restore();
   }
 
-  // 预渲染离屏背景层 (仅在 resize 或资源加载时执行一次，主循环每帧 0ms 贴图)
-  updateOffscreenBackground(width, height) {
+  // 预渲染离屏背景层 (仅在 resize、切关卡或资源加载时执行一次，主循环每帧 0ms 贴图)
+  updateOffscreenBackground(width, height, stageId = 1) {
     const w = Math.max(1, Math.floor(width));
     const h = Math.max(1, Math.floor(height));
     this.bgCanvas.width = w;
     this.bgCanvas.height = h;
     const bctx = this.bgCtx;
 
+    const stConfig = GAME_CONFIG.stages?.find(s => s.id === stageId) || GAME_CONFIG.stages?.[0];
+    const chId = stConfig?.chapter || Math.min(5, Math.ceil((stageId || 1) / 10));
+    const chConfig = GAME_CONFIG.chapters?.find(c => c.id === chId) || GAME_CONFIG.chapters?.[0];
+    const amb = chConfig?.ambience || { filter: 'brightness(0.84) contrast(0.98) saturate(0.88)', tint: 'transparent', haze: 'rgba(15, 23, 42, 0.55)' };
+
     const bgImg = assets.get('bg_highway');
     if (bgImg) {
       bctx.save();
-      bctx.filter = 'brightness(0.84) contrast(0.98) saturate(0.88)';
+      bctx.filter = amb.filter;
       bctx.drawImage(bgImg, 0, 0, w, h);
       bctx.restore();
     } else {
@@ -93,9 +100,15 @@ export class GameRenderer {
       bctx.fillRect(0, 0, w, h);
     }
 
+    // 战区氛围染色覆盖层
+    if (amb.tint && amb.tint !== 'transparent') {
+      bctx.fillStyle = amb.tint;
+      bctx.fillRect(0, 0, w, h);
+    }
+
     // 废土远景灰霾层 (破桥远处纵深空气透视)
     const skyHaze = bctx.createLinearGradient(0, 0, 0, 180);
-    skyHaze.addColorStop(0, 'rgba(15, 23, 42, 0.55)');
+    skyHaze.addColorStop(0, amb.haze || 'rgba(15, 23, 42, 0.55)');
     skyHaze.addColorStop(0.7, 'rgba(20, 30, 48, 0.15)');
     skyHaze.addColorStop(1, 'transparent');
     bctx.fillStyle = skyHaze;
@@ -118,8 +131,9 @@ export class GameRenderer {
     const w = Math.floor(game.width);
     const h = Math.floor(game.height);
 
-    if (this.bgDirty || this.bgCanvas.width !== w || this.bgCanvas.height !== h) {
-      this.updateOffscreenBackground(w, h);
+    if (this.bgDirty || this.bgCanvas.width !== w || this.bgCanvas.height !== h || this.cachedStageId !== game.stageId) {
+      this.cachedStageId = game.stageId;
+      this.updateOffscreenBackground(w, h, game.stageId);
     }
 
     ctx.drawImage(this.bgCanvas, 0, 0);

@@ -39,30 +39,75 @@ export class LevelDesignSystem {
   }
 
   getPlan(stageId, wave, stageConfig = {}) {
-    const design = STAGE_DESIGNS[stageId];
     const clearWaves = stageConfig.clearWaves || 0;
-    const beats = design?.beats || [];
-    let beat = beats[Math.min(Math.max(wave - 1, 0), beats.length - 1)] || DEFAULT_BEAT;
+    const isEndless = !!stageConfig.endless;
+    const isBossWave = (stageConfig.bossEvery && wave % stageConfig.bossEvery === 0) || (!isEndless && clearWaves > 0 && wave === clearWaves);
 
-    if (wave > beats.length && clearWaves > beats.length) {
-      const cycle = beats[(wave - 1) % beats.length] || DEFAULT_BEAT;
-      beat = {
-        ...cycle,
-        intensity: Math.min(1, cycle.intensity + Math.min(0.16, (wave - beats.length) * 0.025)),
-        rest: Math.max(0.8, cycle.rest - Math.min(0.7, (wave - beats.length) * 0.08))
-      };
+    // 确定所属战区 (1..6)
+    const chapterId = stageConfig.chapter || Math.min(5, Math.ceil(stageId / 10));
+
+    // 根据战区与波次动态生成节奏 Beat
+    let type = 'pressure';
+    let intensity = Math.min(1.0, 0.2 + (stageId / 50) * 0.5 + (wave / 15) * 0.25);
+    let rest = Math.max(1.0, 2.0 - (stageId / 50) * 0.8);
+    let lane = 'spread';
+    let bias = { runner: 0.7, charger: 0.3 };
+
+    if (wave === 1) {
+      type = stageId === 1 ? 'teach' : 'recovery';
+      intensity = 0.25;
+      rest = 2.0;
+      lane = 'spread';
+    } else if (isBossWave) {
+      type = (!isEndless && wave === clearWaves) ? 'finale' : 'boss';
+      intensity = 0.9 + Math.min(0.1, stageId * 0.002);
+      rest = 2.2;
+      lane = 'center';
+    } else if (wave % 3 === 0) {
+      type = 'rush';
+      lane = 'alternating';
+    } else if (wave % 4 === 0) {
+      type = 'elite';
+      lane = 'flank';
+    } else {
+      type = 'mixed';
+      lane = 'spread';
+    }
+
+    // 怪物比重根据战区与怪物门禁动态分配
+    const allowed = stageConfig.allowedEnemies || ['runner', 'charger', 'behemoth'];
+    if (!allowed.includes('charger')) {
+      bias = { runner: 1.0 };
+    } else if (!allowed.includes('behemoth')) {
+      bias = { runner: Math.max(0.3, 0.8 - wave * 0.05), charger: Math.min(0.7, 0.2 + wave * 0.05) };
+    } else {
+      if (chapterId === 1) {
+        bias = { runner: 0.55, charger: 0.35, behemoth: 0.10 };
+      } else if (chapterId === 2) {
+        // 剧毒废墟：高疾行冲锋怪
+        bias = { runner: 0.35, charger: 0.50, behemoth: 0.15 };
+      } else if (chapterId === 3) {
+        // 熔岩裂谷：重装高血量巨兽
+        bias = { runner: 0.30, charger: 0.30, behemoth: 0.40 };
+      } else if (chapterId === 4) {
+        // 机械遗迹：攻守兼备
+        bias = { runner: 0.35, charger: 0.35, behemoth: 0.30 };
+      } else {
+        // 虚空深渊：凶猛混合狂潮
+        bias = { runner: 0.25, charger: 0.40, behemoth: 0.35 };
+      }
     }
 
     const plan = {
       stageId,
       wave,
-      type: beat.type,
-      intensity: beat.intensity,
-      rest: beat.rest,
-      bias: { ...beat.bias },
-      lane: beat.lane || 'spread',
-      boss: !!stageConfig.bossEvery && wave % stageConfig.bossEvery === 0,
-      label: this.getLabel(beat.type)
+      type,
+      intensity,
+      rest,
+      bias,
+      lane,
+      boss: isBossWave,
+      label: this.getLabel(type)
     };
     this.lastPlan = plan;
     return plan;
