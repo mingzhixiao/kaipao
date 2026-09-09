@@ -586,7 +586,7 @@ export class HUDManager {
     this.clearAutoSelectTimer();
     const isRetreat = game.battleEndReason === 'retreat';
     if (this.dom.reportTitle) this.dom.reportTitle.textContent = isRetreat ? '已撤离战场' : '防线失守';
-    if (this.dom.reportSubtitle) this.dom.reportSubtitle.textContent = isRetreat ? '仅结算击杀感染者获得的废料' : '基地生命归零，本次防守结束';
+    if (this.dom.reportSubtitle) this.dom.reportSubtitle.textContent = isRetreat ? '仅结算击杀异兽获得的废料' : '基地生命归零，本次防守结束';
     if (this.dom.resWave) this.dom.resWave.textContent = game.wave;
     if (this.dom.resKills) this.dom.resKills.textContent = game.kills;
     const mins = Math.floor(game.survivalTime / 60).toString().padStart(2, '0');

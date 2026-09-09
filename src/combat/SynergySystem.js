@@ -72,7 +72,7 @@ export class SynergySystem {
     game.spawnParticles(x, y, '#fed7aa', 24, 'smoke');
     game.spawnParticles(x, y, '#ff7700', 20, 'fire');
     game.spawnHitRing(x, y, '#ff7700', enemy.radius * 2.2);
-    game.spawnDamageText(x, y - 25, `💥 殉爆! ${shockDmg}`, '#ff7700', true, true);
+    game.spawnDamageText(x, y - 25, `💥 热核聚变! ${shockDmg}`, '#ff7700', true, true);
     SynergySystem.forEachInRadius(game, x, y, 90, (other) => {
       if (other === enemy) return;
       SynergySystem.applyDirectDamage(other, Math.round(shockDmg * 0.45));
@@ -97,7 +97,7 @@ export class SynergySystem {
         damage: Math.round(game.skills.truck.damage * 0.45), pierce: 2, life: 1.1
       });
     }
-    game.spawnDamageText(x, y - 20, '❄️ 碎冰穿刺!', '#00f0ff', true, true);
+    game.spawnDamageText(x, y - 20, '❄️ 晶格崩解穿刺!', '#00f0ff', true, true);
     game.spawnParticles(x, y, '#38bdf8', 18, 'spark');
   }
 
@@ -139,7 +139,7 @@ export class SynergySystem {
         game.damageEnemy(e, 140, true, 'emp');
       }
     }
-    game.spawnDamageText(game.hero.x, game.fortress.y - 40, '⚡ EMP 防线过载冲击!', '#00f0ff', true, true);
+    game.spawnDamageText(game.hero.x, game.fortress.y - 40, '⚡ 基地护盾破裂过载!', '#00f0ff', true, true);
   }
 
   triggerOverload(enemy, x, y) { SynergySystem.triggerOverload(this.game, enemy, x, y); }
@@ -155,7 +155,7 @@ export class SynergySystem {
     game.spawnParticles(x, y, '#c084fc', 18, 'spark');
     game.spawnParticles(x, y, '#ff4400', 16, 'fire');
     game.spawnHitRing(x, y, '#c084fc', enemy.radius * 2.2);
-    game.spawnDamageText(x, y - 24, `⚡ 超载 ${overloadDmg}`, '#e879f9', true, true);
+    game.spawnDamageText(x, y - 24, `⚡ 电离超载 ${overloadDmg}`, '#e879f9', true, true);
     SynergySystem.forEachInRadius(game, x, y, 100, (other) => {
       if (other === enemy) return;
       SynergySystem.applyDirectDamage(other, Math.round(overloadDmg * 0.4));
@@ -187,7 +187,7 @@ export class SynergySystem {
       const now = game.survivalTime || 0;
       if (now - (game._lastSwirlText || 0) > 0.65) {
         game._lastSwirlText = now;
-        game.spawnDamageText(x, y - 20, '🌪️ 火扩散', '#ff7700', false, true);
+        game.spawnDamageText(x, y - 20, '🌪️ 等离子扩散', '#ff7700', false, true);
       }
     }
 
@@ -202,7 +202,7 @@ export class SynergySystem {
       const now = game.survivalTime || 0;
       if (now - (game._lastSwirlText || 0) > 0.65) {
         game._lastSwirlText = now;
-        game.spawnDamageText(x, y - 20, '🌪️ 冰扩散', '#38bdf8', false, true);
+        game.spawnDamageText(x, y - 20, '🌪️ 低温扩散', '#38bdf8', false, true);
       }
     }
     if (spreadCount > 0) game.feedback.triggerHitStop(0.015);

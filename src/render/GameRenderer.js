@@ -542,7 +542,7 @@ export class GameRenderer {
     ctx.stroke();
   }
 
-  // 疾行感染者狂暴爪刺
+  // 硅基噬矿兽能量刺足
   renderRunnerClaws(ctx, size, phase, isMoving) {
     if (!isMoving) return;
     const lOff = Math.sin(phase) * 7;

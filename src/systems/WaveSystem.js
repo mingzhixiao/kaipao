@@ -270,12 +270,12 @@ export class WaveSystem {
 
     // 战区首领专属名称与主题色
     const BOSS_THEMES = {
-      1: { name: isChapterBoss ? '废土处决霸主' : '哨站行刑官', color: '#ff2a5f', auraColor: '#ff2a5f' },
-      2: { name: isChapterBoss ? '剧毒腐化母体' : '酸蚀突变先锋', color: '#10b981', auraColor: '#059669' },
-      3: { name: isChapterBoss ? '熔核炎魔统领' : '炽热爆裂巨兽', color: '#f97316', auraColor: '#ea580c' },
-      4: { name: isChapterBoss ? '机械歼灭神机' : '赛博要塞哨兵', color: '#06b6d4', auraColor: '#0891b2' },
-      5: { name: isChapterBoss ? '母巢支配者·终末' : '深渊虚空行者', color: '#a855f7', auraColor: '#9333ea' },
-      6: { name: '无尽终焉守望者', color: '#eab308', auraColor: '#ca8a04' }
+      1: { name: isChapterBoss ? '星尘裁决执行者' : '轨道重装哨卫', color: '#ff2a5f', auraColor: '#ff2a5f' },
+      2: { name: isChapterBoss ? '强酸星环裂殖体' : '强酸突变先锋兽', color: '#10b981', auraColor: '#059669' },
+      3: { name: isChapterBoss ? '熔核等离子巨擘' : '熔火裂隙突袭者', color: '#f97316', auraColor: '#ea580c' },
+      4: { name: isChapterBoss ? '失控歼灭主脑' : '重巡装甲哨戒机', color: '#06b6d4', auraColor: '#0891b2' },
+      5: { name: isChapterBoss ? '虚空母巢支配者' : '深空虚空潜伏体', color: '#a855f7', auraColor: '#9333ea' },
+      6: { name: '星核终焉要塞守护神', color: '#eab308', auraColor: '#ca8a04' }
     };
     const theme = BOSS_THEMES[chId] || BOSS_THEMES[1];
     boss.bossTitle = theme.name;

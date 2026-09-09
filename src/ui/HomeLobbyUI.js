@@ -110,8 +110,8 @@ export class HomeLobbyUI {
           <div class="lobby-stage-heading">
             <div class="lobby-stage-copy">
               <div class="lobby-stage-info-title">当前作战区域</div>
-              <div class="lobby-stage-info-name" id="lobby-stage-name">STAGE 1 · 废土前哨</div>
-              <div class="lobby-stage-info-desc" id="lobby-stage-desc">抵御 5 波尸潮 · 首通奖励 80 废料</div>
+              <div class="lobby-stage-info-name" id="lobby-stage-name">STAGE 1 · 小行星前哨</div>
+              <div class="lobby-stage-info-desc" id="lobby-stage-desc">抵御 5 波异星狂潮 · 首通奖励 80 废料</div>
             </div>
             <div class="lobby-stage-tools">
               <div class="lobby-power-banner" title="综合战力评分">
@@ -129,8 +129,8 @@ export class HomeLobbyUI {
 
           <div class="lobby-stage-arena">
             <div class="lobby-stage-arena-glow"></div>
-            <div class="lobby-arena-callout"><span>前线整备完成</span><strong id="lobby-arena-stage">废土前哨</strong></div>
-            <div class="lobby-fortress-truck" title="重型突击战车"></div>
+            <div class="lobby-arena-callout"><span>前线整备完成</span><strong id="lobby-arena-stage">小行星前哨</strong></div>
+            <div class="lobby-fortress-truck" title="磁浮重装扫荡舰"></div>
             <div class="lobby-floating-pet" id="lobby-arena-pet" title="出战伙伴">
               <img id="lobby-arena-pet-img" src="assets/pets/fluffy.png" alt="Pet">
             </div>
@@ -1374,7 +1374,7 @@ export class HomeLobbyUI {
           </button>
         </div>
         <div style="font-size:11px;padding:6px 10px;border-radius:6px;margin-top:6px;border:1px solid ${curMode === 'elite' ? 'rgba(244,63,94,0.3);background:rgba(136,19,55,0.25);color:#fca5a5;' : 'rgba(56,189,248,0.2);background:rgba(12,74,110,0.2);color:#7dd3fc;'}">
-          ${curMode === 'elite' ? '⚠️ <b>极度凶险战区</b>：感染者狂暴化（攻击力+85% · 生命+60% · 密度更高），所有专属技能芯片与战利品翻倍掉落！' : '🌿 <b>标准防线推进</b>：稳步歼灭轻度感染者，获取基础物资与技能合成碎片。'}
+          ${curMode === 'elite' ? '⚠️ <b>极度凶险战区</b>：异星敌军狂暴化（攻击力+85% · 生命+60% · 密度更高），所有专属技能芯片与战利品翻倍掉落！' : '🌿 <b>标准防线推进</b>：稳步歼灭前线异兽，获取基础物资与技能合成碎片。'}
         </div>
       </div>
     `;
@@ -1395,7 +1395,7 @@ export class HomeLobbyUI {
       const isSelected = st.id === equipped;
       const isEliteCleared = curMode === 'elite' && saveManager.isEliteCleared(st.id);
       const isNormalCleared = (saveManager.getHighestStageCleared() || 0) >= st.id;
-      const goal = st.endless ? '无尽尸潮极限模式' : `防守 ${st.clearWaves} 波次`;
+      const goal = st.endless ? '无尽异兽极限模式' : `防守 ${st.clearWaves} 波次`;
 
       const lootBadges = (st.targetDrops || []).map(drop => `
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 6px;border-radius:4px;background:${drop.highlight ? 'rgba(234,179,8,0.2)' : 'rgba(30,41,59,0.8)'};border:1px solid ${drop.highlight ? '#eab308' : 'rgba(71,85,105,0.5)'};color:${drop.highlight ? '#fde047' : '#cbd5e1'};">

@@ -1,12 +1,12 @@
 // 战术技能 HUD：4 格战术技能面板 + 波次战术提示
 const SKILL_META = {
-  rocket: { id: 'rocket', name: '温压火箭', icon: '🔥', asset: 'assets/cards/icon_rocket.png', desc: '全屏覆盖温压爆轰', core: true },
-  truck: { id: 'truck', name: '装甲战车', icon: '🚚', asset: 'assets/cards/icon_truck.png', desc: '重装战车碾压前线', core: true },
-  freeze: { id: 'freeze', name: '极寒射线', icon: '❄️', asset: 'assets/cards/icon_frost.png', desc: '绝对零度持续冻结', core: true },
-  tornado: { id: 'tornado', name: '裂风涡流', icon: '🌪️', asset: 'assets/skills/tornado.png', desc: '强效引力聚怪风暴', group: 'tactical' },
-  boomerang: { id: 'boomerang', name: '回旋飞刃', icon: '🪃', asset: 'assets/skills/boomerang.png', desc: '高频穿透弹射飞刃', group: 'tactical' },
-  laser: { id: 'laser', name: '湮灭射线', icon: '⚡', asset: 'assets/skills/laser.png', desc: '贯穿高能毁灭死光', group: 'tactical' },
-  bomber: { id: 'bomber', name: '轨道轰炸', icon: '🚀', asset: 'assets/skills/bomber.png', desc: '天基战术精确打击', group: 'tactical' }
+  rocket: { id: 'rocket', name: '裂变等离子重炮', icon: '🔥', asset: 'assets/cards/icon_rocket.png', desc: '全屏覆盖等离子聚变爆轰', core: true },
+  truck: { id: 'truck', name: '磁浮重装扫荡舰', icon: '🛸', asset: 'assets/cards/icon_truck.png', desc: '磁浮重装扫荡巡航前线', core: true },
+  freeze: { id: 'freeze', name: '绝对零度射线', icon: '❄️', asset: 'assets/cards/icon_frost.png', desc: '绝对零度持续凝结', core: true },
+  tornado: { id: 'tornado', name: '微型引力奇点', icon: '🌪️', asset: 'assets/skills/tornado.png', desc: '强效引力牵引聚怪', group: 'tactical' },
+  boomerang: { id: 'boomerang', name: '高周波磁旋刃', icon: '🪃', asset: 'assets/skills/boomerang.png', desc: '高频穿透双程撕裂', group: 'tactical' },
+  laser: { id: 'laser', name: '粒子歼灭切割器', icon: '⚡', asset: 'assets/skills/laser.png', desc: '贯穿高能粒子束死光', group: 'tactical' },
+  bomber: { id: 'bomber', name: '天基动能天谴打击', icon: '🚀', asset: 'assets/skills/bomber.png', desc: '天基轨道精准打击', group: 'tactical' }
 };
 
 const MAX_SKILL_SLOTS = 4;

@@ -22,7 +22,7 @@ export function showWaveBanner(waveNum, isBossWave, stageConfig = null, wavePlan
     } else if (wavePlan?.bias?.behemoth > 0.25) {
       sub.textContent = '🛡️ 巨型重甲突变体推进！建议重火能集火！';
     } else {
-      sub.textContent = '感染者集群接近中 · 坚守废土防线';
+      sub.textContent = '异星敌军逼近中 · 坚守深空防线';
     }
   }
   banner.style.display = 'block';

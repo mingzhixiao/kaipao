@@ -1,7 +1,7 @@
 {
-  "name": "kaipao-roguelike",
+  "name": "starcore-vanguard",
   "version": "1.0.0",
-  "description": "末日塔防 Roguelike H5",
+  "description": "星核防线：重装先锋 (Starcore Defense) 科幻Roguelike塔防",
   "type": "module",
   "scripts": {
     "dev": "npx serve -l 8099 .",

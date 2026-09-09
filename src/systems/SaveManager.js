@@ -1,7 +1,8 @@
 // ---------------- 本地持久化：战报 + 关卡进度 + 符文 + 宠物 + 枪械 + 背包素材 + 指挥官 ----------------
 import { GAME_CONFIG } from '../core/Config.js';
 
-const SAVE_KEY = 'kaipao_roguelike_save_v5';
+const SAVE_KEY = 'starcore_vanguard_save_v6';
+const LEGACY_KEYS = ['kaipao_roguelike_save_v5', 'kaipao_roguelike_save_v4'];
 
 export class SaveManager {
   constructor() { this.data = this.load(); }
@@ -54,7 +55,7 @@ export class SaveManager {
         power_shard: 0, bulletspeed_shard: 0, attackspeed_shard: 0, mag_shard: 0,
         rare_weapon_shard: 0,
         rune_shard: 0,
-        // 宠物基因碎片
+        // 僚机智能核心与能源晶体
         fluffy_shard: 0, dragon_shard: 0,
         // 技能芯片
         chip_rocket: 0, chip_freeze: 0, chip_truck: 0,
@@ -67,9 +68,18 @@ export class SaveManager {
 
   load() {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      let raw = localStorage.getItem(SAVE_KEY);
       if (!raw) {
-        // 升级自旧版本时，保证新机制的纯净体验
+        for (const legacyKey of LEGACY_KEYS) {
+          const oldRaw = localStorage.getItem(legacyKey);
+          if (oldRaw) {
+            raw = oldRaw;
+            localStorage.setItem(SAVE_KEY, raw);
+            break;
+          }
+        }
+      }
+      if (!raw) {
         return this.getDefaultData();
       }
       return this.mergeDefaults(JSON.parse(raw));

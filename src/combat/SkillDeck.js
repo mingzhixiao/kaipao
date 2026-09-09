@@ -14,12 +14,12 @@ export function buildUpgradeCardPool(game) {
   const pool = [
     {
       id: 'rocket',
-      name: game.skills.rocket.level === 0 ? '温压火箭 (解锁)' : '温压火箭 (强化)',
-      desc: game.skills.rocket.level === 0 ? '部署温压重型火箭，定点引发大范围爆轰核爆与火焰灼烧区。' : '爆炸伤害+35%，爆破范围+20%，冷却-0.5s。',
+      name: game.skills.rocket.level === 0 ? '裂变等离子重炮 (解锁)' : '裂变等离子重炮 (强化)',
+      desc: game.skills.rocket.level === 0 ? '部署重型等离子裂变重炮，定点引发超大范围高能等离子聚变与炽热灼烧带。' : '爆轰威力+35%，聚变范围+20%，冷却-0.5s。',
       img: 'assets/cards/icon_rocket.png',
       rarity: game.skills.rocket.level === 0 ? 'legendary' : 'rare',
       element: 'fire',
-      synergy: '[火系 · 重装火力]',
+      synergy: '[等离子 · 聚变重炮]',
       apply: () => {
         game.skills.rocket.level++;
         game.skills.rocket.cooldown = Math.max(3.0, game.skills.rocket.cooldown - 0.5);
@@ -27,12 +27,12 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'truck',
-      name: game.skills.truck.level === 0 ? '装甲战车 (解锁)' : '装甲战车 (强化)',
-      desc: game.skills.truck.level === 0 ? '呼叫重型突击装甲车，自防线轰鸣冲撞碾压沿途所有敌人！' : '战车碾压伤害+40%，击退距离+50px，冷却-1.0s。',
+      name: game.skills.truck.level === 0 ? '磁浮重装扫荡舰 (解锁)' : '磁浮重装扫荡舰 (强化)',
+      desc: game.skills.truck.level === 0 ? '呼叫高速重装磁浮扫荡舰，沿地面极速巡航扫荡碾压沿途所有敌对目标！' : '扫荡舰冲击伤害+40%，击退距离+50px，冷却-1.0s。',
       img: 'assets/cards/icon_truck.png',
       rarity: game.skills.truck.level === 0 ? 'legendary' : 'rare',
       element: 'physical',
-      synergy: '[物理 · 重装碾压]',
+      synergy: '[磁浮 · 重装扫荡]',
       apply: () => {
         game.skills.truck.level++;
         game.skills.truck.cooldown = Math.max(4.0, game.skills.truck.cooldown - 1.0);
@@ -40,12 +40,12 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'freeze',
-      name: game.skills.freeze.level === 0 ? '极寒射线 (解锁)' : '极寒射线 (强化)',
-      desc: game.skills.freeze.level === 0 ? '周期性向前喷射大范围超低温冰雾，极速减速与冰冻敌人。' : '持续时间+0.5s，减速效果更强，每秒附带霜冻伤害+30%。',
+      name: game.skills.freeze.level === 0 ? '绝对零度射线 (解锁)' : '绝对零度射线 (强化)',
+      desc: game.skills.freeze.level === 0 ? '周期性向前喷射大范围超低温绝对零度冷凝粒子，极速减速并冰冻敌群。' : '持续时间+0.5s，减速效果更强，每秒霜冻伤害+30%。',
       img: 'assets/cards/icon_frost.png',
       rarity: game.skills.freeze.level === 0 ? 'rare' : 'rare',
       element: 'ice',
-      synergy: '[冰系 · 控场减速]',
+      synergy: '[冰霜 · 绝对零度]',
       apply: () => {
         game.skills.freeze.level++;
         game.skills.freeze.duration += 0.4;
@@ -53,12 +53,12 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'laser',
-      name: (game.feature?.skills?.laser?.level || 0) === 0 ? '湮灭射线 (解锁)' : '湮灭射线 (强化)',
-      desc: (game.feature?.skills?.laser?.level || 0) === 0 ? '贯穿全屏的高能雷电射线，引发高频感电贯通，引爆火焰超载！' : '射线威力+30%，持续时间增加，感电超载爆轰提升。',
+      name: (game.feature?.skills?.laser?.level || 0) === 0 ? '粒子歼灭切割器 (解锁)' : '粒子歼灭切割器 (强化)',
+      desc: (game.feature?.skills?.laser?.level || 0) === 0 ? '贯穿全屏的高能聚焦粒子束，引发高频感电贯通与等离子超载！' : '粒子束威力+30%，持续时间增加，感电超载爆轰提升。',
       img: 'assets/skills/laser.png',
       rarity: 'legendary',
       element: 'thunder',
-      synergy: '[雷系 · 感电超载]',
+      synergy: '[粒子 · 感电超载]',
       apply: () => {
         if (game.feature?.skills?.laser) {
           game.feature.skills.laser.level++;
@@ -68,12 +68,12 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'tornado',
-      name: (game.feature?.skills?.tornado?.level || 0) === 0 ? '裂风涡流 (解锁)' : '裂风涡流 (强化)',
-      desc: (game.feature?.skills?.tornado?.level || 0) === 0 ? '持续风暴涡流阻尼牵引敌人，并触发元素扩散机制（大范围传播冰/火）！' : '风暴半径+25px，持续时间+0.8s，阻尼牵引与扩散威能增强。',
+      name: (game.feature?.skills?.tornado?.level || 0) === 0 ? '微型引力奇点 (解锁)' : '微型引力奇点 (强化)',
+      desc: (game.feature?.skills?.tornado?.level || 0) === 0 ? '持续微型引力奇点牵引约束敌群，并引发广域能量扩散！' : '奇点引力半径+25px，持续时间+0.8s，引力牵引威能增强。',
       img: 'assets/skills/tornado.png',
       rarity: 'epic',
       element: 'wind',
-      synergy: '[风系 · 元素扩散]',
+      synergy: '[引力 · 空间扩散]',
       apply: () => {
         if (game.feature?.skills?.tornado) {
           game.feature.skills.tornado.level++;
@@ -83,12 +83,12 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'bomber',
-      name: (game.feature?.skills?.bomber?.level || 0) === 0 ? '轨道轰炸 (解锁)' : '轨道轰炸 (强化)',
-      desc: (game.feature?.skills?.bomber?.level || 0) === 0 ? '战术红圈预瞄战区，呼叫巡航机连续投掷 3 发烈火集束重弹！' : '轰炸伤害+35%，爆炸击退+30px，冷却缩短。',
+      name: (game.feature?.skills?.bomber?.level || 0) === 0 ? '天基动能天谴打击 (解锁)' : '天基动能天谴打击 (强化)',
+      desc: (game.feature?.skills?.bomber?.level || 0) === 0 ? '高空轨道战术信标定位，呼叫天基卫星投掷连续 3 发动能集束熔核弹！' : '打击伤害+35%，冲击击退+30px，冷却缩短。',
       img: 'assets/skills/bomber.png',
       rarity: 'epic',
       element: 'fire',
-      synergy: '[火系 · 毁灭轰炸]',
+      synergy: '[天基 · 动能天谴]',
       apply: () => {
         if (game.feature?.skills?.bomber) {
           game.feature.skills.bomber.level++;
@@ -98,12 +98,12 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'boomerang',
-      name: (game.feature?.skills?.boomerang?.level || 0) === 0 ? '回旋刃 (解锁)' : '回旋刃 (强化)',
-      desc: (game.feature?.skills?.boomerang?.level || 0) === 0 ? '高速往返贯穿飞刃，双程切割穿透，自带 35% 额外暴击率！' : '飞刃伤害+30%，飞行射程+80px，暴击撕裂提升。',
+      name: (game.feature?.skills?.boomerang?.level || 0) === 0 ? '高周波磁旋刃 (解锁)' : '高周波磁旋刃 (强化)',
+      desc: (game.feature?.skills?.boomerang?.level || 0) === 0 ? '高频往返贯穿磁旋飞刃，双程撕裂切割，自带 35% 额外暴击率！' : '磁旋刃伤害+30%，飞行射程+80px，撕裂暴击提升。',
       img: 'assets/skills/boomerang.png',
       rarity: 'rare',
       element: 'physical',
-      synergy: '[物理 · 暴击贯穿]',
+      synergy: '[磁旋 · 高周波撕裂]',
       apply: () => {
         if (game.feature?.skills?.boomerang) {
           game.feature.skills.boomerang.level++;
@@ -113,20 +113,20 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'thermal_engine',
-      name: '热力冲击引擎',
-      desc: '【化学反应】火箭或烈焰击中冰冻目标时，触发 220% 威力温差热力殉爆与破甲蒸汽震荡！',
+      name: '等离子热核聚变',
+      desc: '【化学反应】重炮或等离子击中冰冻目标时，触发 220% 威力温差裂变聚变与破甲能量震荡！',
       img: 'assets/cards/icon_thermal.png',
       rarity: 'legendary',
       element: 'fire',
-      synergy: '[元素反应 · 殉爆]',
+      synergy: '[能量反应 · 聚变]',
       apply: () => {
         game.synergies.thermalEngine = true;
       }
     },
     {
       id: 'tesla_coil',
-      name: '电磁超导弹头',
-      desc: '【弹道协同】武器暴击或雷电命中时释放高压电弧，连锁弹射跳跃至附近 2 个敌方目标！',
+      name: '超导电弧连锁',
+      desc: '【能量协同】武器暴击或高能打击命中时释放高压电弧，连锁弹射跳跃至附近 2 个敌方目标！',
       img: 'assets/cards/icon_tesla.png',
       rarity: 'epic',
       element: 'thunder',
@@ -137,36 +137,36 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'fortress_emp',
-      name: '紧急防线过载',
-      desc: '【战术防御】当防御盾被击碎瞬间，触发全场高能 EMP 电磁冲击波，冻结并击退周围敌群！',
+      name: '基地护盾过载破裂环',
+      desc: '【战术防御】当基地护盾被击碎瞬间，触发全场高能 EMP 电磁冲击波，震退并冻结周围敌群！',
       img: 'assets/cards/icon_emp.png',
       rarity: 'epic',
       element: 'thunder',
-      synergy: '[防线过载]',
+      synergy: '[基地过载]',
       apply: () => {
         game.synergies.fortressEmp = true;
       }
     },
     {
       id: 'truck_inferno',
-      name: '重装喷火战车',
-      desc: '【战车改装】重型装甲车加装后置火箭推力喷火器，飞驰沿途留下一整条炽热灼烧带！',
+      name: '热核离子推进舰',
+      desc: '【舰体改装】磁浮扫荡舰加装后置热核推进喷口，巡航沿途留下一整条炽热等离子灼烧带！',
       img: 'assets/cards/icon_inferno.png',
       rarity: 'epic',
       element: 'fire',
-      synergy: '[战车协同]',
+      synergy: '[扫荡舰协同]',
       apply: () => {
         game.synergies.truckInferno = true;
       }
     },
     {
       id: 'cryo_shatter',
-      name: '极寒深冻碎裂',
-      desc: '【战车协同】装甲战车碾压冰冻敌人时将其彻底粉碎，并向全场前方爆射 5 枚穿透冰晶刺！',
+      name: '极低温晶格崩解',
+      desc: '【扫荡舰协同】扫荡舰冲击冰冻目标时造成晶格崩解，并向前方爆射 5 枚穿透冰晶粒子刺！',
       img: 'assets/cards/icon_shatter.png',
       rarity: 'rare',
       element: 'ice',
-      synergy: '[冰霜碎裂]',
+      synergy: '[晶格崩解]',
       apply: () => {
         game.synergies.cryoShatter = true;
       }
