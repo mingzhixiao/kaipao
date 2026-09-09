@@ -1,5 +1,5 @@
 // ---------------- 资源管理系统 ----------------
-let _globalAssetInstance = globalThis.__KAIPAO_ASSETS_INSTANCE__ || null;
+let _globalAssetInstance = globalThis.__STARCORE_ASSETS_INSTANCE__ || null;
 
 export class AssetManager {
   constructor() {
@@ -10,9 +10,9 @@ export class AssetManager {
     this.loaded = false;
     this.loadingPromise = null;
     // 发布版本统一改这里，避免每次请求都使用 Date.now() 造成无法命中浏览器缓存。
-    this.assetVersion = '20260908';
+    this.assetVersion = '20260909_scifi_v1';
     _globalAssetInstance = this;
-    globalThis.__KAIPAO_ASSETS_INSTANCE__ = this;
+    globalThis.__STARCORE_ASSETS_INSTANCE__ = this;
     this.manifest = {
       bg_highway: 'assets/environment/bg_highway.png',
       fortress_wall: 'assets/environment/fortress_wall.png',
