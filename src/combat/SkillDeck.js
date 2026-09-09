@@ -247,6 +247,31 @@ export function buildUpgradeCardPool(game) {
       apply: () => {
         game.hero.magnetRange += 80;
       }
+    },
+    {
+      id: 'gun_power',
+      name: '重装高能火药',
+      desc: '主武器所有子弹杀伤力直接提升 25%，大幅增强单发点杀与清怪爆发！',
+      img: 'assets/icons/icon_level.png',
+      rarity: 'common',
+      element: 'physical',
+      synergy: '[枪械威力]',
+      apply: () => {
+        game.weapon.damage = Math.round(game.weapon.damage * 1.25);
+      }
+    },
+    {
+      id: 'mag_capacity',
+      name: '复合快速扩容弹匣',
+      desc: '主武器弹匣载弹量直接 +15 发，显著降低换弹频率，维持持续金属风暴！',
+      img: 'assets/icons/icon_part.png',
+      rarity: 'common',
+      element: 'physical',
+      synergy: '[弹药压制]',
+      apply: () => {
+        game.hero.magazineCapacity += 15;
+        game.hero.currentAmmo = Math.min(game.hero.magazineCapacity, game.hero.currentAmmo + 15);
+      }
     }
   ];
 
@@ -255,35 +280,35 @@ export function buildUpgradeCardPool(game) {
   let equippedSkills = [];
   try {
     if (saveManager?.getEquippedSkills) {
-      equippedSkills = saveManager.getEquippedSkills();
+      equippedSkills = saveManager.getEquippedSkills() || [];
     }
   } catch (e) {}
 
-  if (!equippedSkills || equippedSkills.length === 0) {
-    if (game.skills?.rocket?.level > 0) equippedSkills.push('rocket');
-    if (game.skills?.truck?.level > 0) equippedSkills.push('truck');
-    if (game.skills?.freeze?.level > 0) equippedSkills.push('freeze');
-    if (game.feature?.skills) {
-      for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
-        if (game.feature.skills[id]?.level > 0) equippedSkills.push(id);
-      }
-    }
-  }
-
   // 过滤卡池：
-  // 1. 未携带/未出战的主动技能绝不出现在升级抽卡中！
-  // 2. 过滤已激活的唯一协同反应卡及上限属性卡
+  // 1. 未携带/未合成的主动技能绝不出现在升级抽卡中！
+  // 2. 依赖特定技能的协同反应卡，在没有对应技能时不出现！
+  // 3. 过滤已激活的唯一协同反应卡及上限属性卡
   return pool.filter(card => {
     if (activeSkillIds.includes(card.id)) {
       if (!equippedSkills.includes(card.id)) {
         return false; // 未携带的技能绝不出现！
       }
     }
-    if (card.id === 'thermal_engine' && game.synergies.thermalEngine) return false;
+    // 协同卡的前置技能依赖检查
+    if (card.id === 'thermal_engine') {
+      if (!equippedSkills.includes('rocket') && !equippedSkills.includes('freeze')) return false;
+      if (game.synergies.thermalEngine) return false;
+    }
+    if (card.id === 'truck_inferno') {
+      if (!equippedSkills.includes('truck')) return false;
+      if (game.synergies.truckInferno) return false;
+    }
+    if (card.id === 'cryo_shatter') {
+      if (!equippedSkills.includes('freeze') && !equippedSkills.includes('truck')) return false;
+      if (game.synergies.cryoShatter) return false;
+    }
     if (card.id === 'tesla_coil' && game.synergies.teslaCoil) return false;
     if (card.id === 'fortress_emp' && game.synergies.fortressEmp) return false;
-    if (card.id === 'truck_inferno' && game.synergies.truckInferno) return false;
-    if (card.id === 'cryo_shatter' && game.synergies.cryoShatter) return false;
     if (card.id === 'multishot' && game.weapon.multishot >= 5) return false;
     return true;
   });

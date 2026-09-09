@@ -1,7 +1,7 @@
 // ---------------- 本地持久化：战报 + 关卡进度 + 符文 + 宠物 + 枪械 + 背包素材 + 指挥官 ----------------
 import { GAME_CONFIG } from '../core/Config.js';
 
-const SAVE_KEY = 'kaipao_roguelike_save_v4';
+const SAVE_KEY = 'kaipao_roguelike_save_v5';
 
 export class SaveManager {
   constructor() { this.data = this.load(); }
@@ -9,61 +9,57 @@ export class SaveManager {
   getDefaultData() {
     return {
       highWave: 1, maxKills: 0, totalKills: 0, totalRuns: 0, maxSurvivalTime: 0,
-      unlockedSynergies: [], lastPlayed: Date.now(), scrap: 200, gems: 150,
+      unlockedSynergies: [], lastPlayed: Date.now(), scrap: 80, gems: 0,
       energy: 50, maxEnergy: 50,
       commanderLevel: 1, commanderExp: 0,
       highestStageCleared: 0, unlockedStage: 1, equippedStage: 1,
+      currentMode: 'normal', // 'normal' | 'elite'
+      clearedEliteStages: [],
       runeLevels: {}, totalStagesCleared: 0,
+      // 城防加固科技 (通关第1关解锁)
+      fortification: {
+        hpLevel: 1,
+        shieldLevel: 1,
+        regenLevel: 1,
+        armorLevel: 1
+      },
+      // 宠物系统 (通关第3关解锁，需收集基因碎片合成)
       petData: {
-        selected: 'fluffy',
+        selected: null, // 初始无出战宠物
         pets: {
-          fluffy: { unlocked: true, level: 1 },
-          dragon: { unlocked: false, level: 1, unlockCost: 200 }
+          fluffy: { unlocked: false, level: 1, unlockCost: 10 },
+          dragon: { unlocked: false, level: 1, unlockCost: 10 }
         }
       },
+      // 枪械体系 (初始仅先锋步枪)
       weaponData: {
         equipped: 'assault',
         weapons: {
           assault: { unlocked: true, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1 },
-          gatling: { unlocked: true, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1 },
-          gauss: { unlocked: false, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1, unlockCost: 160 },
+          gatling: { unlocked: false, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1, unlockCost: 100 },
+          gauss: { unlocked: false, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1, unlockCost: 180 },
           plasma: { unlocked: false, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1, unlockCost: 260 }
         }
       },
+      // 技能体系 (初始 0 技能！需收集专属芯片碎片合成解锁)
       skillData: {
-        equipped: ['rocket', 'truck', 'freeze', 'tornado'],
-        levels: {
-          rocket: 1, truck: 1, freeze: 1,
-          tornado: 1, boomerang: 1, laser: 1, bomber: 1
-        }
+        equipped: [], // 初始装备栏全空
+        unlocked: {}, // { rocket: false, ... }
+        levels: {}    // { rocket: 1, ... }
       },
+      // 背包素材 (初始干净，随关卡掉落探索积累)
       inventory: {
-        // 枪械专属配件
-        assault_part: 18,
-        gatling_part: 12,
-        gauss_part: 8,
-        plasma_part: 6,
-        // 枪械三维强化碎片
-        power_shard: 20,
-        bulletspeed_shard: 20,
-        attackspeed_shard: 20,
-        // 弹匣扩容与符文专属碎片
-        mag_shard: 20,
-        rune_shard: 25,
-        // 宠物专属基因
-        fluffy_shard: 15,
-        dragon_shard: 6,
-        // 技能专属芯片
-        chip_rocket: 10,
-        chip_truck: 8,
-        chip_freeze: 12,
-        chip_tornado: 6,
-        chip_boomerang: 9,
-        chip_laser: 5,
-        chip_bomber: 6,
-        // 补给物资
-        energy_potion: 3,
-        supply_crate: 2
+        // 枪械配件与三维碎片
+        assault_part: 0, gatling_part: 0, gauss_part: 0, plasma_part: 0,
+        power_shard: 0, bulletspeed_shard: 0, attackspeed_shard: 0, mag_shard: 0,
+        rune_shard: 0,
+        // 宠物基因碎片
+        fluffy_shard: 0, dragon_shard: 0,
+        // 技能芯片
+        chip_rocket: 0, chip_freeze: 0, chip_truck: 0,
+        chip_tornado: 0, chip_boomerang: 0, chip_laser: 0, chip_bomber: 0,
+        // 补给
+        energy_potion: 1, supply_crate: 0
       }
     };
   }
@@ -72,10 +68,7 @@ export class SaveManager {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) {
-        const legacyV3 = localStorage.getItem('kaipao_roguelike_save_v3');
-        if (legacyV3) return this.mergeDefaults(JSON.parse(legacyV3));
-        const legacyV2 = localStorage.getItem('kaipao_roguelike_save_v2');
-        if (legacyV2) return this.mergeDefaults(JSON.parse(legacyV2));
+        // 升级自旧版本时，保证新机制的纯净体验
         return this.getDefaultData();
       }
       return this.mergeDefaults(JSON.parse(raw));
@@ -92,23 +85,13 @@ export class SaveManager {
     merged.petData.pets = { ...defaults.petData.pets, ...(data?.petData?.pets || {}) };
     merged.weaponData = { ...defaults.weaponData, ...(data?.weaponData || {}) };
     merged.weaponData.weapons = { ...defaults.weaponData.weapons, ...(data?.weaponData?.weapons || {}) };
-    Object.values(merged.weaponData.weapons).forEach(w => {
-      if (!w.magazineLevel) w.magazineLevel = 1;
-      if (!w.powerLevel) w.powerLevel = 1;
-      if (!w.bulletSpeedLevel) w.bulletSpeedLevel = 1;
-      if (!w.attackSpeedLevel) w.attackSpeedLevel = 1;
-    });
+    merged.fortification = { ...defaults.fortification, ...(data?.fortification || {}) };
     merged.skillData = { ...defaults.skillData, ...(data?.skillData || {}) };
-    merged.skillData.levels = { ...defaults.skillData.levels, ...(data?.skillData?.levels || {}) };
-    if (!Array.isArray(merged.skillData.equipped) || merged.skillData.equipped.length === 0) {
-      merged.skillData.equipped = [...defaults.skillData.equipped];
-    }
+    merged.skillData.unlocked = { ...(data?.skillData?.unlocked || {}) };
+    merged.skillData.levels = { ...(data?.skillData?.levels || {}) };
+    merged.skillData.equipped = Array.isArray(data?.skillData?.equipped) ? [...data.skillData.equipped] : [];
+    merged.clearedEliteStages = Array.isArray(data?.clearedEliteStages) ? [...data.clearedEliteStages] : [];
     merged.inventory = { ...defaults.inventory, ...(data?.inventory || {}) };
-    if (merged.inventory.power_shard === undefined) merged.inventory.power_shard = 20;
-    if (merged.inventory.bulletspeed_shard === undefined) merged.inventory.bulletspeed_shard = 20;
-    if (merged.inventory.attackspeed_shard === undefined) merged.inventory.attackspeed_shard = 20;
-    if (merged.inventory.mag_shard === undefined) merged.inventory.mag_shard = 20;
-    if (merged.inventory.rune_shard === undefined) merged.inventory.rune_shard = 25;
     return merged;
   }
 
@@ -161,14 +144,71 @@ export class SaveManager {
     };
   }
 
-  recordStageClear(stageId, scrapEarned = 0) {
+  recordStageClear(stageId, scrapEarned = 0, mode = 'normal') {
     this.data.totalStagesCleared = (this.data.totalStagesCleared || 0) + 1;
-    if (stageId > (this.data.highestStageCleared || 0)) this.data.highestStageCleared = stageId;
-    if (stageId >= (this.data.unlockedStage || 1)) this.data.unlockedStage = Math.min(8, stageId + 1);
+    if (mode === 'elite') {
+      if (!Array.isArray(this.data.clearedEliteStages)) this.data.clearedEliteStages = [];
+      if (!this.data.clearedEliteStages.includes(stageId)) {
+        this.data.clearedEliteStages.push(stageId);
+      }
+    } else {
+      if (stageId > (this.data.highestStageCleared || 0)) this.data.highestStageCleared = stageId;
+      if (stageId >= (this.data.unlockedStage || 1)) this.data.unlockedStage = Math.min(8, stageId + 1);
+    }
     if (scrapEarned > 0) this.addScrap(scrapEarned);
-    this.addCommanderExp(50 + stageId * 25);
+    this.addCommanderExp(mode === 'elite' ? (80 + stageId * 40) : (50 + stageId * 25));
     this.save();
-    return { scrap: this.data.scrap, unlockedStage: this.data.unlockedStage, highestStageCleared: this.data.highestStageCleared };
+    return {
+      scrap: this.data.scrap,
+      unlockedStage: this.data.unlockedStage,
+      highestStageCleared: this.data.highestStageCleared,
+      clearedEliteStages: this.data.clearedEliteStages
+    };
+  }
+
+  // 模式与系统解锁
+  getMode() { return this.data.currentMode || 'normal'; }
+  setMode(mode) { this.data.currentMode = mode === 'elite' ? 'elite' : 'normal'; this.save(); }
+  isEliteUnlocked(stageId) {
+    return (this.data.highestStageCleared || 0) >= stageId;
+  }
+  isEliteCleared(stageId) {
+    return Array.isArray(this.data.clearedEliteStages) && this.data.clearedEliteStages.includes(stageId);
+  }
+
+  isSystemUnlocked(systemKey) {
+    const unlocks = GAME_CONFIG.systemUnlocks || {};
+    const reqStage = unlocks[systemKey]?.stage ?? 1;
+    return (this.data.highestStageCleared || 0) >= reqStage;
+  }
+
+  // 城防加固科技系统
+  getFortification() {
+    if (!this.data.fortification) {
+      this.data.fortification = { hpLevel: 1, shieldLevel: 1, regenLevel: 1, armorLevel: 1 };
+      this.save();
+    }
+    return this.data.fortification;
+  }
+  getFortificationLevel(type) {
+    return this.getFortification()[`${type}Level`] || 1;
+  }
+  getFortificationCost(type) {
+    const cfg = GAME_CONFIG.fortressUpgrades?.[type];
+    if (!cfg) return 999;
+    const curLv = this.getFortificationLevel(type);
+    return Math.round(cfg.costBase * Math.pow(cfg.costGrowth, curLv - 1));
+  }
+  upgradeFortification(type) {
+    const cfg = GAME_CONFIG.fortressUpgrades?.[type];
+    if (!cfg) return { success: false, message: '未知科技' };
+    const curLv = this.getFortificationLevel(type);
+    if (curLv >= (cfg.maxLevel || 25)) return { success: false, message: '已升至最高等级！' };
+    const cost = this.getFortificationCost(type);
+    if (!this.spendScrap(cost)) return { success: false, message: `工业废料不足（需要 ${cost} 废料）` };
+    this.data.fortification[`${type}Level`] = curLv + 1;
+    this.save();
+    return { success: true, newLevel: curLv + 1 };
   }
 
   // 货币与能量
@@ -472,44 +512,81 @@ export class SaveManager {
     return true;
   }
 
-  // 技能专精 (消耗专属芯片 + 废料)
+  // 技能体系：碎片收集、合成解锁、装备与专精
   getSkillData() { return this.data.skillData; }
+
+  isSkillUnlocked(id) {
+    return !!this.data.skillData?.unlocked?.[id];
+  }
+
   getEquippedSkills() {
-    if (!Array.isArray(this.data.skillData?.equipped) || this.data.skillData.equipped.length === 0) {
+    if (!Array.isArray(this.data.skillData?.equipped)) {
       if (!this.data.skillData) this.data.skillData = {};
-      this.data.skillData.equipped = ['rocket', 'truck', 'freeze', 'tornado'];
+      this.data.skillData.equipped = [];
       this.save();
     }
-    return this.data.skillData.equipped;
+    // 过滤掉未解锁的技能，防止脏数据
+    return this.data.skillData.equipped.filter(id => this.isSkillUnlocked(id));
   }
+
   setEquippedSkills(skills) {
-    if (Array.isArray(skills) && skills.length > 0) {
-      this.data.skillData.equipped = skills.slice(0, 4);
+    if (Array.isArray(skills)) {
+      this.data.skillData.equipped = skills.filter(id => this.isSkillUnlocked(id)).slice(0, 4);
       this.save();
     }
   }
+
+  // 消耗 10 块技能芯片合成解锁新技能
+  synthesizeSkill(id) {
+    const chipId = `chip_${id}`;
+    const cost = GAME_CONFIG.SKILL_SYNTHESIS_COST || 10;
+    if (this.isSkillUnlocked(id)) {
+      return { success: false, message: '该技能已合成解锁！' };
+    }
+    if (!this.hasItem(chipId, cost)) {
+      const cur = this.getItemCount(chipId);
+      return { success: false, message: `技能碎片不足！当前拥有 ${cur}/${cost} 块` };
+    }
+    this.consumeItem(chipId, cost);
+    if (!this.data.skillData.unlocked) this.data.skillData.unlocked = {};
+    if (!this.data.skillData.levels) this.data.skillData.levels = {};
+    this.data.skillData.unlocked[id] = true;
+    this.data.skillData.levels[id] = 1;
+
+    // 若当前装备槽位未满 4 个，自动放入出战槽位
+    if (!Array.isArray(this.data.skillData.equipped)) this.data.skillData.equipped = [];
+    if (this.data.skillData.equipped.length < 4 && !this.data.skillData.equipped.includes(id)) {
+      this.data.skillData.equipped.push(id);
+    }
+    this.save();
+    return { success: true, message: '🎉 技能合成成功！已装配至出战槽位。' };
+  }
+
   toggleEquipSkill(id) {
-    if (!this.data.skillData.equipped) {
-      this.data.skillData.equipped = ['rocket', 'truck', 'freeze', 'tornado'];
+    if (!this.isSkillUnlocked(id)) {
+      return { success: false, message: '该技能尚未合成解锁，请先收集碎片！' };
+    }
+    if (!Array.isArray(this.data.skillData.equipped)) {
+      this.data.skillData.equipped = [];
     }
     const idx = this.data.skillData.equipped.indexOf(id);
     if (idx >= 0) {
-      if (this.data.skillData.equipped.length <= 1) {
-        return { success: false, message: '至少需要携带1个技能出战！' };
-      }
+      // 允许卸下（即使全部卸下为 0 技能也允许）
       this.data.skillData.equipped.splice(idx, 1);
       this.save();
-      return { success: true, equipped: false };
+      return { success: true, equipped: false, message: '已卸下该技能' };
     } else {
       if (this.data.skillData.equipped.length >= 4) {
         return { success: false, message: '出战技能位已满（最多4个）！请先卸下其他技能。' };
       }
       this.data.skillData.equipped.push(id);
       this.save();
-      return { success: true, equipped: true };
+      return { success: true, equipped: true, message: '已成功装备出战！' };
     }
   }
+
   upgradeSkillMastery(id, scrapCost, chipCost = 2) {
+    if (!this.isSkillUnlocked(id)) return false;
     const materialId = `chip_${id}`;
     if (!this.hasItem(materialId, chipCost)) return false;
     if (!this.spendScrap(scrapCost)) return false;
@@ -519,24 +596,41 @@ export class SaveManager {
     return true;
   }
 
-  // 综合战力评分
+  // 综合战力评分 (综合计算武器、城防科技、符文、宠物、已解锁技能)
   calcCombatPower() {
-    let power = 1000 + (this.getCommanderLevel() - 1) * 85;
+    let power = 800 + (this.getCommanderLevel() - 1) * 80;
     const equippedW = this.getEquippedWeapon();
     const wObj = this.data.weaponData.weapons[equippedW] || { level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1 };
-    power += (wObj.level || 1) * 120;
-    power += ((wObj.powerLevel || 1) - 1) * 40;
-    power += ((wObj.bulletSpeedLevel || 1) - 1) * 35;
-    power += ((wObj.attackSpeedLevel || 1) - 1) * 45;
-    power += ((wObj.magazineLevel || 1) - 1) * 30;
+    power += (wObj.level || 1) * 110;
+    power += ((wObj.powerLevel || 1) - 1) * 35;
+    power += ((wObj.bulletSpeedLevel || 1) - 1) * 30;
+    power += ((wObj.attackSpeedLevel || 1) - 1) * 40;
+    power += ((wObj.magazineLevel || 1) - 1) * 25;
+
+    // 城防加固评分
+    const fort = this.getFortification();
+    power += ((fort.hpLevel || 1) - 1) * 35;
+    power += ((fort.shieldLevel || 1) - 1) * 35;
+    power += ((fort.regenLevel || 1) - 1) * 30;
+    power += ((fort.armorLevel || 1) - 1) * 30;
+
+    // 符文评分
     const runeLevels = this.getRuneLevels();
-    for (const lv of Object.values(runeLevels)) power += lv * 45;
+    for (const lv of Object.values(runeLevels)) power += lv * 40;
+
+    // 宠物评分
     const selectedPet = this.data.petData.selected;
-    if (selectedPet) {
+    if (selectedPet && this.data.petData.pets[selectedPet]?.unlocked) {
       const pLevel = this.data.petData.pets[selectedPet]?.level || 1;
-      power += pLevel * 90;
+      power += pLevel * 85;
     }
-    for (const lv of Object.values(this.data.skillData.levels)) power += (lv - 1) * 35;
+
+    // 技能评分 (仅统计已解锁技能)
+    for (const [sId, lv] of Object.entries(this.data.skillData.levels || {})) {
+      if (this.isSkillUnlocked(sId)) {
+        power += 50 + (lv - 1) * 30;
+      }
+    }
     return Math.round(power);
   }
 

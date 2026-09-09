@@ -123,9 +123,24 @@ export class HomeLobbyUI {
             <div>
               <div class="lobby-stage-info-title">当前作战区域</div>
               <div class="lobby-stage-info-name" id="lobby-stage-name">STAGE 1 · 废土前哨</div>
-              <div class="lobby-stage-info-desc" id="lobby-stage-desc">抵御 5 波尸潮 · 首通奖励 60 废料</div>
+              <div class="lobby-stage-info-desc" id="lobby-stage-desc">抵御 5 波尸潮 · 首通奖励 80 废料</div>
             </div>
             <button class="lobby-stage-change-btn" id="btn-switch-to-trials">切换关卡</button>
+          </div>
+
+          <!-- 城防加固科技专区 (通关第1关解锁) -->
+          <div class="lobby-fortification-card" id="lobby-fortification-section">
+            <div class="lobby-fortification-header">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">🛡️</span>
+                <div>
+                  <div style="font-weight:900;color:#f8fafc;font-size:13px;">基地城防加固工程</div>
+                  <div style="font-size:11px;color:#94a3b8;">强化外挂装甲壁、能量屏障与自愈反伤</div>
+                </div>
+              </div>
+              <span id="lobby-fort-status-badge" style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:12px;background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);">Lv.1</span>
+            </div>
+            <div class="lobby-fort-grid" id="lobby-fort-grid"></div>
           </div>
 
           <div class="lobby-battle-cta-wrap">
@@ -328,6 +343,14 @@ export class HomeLobbyUI {
   }
 
   switchTab(tabId) {
+    if (tabId === 'runes' && !saveManager.isSystemUnlocked('runes')) {
+      alert('🔒【符文矩阵工坊】尚未解锁！\n通关第 2 关【锈蚀公路】后开放。');
+      return;
+    }
+    if (tabId === 'pets' && !saveManager.isSystemUnlocked('pets')) {
+      alert('🔒【战术宠物乐园】尚未解锁！\n通关第 3 关【断裂立交】后开放。');
+      return;
+    }
     this.activeTab = tabId;
     this.dom.root.querySelectorAll('.nav-tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -376,6 +399,20 @@ export class HomeLobbyUI {
     if (elEnergy) elEnergy.textContent = `${saveManager.getEnergy()}/${saveManager.getMaxEnergy()}`;
     if (elScrap) elScrap.textContent = saveManager.getScrap();
     if (elGems) elGems.textContent = saveManager.getGems();
+
+    // 动态同步底部导航栏锁定角标
+    const navLabels = { lobby: '基地', weapons: '枪械', skills: '技能', backpack: '背包', pets: '宠物', runes: '符文', trials: '试炼' };
+    this.dom.root.querySelectorAll('.nav-tab-btn').forEach(btn => {
+      const tab = btn.dataset.tab;
+      let locked = false;
+      if (tab === 'runes' && !saveManager.isSystemUnlocked('runes')) locked = true;
+      if (tab === 'pets' && !saveManager.isSystemUnlocked('pets')) locked = true;
+      btn.classList.toggle('nav-locked', locked);
+      const labelEl = btn.querySelector('.nav-tab-label');
+      if (labelEl && navLabels[tab]) {
+        labelEl.textContent = locked ? `${navLabels[tab]} 🔒` : navLabels[tab];
+      }
+    });
   }
 
   // 1. 首页大厅
@@ -386,7 +423,7 @@ export class HomeLobbyUI {
     const petImg = document.getElementById('lobby-arena-pet-img');
     const selectedPetId = saveManager.getPetData().selected;
     if (petImg) {
-      if (selectedPetId && GAME_CONFIG.pets.types[selectedPetId]) {
+      if (selectedPetId && GAME_CONFIG.pets.types[selectedPetId] && saveManager.isSystemUnlocked('pets')) {
         petImg.src = GAME_CONFIG.pets.types[selectedPetId].asset;
         petImg.parentElement.style.display = 'block';
       } else {
@@ -398,8 +435,76 @@ export class HomeLobbyUI {
     const stage = GAME_CONFIG.stages.find(s => s.id === currentStageId) || GAME_CONFIG.stages[0];
     const nameEl = document.getElementById('lobby-stage-name');
     const descEl = document.getElementById('lobby-stage-desc');
-    if (nameEl) nameEl.textContent = `STAGE ${stage.id} · ${stage.name}`;
+    const curMode = saveManager.getMode();
+    const modeTag = curMode === 'elite' ? '<span style="color:#f43f5e;font-weight:900;margin-left:6px;">[💀 精英模式]</span>' : '';
+    if (nameEl) nameEl.innerHTML = `STAGE ${stage.id} · ${stage.name} ${modeTag}`;
     if (descEl) descEl.textContent = stage.endless ? '无尽模式 · 极限生存挑战' : `通关波次 ${stage.clearWaves} · 难度 x${stage.difficulty}`;
+
+    // 渲染基地城防加固系统
+    this.renderFortification();
+  }
+
+  renderFortification() {
+    const grid = document.getElementById('lobby-fort-grid');
+    const badge = document.getElementById('lobby-fort-status-badge');
+    if (!grid) return;
+
+    const isUnlocked = saveManager.isSystemUnlocked('fortification');
+    if (!isUnlocked) {
+      if (badge) badge.textContent = '🔒 未解锁';
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:12px;background:rgba(15,23,42,0.6);border:1px dashed rgba(100,116,139,0.3);border-radius:8px;font-size:11px;color:#94a3b8;">
+          🔒 通关第 1 关【废土前哨】后解锁城防加固工程
+        </div>
+      `;
+      return;
+    }
+
+    const fort = saveManager.getFortification();
+    const avgLv = Math.round(((fort.hpLevel || 1) + (fort.shieldLevel || 1) + (fort.regenLevel || 1) + (fort.armorLevel || 1)) / 4);
+    if (badge) badge.textContent = `综合防御 Lv.${avgLv}`;
+
+    const upgrades = GAME_CONFIG.fortressUpgrades || {};
+    grid.innerHTML = Object.entries(upgrades).map(([key, cfg]) => {
+      const curLv = saveManager.getFortificationLevel(key);
+      const isMax = curLv >= (cfg.maxLevel || 25);
+      const curVal = cfg.baseVal + (curLv - 1) * cfg.addPerLvl;
+      const nextVal = curVal + cfg.addPerLvl;
+      const cost = saveManager.getFortificationCost(key);
+      const canAfford = saveManager.getScrap() >= cost;
+
+      return `
+        <div class="fort-item-card" style="background:rgba(15,23,42,0.7);border:1px solid rgba(59,130,246,0.25);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;justify-content:space-between;">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:800;color:#f8fafc;">${cfg.name}</span>
+              <span style="font-size:11px;color:#38bdf8;font-weight:900;">Lv.${curLv}</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
+              <span style="font-size:14px;font-weight:900;color:#22c55e;">${curVal}</span>
+              ${!isMax ? `<span style="font-size:10px;color:#64748b;">→</span><span style="font-size:12px;color:#38bdf8;font-weight:bold;">${nextVal}</span>` : '<span style="color:#10b981;font-size:10px;">MAX</span>'}
+              <span style="font-size:10px;color:#94a3b8;">${cfg.unit}</span>
+            </div>
+            <div style="font-size:10px;color:#94a3b8;line-height:1.25;margin-bottom:6px;">${cfg.desc}</div>
+          </div>
+          <button class="weapon-btn upgrade" data-action="upgrade-fort" data-key="${key}" style="padding:4px 8px;font-size:10px;width:100%;margin-top:auto;" ${isMax || !canAfford ? 'disabled' : ''}>
+            ${isMax ? '已达上限' : `<img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${cost} 强化`}
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    grid.querySelectorAll('[data-action="upgrade-fort"]').forEach(btn => {
+      btn.onclick = () => {
+        const key = btn.dataset.key;
+        const res = saveManager.upgradeFortification(key);
+        if (!res.success) {
+          alert(res.message);
+        } else {
+          this.render();
+        }
+      };
+    });
   }
 
   // 2. 枪械管理 (专属零件 + 废料)
@@ -662,15 +767,57 @@ export class HomeLobbyUI {
     `;
 
     container.innerHTML = bannerHtml + GAME_CONFIG.skillCatalog.map(sk => {
+      const isUnlocked = saveManager.isSkillUnlocked(sk.id);
       const level = skillData.levels[sk.id] || 1;
-      const chipCost = 2 + Math.floor((level - 1) / 2);
-      const scrapCost = 50 + (level - 1) * 35;
       const chipItem = GAME_CONFIG.items[sk.materialId] || { name: '战术芯片', icon: '💾' };
       const heldChips = saveManager.getItemCount(sk.materialId);
+      const synthCost = GAME_CONFIG.SKILL_SYNTHESIS_COST || 10;
+      const isEquipped = equippedSkills.includes(sk.id);
+
+      if (!isUnlocked) {
+        const canSynth = heldChips >= synthCost;
+        const pct = Math.min(100, Math.round((heldChips / synthCost) * 100));
+
+        return `
+          <div class="skill-catalog-card locked-skill-card" style="border-color:rgba(100,116,139,0.3);background:rgba(15,23,42,0.75);">
+            <img class="skill-catalog-img" src="${sk.asset}" alt="${sk.name}" style="filter:grayscale(0.8) brightness(0.7);">
+            <div class="skill-catalog-info">
+              <div class="skill-catalog-header">
+                <span class="skill-catalog-name" style="color:#94a3b8;">${sk.name}</span>
+                <span class="skill-catalog-type" style="background:#1e293b;color:#94a3b8;border-color:#475569;">🔒 待合成 · ${sk.type}</span>
+              </div>
+              <div class="skill-catalog-desc">${sk.desc}</div>
+
+              <!-- 碎片收集进度条 -->
+              <div style="margin-top:6px;background:rgba(30,41,59,0.8);border:1px solid rgba(71,85,105,0.4);border-radius:6px;padding:6px 8px;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
+                  <span style="color:#cbd5e1;display:flex;align-items:center;gap:4px;">
+                    ${this.formatItemIcon(chipItem.icon, chipItem.name, 'mat-req-icon-img')} 碎片收集
+                  </span>
+                  <span style="font-weight:800;color:${canSynth ? '#facc15' : '#38bdf8'};">${heldChips} / ${synthCost} 块</span>
+                </div>
+                <div style="height:5px;background:#0f172a;border-radius:3px;overflow:hidden;">
+                  <div style="height:100%;width:${pct}%;background:${canSynth ? 'linear-gradient(90deg,#eab308,#f59e0b)' : 'linear-gradient(90deg,#3b82f6,#60a5fa)'};"></div>
+                </div>
+                <div style="font-size:10px;color:#60a5fa;margin-top:4px;">📍 ${sk.unlockHint || '关卡掉落获取'}</div>
+              </div>
+
+              <div style="margin-top:8px;">
+                <button class="weapon-btn ${canSynth ? 'synth-ready' : 'disabled'}" data-action="synthesize-skill" data-id="${sk.id}" style="width:100%;padding:6px 12px;font-size:11px;${canSynth ? 'background:linear-gradient(135deg,#eab308,#f59e0b);color:#0f172a;font-weight:900;border-color:#facc15;box-shadow:0 0 12px rgba(234,179,8,0.4);' : 'background:#1e293b;color:#64748b;border-color:#334155;'}" ${!canSynth ? 'disabled' : ''}>
+                  ${canSynth ? '⚡ 消耗 10 碎片合成解锁' : `芯片不足 (${heldChips}/${synthCost})`}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 已解锁技能卡片
+      const chipCost = 2 + Math.floor((level - 1) / 2);
+      const scrapCost = 50 + (level - 1) * 35;
       const canAffordChips = heldChips >= chipCost;
       const canAffordScrap = saveManager.getScrap() >= scrapCost;
       const canUpgrade = canAffordChips && canAffordScrap;
-      const isEquipped = equippedSkills.includes(sk.id);
 
       return `
         <div class="skill-catalog-card ${isEquipped ? 'equipped-card' : ''}" style="${isEquipped ? 'border-color:rgba(52,211,153,0.5);box-shadow:0 0 14px rgba(16,185,129,0.18);' : ''}">
@@ -708,6 +855,15 @@ export class HomeLobbyUI {
         </div>
       `;
     }).join('');
+
+    container.querySelectorAll('[data-action="synthesize-skill"]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        const res = saveManager.synthesizeSkill(id);
+        alert(res.message);
+        if (res.success) this.render();
+      };
+    });
 
     container.querySelectorAll('[data-action="toggle-equip-skill"]').forEach(btn => {
       btn.onclick = () => {
@@ -1067,36 +1223,96 @@ export class HomeLobbyUI {
     });
   }
 
-  // 7. 试炼之路
+  // 7. 试炼之路 (普通模式 & 精英模式双难度)
   renderTrials() {
     const container = document.getElementById('stages-list');
     if (!container) return;
+    const curMode = saveManager.getMode() || 'normal';
     const unlocked = saveManager.getUnlockedStage();
     const equipped = saveManager.getEquippedStage();
 
-    container.innerHTML = GAME_CONFIG.stages.map(st => {
-      const isLocked = st.id > unlocked;
+    const modeSelectorHtml = `
+      <div style="grid-column: 1 / -1; margin-bottom: 8px;">
+        <div style="display:flex; gap:8px; background:rgba(15,23,42,0.8); padding:4px; border-radius:10px; border:1px solid rgba(59,130,246,0.3);">
+          <button class="mode-toggle-btn ${curMode === 'normal' ? 'active-normal' : ''}" data-action="switch-mode" data-mode="normal" style="flex:1;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;${curMode === 'normal' ? 'background:linear-gradient(135deg,#0284c7,#38bdf8);color:#0f172a;box-shadow:0 0 12px rgba(56,189,248,0.4);' : 'background:transparent;color:#94a3b8;'}">
+            <span>🛡️ 普通模式</span>
+            <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:${curMode === 'normal' ? 'rgba(15,23,42,0.2)' : 'rgba(51,65,85,0.5)'};">标准探索</span>
+          </button>
+          <button class="mode-toggle-btn ${curMode === 'elite' ? 'active-elite' : ''}" data-action="switch-mode" data-mode="elite" style="flex:1;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#f43f5e);color:#fff;box-shadow:0 0 14px rgba(244,63,94,0.5);' : 'background:transparent;color:#94a3b8;'}">
+            <span>💀 精英模式</span>
+            <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:${curMode === 'elite' ? 'rgba(255,255,255,0.25)' : 'rgba(244,63,94,0.15)'};color:${curMode === 'elite' ? '#fff' : '#f43f5e'};">200% 战利品</span>
+          </button>
+        </div>
+        <div style="font-size:11px;padding:6px 10px;border-radius:6px;margin-top:6px;border:1px solid ${curMode === 'elite' ? 'rgba(244,63,94,0.3);background:rgba(136,19,55,0.25);color:#fca5a5;' : 'rgba(56,189,248,0.2);background:rgba(12,74,110,0.2);color:#7dd3fc;'}">
+          ${curMode === 'elite' ? '⚠️ <b>极度凶险战区</b>：感染者狂暴化（攻击力+85% · 生命+60% · 密度更高），所有专属技能芯片与战利品翻倍掉落！' : '🌿 <b>标准防线推进</b>：稳步歼灭轻度感染者，获取基础物资与技能合成碎片。'}
+        </div>
+      </div>
+    `;
+
+    const stagesHtml = GAME_CONFIG.stages.map(st => {
+      let isLocked = false;
+      let lockReason = '';
+      if (curMode === 'normal') {
+        isLocked = st.id > unlocked;
+        lockReason = '未解锁';
+      } else {
+        const isEliteUnlocked = saveManager.isEliteUnlocked(st.id);
+        isLocked = !isEliteUnlocked;
+        lockReason = `需先通关普通第${st.id}关`;
+      }
+
       const isSelected = st.id === equipped;
-      const goal = st.endless ? '无尽尸潮模式' : `通关目标 ${st.clearWaves} 波次`;
+      const isEliteCleared = curMode === 'elite' && saveManager.isEliteCleared(st.id);
+      const goal = st.endless ? '无尽尸潮极限模式' : `防守 ${st.clearWaves} 波次`;
+
+      const lootBadges = (st.targetDrops || []).map(drop => `
+        <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 6px;border-radius:4px;background:${drop.highlight ? 'rgba(234,179,8,0.2)' : 'rgba(30,41,59,0.8)'};border:1px solid ${drop.highlight ? '#eab308' : 'rgba(71,85,105,0.5)'};color:${drop.highlight ? '#fde047' : '#cbd5e1'};">
+          ${this.formatItemIcon(drop.icon, drop.name, 'mat-req-icon-img')}
+          <span>${drop.name}</span>
+        </span>
+      `).join('');
 
       return `
-        <div class="stage-flow-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}" data-stage-id="${st.id}">
-          <div class="stage-flow-left">
-            <div class="stage-flow-badge">${st.id}</div>
-            <div>
-              <div class="stage-flow-title">${st.name} ${isLocked ? '🔒' : ''}</div>
-              <div class="stage-flow-sub">${goal} · 难度 x${st.difficulty}</div>
+        <div class="stage-flow-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''} ${curMode === 'elite' ? 'elite-stage-card' : ''}" data-stage-id="${st.id}" style="${curMode === 'elite' && !isLocked ? 'border-color:rgba(244,63,94,0.4);background:linear-gradient(135deg, rgba(30,10,20,0.8), rgba(15,23,42,0.9));' : ''}">
+          <div class="stage-flow-left" style="flex:1;">
+            <div class="stage-flow-badge" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#be123c);color:#fff;' : ''}">${st.id}</div>
+            <div style="flex:1;">
+              <div class="stage-flow-title" style="display:flex;align-items:center;gap:6px;">
+                <span>${st.name}</span>
+                ${curMode === 'elite' ? '<span style="font-size:10px;color:#f43f5e;font-weight:900;background:rgba(244,63,94,0.15);padding:1px 4px;border-radius:4px;">ELITE</span>' : ''}
+                ${isEliteCleared ? '<span style="font-size:10px;color:#22c55e;">★已通关</span>' : ''}
+                ${isLocked ? '🔒' : ''}
+              </div>
+              <div class="stage-flow-sub" style="margin-top:2px;">${goal} · 难度系数 x${(st.difficulty * (curMode === 'elite' ? 1.6 : 1.0)).toFixed(2)}</div>
               <div style="font-size:10px;color:#64748b;margin-top:2px;">${st.desc || ''}</div>
+              <!-- 定向掉落物预览 -->
+              <div style="margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                <span style="font-size:10px;color:#94a3b8;font-weight:bold;">特色产出:</span>
+                ${lootBadges}
+              </div>
             </div>
           </div>
-          ${!isLocked ? `
-            <button class="stage-flow-btn" data-action="pick-stage" data-id="${st.id}">
-              ${isSelected ? '出击此关' : '选定此关'}
-            </button>
-          ` : '<span style="font-size:11px;color:#64748b;">未解锁</span>'}
+          <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;margin-left:8px;">
+            ${!isLocked ? `
+              <button class="stage-flow-btn" data-action="pick-stage" data-id="${st.id}" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#f43f5e);border-color:#fb7185;color:#fff;' : ''}">
+                ${isSelected ? (curMode === 'elite' ? '出击精英' : '出击此关') : '选定此关'}
+              </button>
+            ` : `<span style="font-size:11px;color:#ef4444;background:rgba(239,68,68,0.15);padding:3px 6px;border-radius:4px;">${lockReason}</span>`}
+          </div>
         </div>
       `;
     }).join('');
+
+    container.innerHTML = modeSelectorHtml + stagesHtml;
+
+    container.querySelectorAll('[data-action="switch-mode"]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const mode = btn.dataset.mode;
+        saveManager.setMode(mode);
+        this.renderTrials();
+      };
+    });
 
     container.querySelectorAll('[data-action="pick-stage"]').forEach(btn => {
       btn.onclick = (e) => {

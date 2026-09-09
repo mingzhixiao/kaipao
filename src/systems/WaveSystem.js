@@ -33,13 +33,17 @@ export class WaveSystem {
     if (stageId > unlocked) stageId = unlocked;
     this.stageId = stageId;
     this.stageConfig = this.getStageConfig(stageId);
-    this.difficultyMult = this.stageConfig?.difficulty || 1.0;
+    this.mode = saveManager.getMode() || 'normal';
+    this.modeConfig = GAME_CONFIG.modes?.[this.mode] || GAME_CONFIG.modes.normal;
+    this.difficultyMult = (this.stageConfig?.difficulty || 1.0) * (this.modeConfig.hpMult || 1.0);
     this.game.stageId = stageId;
-    this.game.stageName = this.stageConfig?.name || `关卡 ${stageId}`;
+    this.game.stageMode = this.mode;
+    const modeTag = this.mode === 'elite' ? ' [精英]' : '';
+    this.game.stageName = (this.stageConfig?.name || `关卡 ${stageId}`) + modeTag;
   }
 
   reset() {
-    if (!this.stageConfig) this.setStage(this.stageId || 1);
+    this.setStage(this.stageId || 1);
     this.wave = 1;
     this.waveTimer = 0;
     this.waveSpawnTimer = 0;
@@ -60,13 +64,15 @@ export class WaveSystem {
   calcEnemyCount(wave) {
     const base = GAME_CONFIG.difficulty.getWaveEnemyCount(wave);
     const plan = this.levelDesign.getPlan(this.stageId, wave, this.stageConfig);
-    return Math.max(8, Math.round(base * (0.85 + this.difficultyMult * 0.15) * this.levelDesign.getCountMultiplier(plan)));
+    const countMult = this.modeConfig?.countMult || 1.0;
+    return Math.max(6, Math.round(base * (0.85 + this.difficultyMult * 0.15) * this.levelDesign.getCountMultiplier(plan) * countMult));
   }
 
   calcSpawnInterval(wave) {
     const base = GAME_CONFIG.difficulty.getWaveSpawnInterval(wave);
     const plan = this.levelDesign.getPlan(this.stageId, wave, this.stageConfig);
-    return Math.max(0.24, base * this.levelDesign.getIntervalMultiplier(plan) / (0.9 + this.difficultyMult * 0.1));
+    const intervalDiv = (this.mode === 'elite' ? 1.25 : 1.0);
+    return Math.max(0.24, (base * this.levelDesign.getIntervalMultiplier(plan) / (0.9 + this.difficultyMult * 0.1)) / intervalDiv);
   }
 
   startWave(waveNum) {
@@ -100,7 +106,6 @@ export class WaveSystem {
     this.waveTimer += dt;
     this.waveSpawnTimer += dt;
 
-    // 首领波次平滑召唤计时（受暂停与时间缩放约束，彻底根除 setTimeout 异步漂移）
     if (this.isBossWave && !this.bossSpawned) {
       this.bossSpawnTimer += dt;
       if (this.bossSpawnTimer >= 1.2) {
@@ -115,7 +120,6 @@ export class WaveSystem {
         this.spawnEnemy();
       }
     } else {
-      // 判定是否所有怪物（含 Boss）均已消灭
       const bossPendingOrAlive = this.isBossWave && (!this.bossSpawned || (this.game.activeBoss && this.game.activeBoss.active));
       const allDefeated = this.game.enemies.length === 0 && !bossPendingOrAlive;
 
@@ -127,7 +131,6 @@ export class WaveSystem {
           return;
         }
 
-        // 每通过一波怪物时触发技能抽取 (5秒不选自动选取并开启下一波)
         if (!this.waveUpgradeTriggered) {
           this.waveUpgradeTriggered = true;
           this.game.waveIntermission = true;
@@ -144,8 +147,6 @@ export class WaveSystem {
       }
     }
 
-    // ---------------- 防卡死自愈看门狗 (Anti-Softlock Watchdog) ----------------
-    // 当怪物已全部清空，且已标记波次结算，但游戏不在升级状态/弹窗未展示超过 0.8 秒时，自动推进波次或通关
     if (this.waveUpgradeTriggered && !this.game.isUpgrading && !this.stageCleared && !this.game.isGameOver) {
       this.waveStuckTimer = (this.waveStuckTimer || 0) + dt;
       if (this.waveStuckTimer >= 0.8) {
@@ -169,31 +170,52 @@ export class WaveSystem {
     if (this.stageCleared) return;
     this.stageCleared = true;
     this.game.isPaused = true;
-    const base = this.stageConfig?.scrapReward || 50;
-    const killBonus = Math.floor(this.game.kills * 0.4);
+    const modeCfg = this.modeConfig || GAME_CONFIG.modes.normal;
+    const base = Math.round((this.stageConfig?.scrapReward || 60) * (modeCfg.scrapMult || 1.0));
+    const killBonus = Math.floor(this.game.kills * 0.4 * (modeCfg.scrapMult || 1.0));
     const waveBonus = this.wave * 5;
     const stageClearScrap = base + killBonus + waveBonus;
 
-    // 将通关奖励与本局战利品统一结算
     if (!this.game.battleLoot) this.game.battleLoot = { scrap: 0, gems: 0, items: {} };
     this.game.battleLoot.scrap = (this.game.battleLoot.scrap || 0) + stageClearScrap;
-    // 通关保底奖励：获得 2~3 个强化碎片（力量/射速/攻速/弹匣）
-    const clearShards = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard', 'mag_shard'];
-    const drop1 = clearShards[Math.floor(Math.random() * clearShards.length)];
-    const drop2 = clearShards[Math.floor(Math.random() * clearShards.length)];
-    this.game.battleLoot.items[drop1] = (this.game.battleLoot.items[drop1] || 0) + 2;
-    this.game.battleLoot.items[drop2] = (this.game.battleLoot.items[drop2] || 0) + 2;
 
-    if (Math.random() < 0.75) {
+    // 定向专属芯片掉落 (如第 1 关掉落温压火箭芯片)
+    const featuredChip = this.stageConfig?.featuredChip;
+    if (featuredChip) {
+      const minChip = this.stageConfig.chipDropCount?.[0] || 2;
+      const maxChip = this.stageConfig.chipDropCount?.[1] || 4;
+      const baseChipCnt = minChip + Math.floor(Math.random() * (maxChip - minChip + 1));
+      const finalChipCnt = Math.round(baseChipCnt * (modeCfg.shardMult || 1.0));
+      this.game.battleLoot.items[featuredChip] = (this.game.battleLoot.items[featuredChip] || 0) + finalChipCnt;
+    }
+
+    // 强化碎片保底奖励 (力量/射速/攻速/弹匣)
+    const clearShards = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard', 'mag_shard'];
+    const shardDropTimes = this.mode === 'elite' ? 3 : 2;
+    for (let i = 0; i < shardDropTimes; i++) {
+      const dropShard = clearShards[Math.floor(Math.random() * clearShards.length)];
+      const num = this.mode === 'elite' ? 3 : 2;
+      this.game.battleLoot.items[dropShard] = (this.game.battleLoot.items[dropShard] || 0) + num;
+    }
+
+    // 精英模式高额晶核掉落几率
+    if (Math.random() < (modeCfg.gemChance || 0.15)) {
+      const gemReward = this.mode === 'elite' ? (5 + Math.floor(Math.random() * 8)) : 2;
+      this.game.battleLoot.gems = (this.game.battleLoot.gems || 0) + gemReward;
+    }
+
+    // 战略军备箱掉落
+    if (Math.random() < (this.mode === 'elite' ? 0.85 : 0.45)) {
       this.game.battleLoot.items['supply_crate'] = (this.game.battleLoot.items['supply_crate'] || 0) + 1;
     }
 
     const settled = saveManager.settleBattleLoot(this.game.battleLoot, true, this.stageId);
-    const result = saveManager.recordStageClear(this.stageId, 0);
+    const result = saveManager.recordStageClear(this.stageId, 0, this.mode);
 
     this.game.lastStageReward = {
       stageId: this.stageId,
       stageName: this.stageConfig?.name || '',
+      mode: this.mode,
       scrap: settled.scrap,
       gems: settled.gems,
       items: settled.items,
@@ -209,13 +231,22 @@ export class WaveSystem {
     const enemy = this.game.enemyPool.get();
     enemy.active = true;
     enemy.isBoss = false;
-    enemy.type = this.levelDesign.chooseEnemyType(this.wavePlan || DEFAULT_PLAN, this.wave);
-    const waveScale = GAME_CONFIG.difficulty.getEnemyWaveScale(this.wave) * this.difficultyMult;
+
+    let rawType = this.levelDesign.chooseEnemyType(this.wavePlan || DEFAULT_PLAN, this.wave);
+    // 关卡怪物门禁：检查本关允许出现的怪物
+    const allowed = this.stageConfig?.allowedEnemies || ['runner'];
+    if (!allowed.includes(rawType)) {
+      rawType = allowed[allowed.length - 1] || 'runner';
+    }
+    enemy.type = rawType;
+
+    const waveScale = GAME_CONFIG.difficulty.getEnemyWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0);
     const cfg = GAME_CONFIG.enemies[enemy.type] || GAME_CONFIG.enemies.runner;
     enemy.radius = cfg.radius;
-    enemy.maxHp = enemy.hp = Math.round(cfg.baseHp * waveScale);
+    enemy.maxHp = enemy.hp = Math.max(15, Math.round(cfg.baseHp * waveScale));
     enemy.speed = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
-    enemy.attackPower = Math.round(cfg.attackPower * (0.9 + this.difficultyMult * 0.1));
+    const atkMult = (this.modeConfig?.atkMult || 1.0) * (0.9 + (this.stageConfig?.difficulty || 1.0) * 0.1);
+    enemy.attackPower = Math.round(cfg.attackPower * atkMult);
     enemy.attackCooldown = cfg.attackCooldown;
     enemy.color = cfg.color;
     enemy.expVal = cfg.expVal;
@@ -237,13 +268,13 @@ export class WaveSystem {
   spawnBoss(spawnY = null) {
     if (this.game.activeBoss && this.game.activeBoss.active) return;
     const boss = this.game.enemyPool.get();
-    boss.active = true; boss.isBoss = true; boss.type = 'mutant_overlord';
-    const bossScale = GAME_CONFIG.difficulty.getBossWaveScale(this.wave) * this.difficultyMult;
+    boss.active = true; boss.isBoss = true; boss.type = 'boss_overlord';
+    const bossScale = GAME_CONFIG.difficulty.getBossWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0);
     const cfg = GAME_CONFIG.enemies.boss_overlord;
     boss.radius = cfg.radius;
     boss.maxHp = boss.hp = Math.round(cfg.baseHp * bossScale);
     boss.speed = cfg.speed;
-    boss.attackPower = Math.round(cfg.attackPower * this.difficultyMult);
+    boss.attackPower = Math.round(cfg.attackPower * (this.modeConfig?.atkMult || 1.0) * (this.stageConfig?.difficulty || 1.0));
     boss.attackCooldown = cfg.attackCooldown;
     boss.color = cfg.color; boss.expVal = cfg.expVal;
     const road = this.game.getRoadBounds(0);

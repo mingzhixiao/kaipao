@@ -3,30 +3,30 @@
 
 const STAGE_DESIGNS = {
   1: { theme: 'teach', beats: [
-    { type: 'teach', intensity: 0.20, rest: 1.8, bias: { runner: 1 }, lane: 'spread' },
-    { type: 'test', intensity: 0.34, rest: 1.6, bias: { runner: 0.72, charger: 0.28 }, lane: 'alternating' },
-    { type: 'pressure', intensity: 0.48, rest: 1.8, bias: { runner: 0.58, charger: 0.42 }, lane: 'center' },
-    { type: 'mixed', intensity: 0.58, rest: 2.2, bias: { runner: 0.50, charger: 0.35, behemoth: 0.15 }, lane: 'flank' },
-    { type: 'boss', intensity: 0.90, rest: 0, bias: { runner: 0.45, charger: 0.35, behemoth: 0.20 }, lane: 'center' }
+    { type: 'teach', intensity: 0.15, rest: 2.0, bias: { runner: 1.0 }, lane: 'spread' },
+    { type: 'test', intensity: 0.22, rest: 1.8, bias: { runner: 1.0 }, lane: 'alternating' },
+    { type: 'pressure', intensity: 0.30, rest: 1.8, bias: { runner: 1.0 }, lane: 'center' },
+    { type: 'mixed', intensity: 0.38, rest: 2.0, bias: { runner: 1.0 }, lane: 'flank' },
+    { type: 'boss', intensity: 0.65, rest: 0, bias: { runner: 1.0 }, lane: 'center' }
   ] },
   2: { theme: 'rush', beats: [
-    { type: 'teach', intensity: 0.34, rest: 1.6, bias: { runner: 0.60, charger: 0.40 }, lane: 'spread' },
-    { type: 'rush', intensity: 0.50, rest: 1.4, bias: { runner: 0.45, charger: 0.55 }, lane: 'alternating' },
-    { type: 'pressure', intensity: 0.60, rest: 1.6, bias: { runner: 0.42, charger: 0.48, behemoth: 0.10 }, lane: 'flank' },
-    { type: 'mixed', intensity: 0.66, rest: 1.8, bias: { runner: 0.40, charger: 0.42, behemoth: 0.18 }, lane: 'center' },
-    { type: 'boss', intensity: 0.92, rest: 2.2, bias: { runner: 0.35, charger: 0.40, behemoth: 0.25 }, lane: 'center' },
-    { type: 'recovery', intensity: 0.48, rest: 1.6, bias: { runner: 0.55, charger: 0.35, behemoth: 0.10 }, lane: 'spread' },
-    { type: 'finale', intensity: 0.82, rest: 0, bias: { runner: 0.35, charger: 0.40, behemoth: 0.25 }, lane: 'flank' }
+    { type: 'teach', intensity: 0.28, rest: 1.8, bias: { runner: 0.75, charger: 0.25 }, lane: 'spread' },
+    { type: 'rush', intensity: 0.42, rest: 1.6, bias: { runner: 0.60, charger: 0.40 }, lane: 'alternating' },
+    { type: 'pressure', intensity: 0.52, rest: 1.6, bias: { runner: 0.50, charger: 0.50 }, lane: 'flank' },
+    { type: 'mixed', intensity: 0.58, rest: 1.8, bias: { runner: 0.45, charger: 0.55 }, lane: 'center' },
+    { type: 'boss', intensity: 0.85, rest: 2.2, bias: { runner: 0.50, charger: 0.50 }, lane: 'center' },
+    { type: 'recovery', intensity: 0.40, rest: 1.6, bias: { runner: 0.65, charger: 0.35 }, lane: 'spread' },
+    { type: 'finale', intensity: 0.75, rest: 0, bias: { runner: 0.45, charger: 0.55 }, lane: 'flank' }
   ] },
   3: { theme: 'heavy', beats: [
-    { type: 'teach', intensity: 0.46, rest: 1.6, bias: { runner: 0.50, charger: 0.40, behemoth: 0.10 }, lane: 'spread' },
-    { type: 'pressure', intensity: 0.58, rest: 1.4, bias: { runner: 0.42, charger: 0.42, behemoth: 0.16 }, lane: 'alternating' },
-    { type: 'elite', intensity: 0.70, rest: 2.0, bias: { runner: 0.35, charger: 0.35, behemoth: 0.30 }, lane: 'center' },
-    { type: 'boss', intensity: 0.95, rest: 2.4, bias: { runner: 0.30, charger: 0.35, behemoth: 0.35 }, lane: 'center' },
-    { type: 'recovery', intensity: 0.52, rest: 1.6, bias: { runner: 0.50, charger: 0.35, behemoth: 0.15 }, lane: 'spread' },
-    { type: 'mixed', intensity: 0.72, rest: 1.8, bias: { runner: 0.34, charger: 0.36, behemoth: 0.30 }, lane: 'flank' },
-    { type: 'elite', intensity: 0.78, rest: 1.8, bias: { runner: 0.30, charger: 0.35, behemoth: 0.35 }, lane: 'alternating' },
-    { type: 'finale', intensity: 0.98, rest: 0, bias: { runner: 0.28, charger: 0.34, behemoth: 0.38 }, lane: 'flank' }
+    { type: 'teach', intensity: 0.40, rest: 1.6, bias: { runner: 0.55, charger: 0.35, behemoth: 0.10 }, lane: 'spread' },
+    { type: 'pressure', intensity: 0.52, rest: 1.5, bias: { runner: 0.45, charger: 0.40, behemoth: 0.15 }, lane: 'alternating' },
+    { type: 'elite', intensity: 0.64, rest: 1.8, bias: { runner: 0.35, charger: 0.40, behemoth: 0.25 }, lane: 'center' },
+    { type: 'boss', intensity: 0.90, rest: 2.2, bias: { runner: 0.30, charger: 0.40, behemoth: 0.30 }, lane: 'center' },
+    { type: 'recovery', intensity: 0.46, rest: 1.6, bias: { runner: 0.50, charger: 0.35, behemoth: 0.15 }, lane: 'spread' },
+    { type: 'mixed', intensity: 0.68, rest: 1.8, bias: { runner: 0.35, charger: 0.35, behemoth: 0.30 }, lane: 'flank' },
+    { type: 'elite', intensity: 0.74, rest: 1.8, bias: { runner: 0.30, charger: 0.35, behemoth: 0.35 }, lane: 'alternating' },
+    { type: 'finale', intensity: 0.92, rest: 0, bias: { runner: 0.25, charger: 0.35, behemoth: 0.40 }, lane: 'flank' }
   ] }
 };
 

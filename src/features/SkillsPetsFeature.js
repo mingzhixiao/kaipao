@@ -768,7 +768,7 @@ export function installSkillsPetsFeature(game) {
     try {
       return saveManager.getEquippedSkills() || [];
     } catch (e) {
-      return ['rocket', 'truck', 'freeze', 'tornado'];
+      return [];
     }
   };
 
@@ -796,10 +796,14 @@ export function installSkillsPetsFeature(game) {
   game.pet = null;
 
   game.feature.syncPet = () => {
+    if (saveManager?.isSystemUnlocked && !saveManager.isSystemUnlocked('pets')) {
+      game.pet = null;
+      return;
+    }
     const petData = getPetData();
-    const id = petData.selected;
+    const id = petData?.selected;
     if (!id) { game.pet = null; return; }
-    const saved = petData.pets[id];
+    const saved = petData?.pets?.[id];
     if (!saved?.unlocked) { game.pet = null; return; }
     game.pet = new Pet(id, saved.level);
     game.pet.x = game.hero.x - 65;

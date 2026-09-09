@@ -170,8 +170,21 @@ export class Game {
   }
 
   resetGame() {
-    this.fortress.hp = this.fortress.maxHp = GAME_CONFIG.fortress.maxHp;
-    this.fortress.shield = this.fortress.maxShield = GAME_CONFIG.fortress.maxShield;
+    const fort = saveManager.getFortification ? saveManager.getFortification() : { hpLevel: 1, shieldLevel: 1, regenLevel: 1, armorLevel: 1 };
+    const hpCfg = GAME_CONFIG.fortressUpgrades?.hp;
+    const shieldCfg = GAME_CONFIG.fortressUpgrades?.shield;
+    const regenCfg = GAME_CONFIG.fortressUpgrades?.regen;
+    const armorCfg = GAME_CONFIG.fortressUpgrades?.armor;
+
+    const baseMaxHp = (hpCfg?.baseVal || 1000) + ((fort.hpLevel || 1) - 1) * (hpCfg?.addPerLvl || 160);
+    const baseMaxShield = (shieldCfg?.baseVal || 300) + ((fort.shieldLevel || 1) - 1) * (shieldCfg?.addPerLvl || 60);
+    const baseRegenRate = (regenCfg?.baseVal || 25) + ((fort.regenLevel || 1) - 1) * (regenCfg?.addPerLvl || 8);
+    const spikeArmor = ((fort.armorLevel || 1) - 1) * (armorCfg?.addPerLvl || 6);
+
+    this.fortress.hp = this.fortress.maxHp = baseMaxHp;
+    this.fortress.shield = this.fortress.maxShield = baseMaxShield;
+    this.fortress.shieldRegenRate = baseRegenRate;
+    this.fortress.spikeArmor = spikeArmor;
     this.fortress.hitFlash = 0;
     this.hero.level = 1; this.hero.exp = 0;
     this.hero.expNeeded = GAME_CONFIG.hero.expNeededBase;
@@ -508,7 +521,7 @@ export class Game {
       } else {
         e.y = targetY;
         e.attackTimer += dt;
-        if (e.attackTimer >= e.attackCooldown) { e.attackTimer = 0; this.damageFortress(e.attackPower); }
+        if (e.attackTimer >= e.attackCooldown) { e.attackTimer = 0; this.damageFortress(e.attackPower, e); }
       }
     }
     for (let i = 0; i < this.enemies.length; i++) {
@@ -589,7 +602,7 @@ export class Game {
     ObjectPool.compact(this.hitRings);
   }
 
-  damageFortress(dmg) {
+  damageFortress(dmg, sourceEnemy = null) {
     this.fortress.shieldRegenTimer = 0;
     this.fortress.hitFlash = 0.2;
     this.feedback.addTrauma(0.25);
@@ -603,6 +616,11 @@ export class Game {
       }
     } else {
       this.fortress.hp -= dmg;
+    }
+
+    // 城防反伤尖刺触发
+    if (sourceEnemy && sourceEnemy.active && this.fortress.spikeArmor > 0) {
+      this.combatSystem.onHit(sourceEnemy, this.fortress.spikeArmor, false, 'thorns');
     }
     gameEvents.emit('shield_changed', { shield: this.fortress.shield, maxShield: this.fortress.maxShield });
     gameEvents.emit('health_changed', { hp: this.fortress.hp, maxHp: this.fortress.maxHp });
