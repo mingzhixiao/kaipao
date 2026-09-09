@@ -466,7 +466,8 @@ export class HomeLobbyUI {
     const descEl = document.getElementById('lobby-stage-desc');
     const curMode = saveManager.getMode();
     if (nameEl) nameEl.textContent = `STAGE ${stage.id} · ${stage.name}`;
-    if (descEl) descEl.textContent = stage.endless ? '无尽模式 · 极限生存挑战' : `通关波次 ${stage.clearWaves} · 难度 x${stage.difficulty}`;
+    const shownResistance = Math.min(0.6, (stage.physicalResistance || 0) + (GAME_CONFIG.modes?.[curMode]?.physicalResistanceBonus || 0));
+    if (descEl) descEl.textContent = stage.endless ? `无尽模式 · 极限生存挑战 · 物抗 ${Math.round(shownResistance * 100)}%+` : `通关波次 ${stage.clearWaves} · 难度 x${stage.difficulty} · 物抗 ${Math.round(shownResistance * 100)}%+`;
 
     const arenaStageEl = document.getElementById('lobby-arena-stage');
     if (arenaStageEl) arenaStageEl.textContent = stage.name;
@@ -1422,7 +1423,7 @@ export class HomeLobbyUI {
                 ${isEliteCleared ? '<span style="font-size:10px;color:#22c55e;">★已通关</span>' : (isNormalCleared && curMode === 'normal' ? '<span style="font-size:10px;color:#38bdf8;">✓ 已通关</span>' : '')}
                 ${isLocked ? '🔒' : ''}
               </div>
-              <div class="stage-flow-sub" style="margin-top:2px;">${goal} · 难度系数 x${(st.difficulty * (curMode === 'elite' ? 1.6 : 1.0)).toFixed(2)}</div>
+              <div class="stage-flow-sub" style="margin-top:2px;">${goal} · 难度系数 x${(st.difficulty * (curMode === 'elite' ? 1.6 : 1.0)).toFixed(2)} · 物抗 ${Math.round(Math.min(0.6, (st.physicalResistance || 0) + (GAME_CONFIG.modes?.[curMode]?.physicalResistanceBonus || 0)) * 100)}%+</div>
               <div style="font-size:10px;color:#64748b;margin-top:2px;">${st.desc || ''}</div>
               <!-- 定向掉落物预览 -->
               <div style="margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;">

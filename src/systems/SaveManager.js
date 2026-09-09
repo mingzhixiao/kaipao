@@ -441,20 +441,20 @@ export class SaveManager {
   getWeaponBulletSpeed(id) {
     const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
     const w = this.data.weaponData.weapons[id] || { level: 1, bulletSpeedLevel: 1 };
-    const levelBonus = ((w.level || 1) - 1) * (cfg.growth.bulletSpeedPerLevel || 15);
-    // 弹速平滑递增，硬上限 2000，防止物理穿透异常
-    const shardBonus = Math.min(1500, ((w.bulletSpeedLevel || 1) - 1) * 2.2);
-    return Math.round(cfg.baseStats.bulletSpeed + levelBonus + shardBonus);
+    const levelBonus = Math.min(220, ((w.level || 1) - 1) * (cfg.growth.bulletSpeedPerLevel || 8));
+    // 限制等级与碎片带来的弹速膨胀，保留可观察的弹道飞行过程
+    const shardBonus = Math.min(260, ((w.bulletSpeedLevel || 1) - 1) * 1.2);
+    return Math.min(1050, Math.round(cfg.baseStats.bulletSpeed + levelBonus + shardBonus));
   }
 
   getWeaponFireInterval(id) {
     const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
     const w = this.data.weaponData.weapons[id] || { level: 1, attackSpeedLevel: 1 };
     const base = cfg.baseStats.fireInterval;
-    const levelFactor = Math.max(0.75, 1 - ((w.level || 1) - 1) * 0.001);
-    // 攻速强化采用平滑几何衰减，硬下限 0.18s（避免攻速过快失去射击打击质感与音效重叠）
-    const shardFactor = Math.pow(0.998, (w.attackSpeedLevel || 1) - 1);
-    const finalInterval = Math.max(0.18, base * levelFactor * shardFactor);
+    const levelFactor = Math.max(0.85, 1 - ((w.level || 1) - 1) * 0.0005);
+    // 攻速强化采用缓慢几何衰减，统一守住 0.28 秒射击间隔下限
+    const shardFactor = Math.pow(0.9994, (w.attackSpeedLevel || 1) - 1);
+    const finalInterval = Math.max(GAME_CONFIG.hero.minAttackInterval || 0.28, base * levelFactor * shardFactor);
     return parseFloat(finalInterval.toFixed(3));
   }
 

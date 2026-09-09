@@ -187,13 +187,13 @@ export function buildUpgradeCardPool(game) {
     {
       id: 'firerate',
       name: '超频连发机匣',
-      desc: '主武器射击间隔缩短 14%，提升持续射击压制力。',
+      desc: '主武器射击间隔缩短 10%，提升持续射击压制力。',
       img: 'assets/cards/icon_firerate.png',
       rarity: 'common',
       element: 'physical',
       synergy: '[射速提升]',
       apply: () => {
-        game.hero.baseAttackInterval = Math.max(0.18, parseFloat((game.hero.baseAttackInterval * 0.86).toFixed(3)));
+        game.hero.baseAttackInterval = Math.max(0.28, parseFloat((game.hero.baseAttackInterval * 0.90).toFixed(3)));
       }
     },
     {

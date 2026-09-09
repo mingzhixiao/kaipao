@@ -4,6 +4,7 @@ import { ObjectPool } from '../systems/ObjectPool.js';
 import { GAME_CONFIG } from '../core/Config.js';
 import { gameEvents } from '../core/GameEventBus.js';
 import { saveManager } from '../systems/SaveManager.js';
+import { calculateDamageAfterResistance } from '../systems/PhysicalResistanceSystem.js';
 
 const ENEMY_COMBAT_ENTRY_Y = 64;
 
@@ -206,6 +207,8 @@ export class CombatSystem {
   onHit(enemy, dmg, isCrit = false, type = 'normal', knockVx = 0, knockVy = 0) {
     if (!enemy.active || enemy.hp <= 0 || enemy.y - enemy.radius < ENEMY_COMBAT_ENTRY_Y) return;
     const game = this.game;
+    const damageResult = calculateDamageAfterResistance(dmg, type, enemy.physicalResistance || 0, game.weapon.armorPenetration || 0);
+    dmg = damageResult.damage;
     // 统一元素协同与反应调用
     let elem = null;
     if (type === 'laser' || type === 'thunder') elem = 'thunder';
