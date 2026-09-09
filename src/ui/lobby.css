@@ -211,7 +211,7 @@
 .lobby-stage-arena {
   position: relative;
   height: 230px;
-  background: radial-gradient(circle at 50% 65%, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.8) 75%), url('/assets/environment/bg_highway.png') center bottom / cover no-repeat;
+  background: radial-gradient(circle at 50% 65%, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.8) 75%), url('../../assets/environment/bg_highway.png?v=20260909_scifi_v2') center bottom / cover no-repeat;
   border-radius: 20px;
   border: 1.5px solid rgba(56, 189, 248, 0.3);
   margin-bottom: 14px;
@@ -239,7 +239,7 @@
   transform: translateX(-50%);
   width: 90px;
   height: 90px;
-  background: url('/assets/vehicles/truck.png') center center / contain no-repeat;
+  background: url('../../assets/vehicles/truck.png?v=20260909_scifi_v2') center center / contain no-repeat;
   filter: drop-shadow(0 15px 25px rgba(0,0,0,0.85));
   animation: truckIdleBreath 3.5s ease-in-out infinite;
 }

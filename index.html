@@ -1639,8 +1639,51 @@
       0% { opacity: 0.6; }
       100% { opacity: 1; filter: brightness(1.3); }
     }
+    /* 关键防御兜底样式：确保在任何弱网或 CDN 缓存情况下，大厅小图标均有绝对尺寸边界，绝不爆屏 */
+    .lobby-reward-preview {
+      display: grid !important;
+      grid-template-columns: minmax(78px, 1fr) 10px minmax(78px, 1fr) 10px minmax(78px, 1fr) !important;
+      align-items: center !important;
+      gap: 2px !important;
+      padding: 8px 9px !important;
+      margin-bottom: 8px !important;
+      border: 1px solid rgba(245, 158, 11, 0.25) !important;
+      border-radius: 8px !important;
+      background: rgba(12, 17, 27, 0.92) !important;
+    }
+    .lobby-reward-node {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+    }
+    .lobby-reward-node img,
+    .lobby-reward-node-img {
+      width: 28px !important;
+      height: 28px !important;
+      max-width: 28px !important;
+      max-height: 28px !important;
+      object-fit: contain !important;
+    }
+    .lobby-arena-callout {
+      position: absolute !important;
+      top: 13px !important;
+      left: 14px !important;
+      z-index: 2 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 2px !important;
+      color: #94a3b8 !important;
+      font-size: 9px !important;
+      font-weight: 800 !important;
+    }
+    .lobby-arena-callout strong {
+      color: #f8fafc !important;
+      font-size: 13px !important;
+    }
   </style>
-  <link rel="stylesheet" href="src/ui/lobby.css?v=20260909_backpack_filter_v10">
+  <link rel="stylesheet" href="src/ui/lobby.css?v=20260909_scifi_v3">
 </head>
 
 <body>

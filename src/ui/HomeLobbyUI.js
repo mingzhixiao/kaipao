@@ -137,11 +137,11 @@ export class HomeLobbyUI {
           </div>
 
           <div class="lobby-reward-preview" aria-label="星级通关奖励预览">
-            <div class="lobby-reward-node"><span class="lobby-reward-stars">★</span><img src="assets/icons/icon_coin.png" alt="废料"><strong id="lobby-reward-scrap">55+</strong><small>险守奖励</small></div>
+            <div class="lobby-reward-node"><span class="lobby-reward-stars">★</span><img class="lobby-reward-node-img" src="assets/icons/icon_coin.png" alt="废料" style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;"><strong id="lobby-reward-scrap">55+</strong><small>险守奖励</small></div>
             <div class="lobby-reward-line"></div>
-            <div class="lobby-reward-node featured"><span class="lobby-reward-stars">★★★</span><img id="lobby-reward-chip-img" src="assets/items/item_chip_rocket.png" alt="定向芯片"><strong id="lobby-reward-chip">定向芯片</strong><small>稳固防线</small></div>
+            <div class="lobby-reward-node featured"><span class="lobby-reward-stars">★★★</span><img class="lobby-reward-node-img" id="lobby-reward-chip-img" src="assets/items/item_chip_rocket.png" alt="定向芯片" style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;"><strong id="lobby-reward-chip">定向芯片</strong><small>稳固防线</small></div>
             <div class="lobby-reward-line"></div>
-            <div class="lobby-reward-node perfect"><span class="lobby-reward-stars">★★★★★</span><img src="assets/items/item_supply_crate.png" alt="军备箱"><strong id="lobby-reward-perfect">晶核 +5</strong><small>完美守卫</small></div>
+            <div class="lobby-reward-node perfect"><span class="lobby-reward-stars">★★★★★</span><img class="lobby-reward-node-img" src="assets/items/item_supply_crate.png" alt="军备箱" style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;"><strong id="lobby-reward-perfect">晶核 +5</strong><small>完美守卫</small></div>
           </div>
 
           <div class="lobby-battle-cta-wrap">
@@ -250,7 +250,7 @@ export class HomeLobbyUI {
       <!-- 底部 7 大主流导航栏 -->
       <nav class="lobby-bottom-nav">
         <button class="nav-tab-btn active" data-tab="lobby">
-          <span class="nav-tab-icon">🏰</span>
+          <span class="nav-tab-icon">🛡️</span>
           <span class="nav-tab-label">基地</span>
         </button>
         <button class="nav-tab-btn" data-tab="weapons">
