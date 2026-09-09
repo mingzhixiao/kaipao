@@ -5,6 +5,7 @@ import { saveManager } from './SaveManager.js';
 import { LevelDesignSystem } from './LevelDesignSystem.js';
 import { gameEvents } from '../core/GameEventBus.js';
 import { buildStageClearReward, getFortressStarRating } from './BattleRewardSystem.js';
+import { getEnemyPhysicalResistance } from './PhysicalResistanceSystem.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -17,6 +18,7 @@ export class WaveSystem {
     this.waveSpawnedCount = 0;
     this.stageId = saveManager.getUnlockedStage() || 1;
     this.stageConfig = null;
+    this.normalAssist = null;
     this.stageCleared = false;
     this.difficultyMult = 1.0;
     this.levelDesign = new LevelDesignSystem(game);
@@ -36,6 +38,7 @@ export class WaveSystem {
     this.stageConfig = this.getStageConfig(stageId);
     this.mode = saveManager.getMode() || 'normal';
     this.modeConfig = GAME_CONFIG.modes?.[this.mode] || GAME_CONFIG.modes.normal;
+    this.normalAssist = this.mode === 'normal' ? (this.stageConfig?.normalAssist || null) : null;
     this.difficultyMult = (this.stageConfig?.difficulty || 1.0) * (this.modeConfig.hpMult || 1.0);
     this.game.stageId = stageId;
     this.game.stageMode = this.mode;
@@ -66,14 +69,16 @@ export class WaveSystem {
     const base = GAME_CONFIG.difficulty.getWaveEnemyCount(wave);
     const plan = this.levelDesign.getPlan(this.stageId, wave, this.stageConfig);
     const countMult = this.modeConfig?.countMult || 1.0;
-    return Math.max(6, Math.round(base * (0.85 + this.difficultyMult * 0.15) * this.levelDesign.getCountMultiplier(plan) * countMult));
+    const assistCountMult = this.normalAssist?.countMult || 1.0;
+    return Math.max(6, Math.round(base * (0.85 + this.difficultyMult * 0.15) * this.levelDesign.getCountMultiplier(plan) * countMult * assistCountMult));
   }
 
   calcSpawnInterval(wave) {
     const base = GAME_CONFIG.difficulty.getWaveSpawnInterval(wave);
     const plan = this.levelDesign.getPlan(this.stageId, wave, this.stageConfig);
     const intervalDiv = (this.mode === 'elite' ? 1.25 : 1.0);
-    return Math.max(0.24, (base * this.levelDesign.getIntervalMultiplier(plan) / (0.9 + this.difficultyMult * 0.1)) / intervalDiv);
+    const assistIntervalMult = this.normalAssist?.spawnIntervalMult || 1.0;
+    return Math.max(0.24, (base * this.levelDesign.getIntervalMultiplier(plan) * assistIntervalMult / (0.9 + this.difficultyMult * 0.1)) / intervalDiv);
   }
 
   startWave(waveNum) {
@@ -218,7 +223,7 @@ export class WaveSystem {
     }
     enemy.type = rawType;
 
-    const waveScale = GAME_CONFIG.difficulty.getEnemyWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0);
+    const waveScale = GAME_CONFIG.difficulty.getEnemyWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0) * (this.normalAssist?.hpMult || 1.0);
     const cfg = GAME_CONFIG.enemies[enemy.type] || GAME_CONFIG.enemies.runner;
     enemy.radius = cfg.radius;
     enemy.maxHp = enemy.hp = Math.max(25, Math.round(cfg.baseHp * waveScale));
@@ -232,9 +237,10 @@ export class WaveSystem {
       rawShield = Math.round(enemy.maxHp * baseShieldRatio * monsterShieldMod * modeShieldMult);
     }
     enemy.maxShield = enemy.shield = rawShield;
+    enemy.physicalResistance = getEnemyPhysicalResistance(this.stageConfig?.physicalResistance || 0, enemy.type, false, this.modeConfig?.physicalResistanceBonus || 0);
 
-    enemy.speed = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
-    const atkMult = (this.modeConfig?.atkMult || 1.0) * (0.9 + (this.stageConfig?.difficulty || 1.0) * 0.1);
+    enemy.speed = (cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin)) * (this.normalAssist?.speedMult || 1.0);
+    const atkMult = (this.modeConfig?.atkMult || 1.0) * (0.9 + (this.stageConfig?.difficulty || 1.0) * 0.1) * (this.normalAssist?.atkMult || 1.0);
     enemy.attackPower = Math.round(cfg.attackPower * atkMult);
     enemy.attackCooldown = cfg.attackCooldown;
     enemy.color = cfg.color;
@@ -277,18 +283,19 @@ export class WaveSystem {
 
     // 首领倍率调整：中首领 1.25x，大首领 1.6x
     const bossTierMult = isChapterBoss ? 1.6 : (isMiniBoss ? 1.25 : 1.0);
-    const bossScale = GAME_CONFIG.difficulty.getBossWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0) * bossTierMult;
+    const bossScale = GAME_CONFIG.difficulty.getBossWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0) * bossTierMult * (this.normalAssist?.bossHpMult || 1.0);
     const cfg = GAME_CONFIG.enemies.boss_overlord;
 
     boss.radius = isChapterBoss ? Math.round(cfg.radius * 1.15) : cfg.radius;
     boss.maxHp = boss.hp = Math.round(cfg.baseHp * bossScale);
 
     // 首领专属高能偏转力场护盾：保底不低于生命值 45%，随战区递增可达 100%~200%
-    const bossShieldRatio = Math.max(0.45, (this.stageConfig?.shieldRatio || 0.35) * (cfg.shieldMod || 1.6));
+    const bossShieldRatio = this.normalAssist?.bossShieldRatio ?? Math.max(0.45, (this.stageConfig?.shieldRatio || 0.35) * (cfg.shieldMod || 1.6));
     boss.maxShield = boss.shield = Math.round(boss.maxHp * bossShieldRatio * (this.modeConfig?.shieldMult || 1.0));
+    boss.physicalResistance = getEnemyPhysicalResistance(this.stageConfig?.physicalResistance || 0, boss.type, true, this.modeConfig?.physicalResistanceBonus || 0);
 
-    boss.speed = cfg.speed;
-    boss.attackPower = Math.round(cfg.attackPower * (this.modeConfig?.atkMult || 1.0) * (this.stageConfig?.difficulty || 1.0) * (isChapterBoss ? 1.25 : 1.0));
+    boss.speed = cfg.speed * (this.normalAssist?.bossSpeedMult || 1.0);
+    boss.attackPower = Math.round(cfg.attackPower * (this.modeConfig?.atkMult || 1.0) * (this.stageConfig?.difficulty || 1.0) * (isChapterBoss ? 1.25 : 1.0) * (this.normalAssist?.bossAtkMult || 1.0));
     boss.attackCooldown = cfg.attackCooldown;
     boss.color = theme.color;
     boss.expVal = Math.round(cfg.expVal * bossTierMult);

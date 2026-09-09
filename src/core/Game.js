@@ -106,12 +106,12 @@ export class Game {
     }), (b) => { b.x = 0; b.y = 0; b.vx = 0; b.vy = 0; b.damage = 0; b.isCrit = false; b.pierceLeft = 1; }, 80, 200);
     this.enemyPool = new ObjectPool(() => ({
       active: false, type: 'runner', isBoss: false, x: 0, y: 0, vx: 0, vy: 0, hp: 100, maxHp: 100,
-      speed: 80, radius: 18, color: '#38ef7d', expVal: 8, attackPower: 30, attackCooldown: 1.0, attackTimer: 0,
+      speed: 80, radius: 18, color: '#38ef7d', expVal: 8, physicalResistance: 0, attackPower: 30, attackCooldown: 1.0, attackTimer: 0,
       hitFlash: 0, hitStagger: 0, hitStaggerTotal: 0.22, hitAngle: 0,
       burnTimer: 0, burnDps: 0, freezeTimer: 0, freezeFactor: 1.0, walkTime: 0, stepTimer: 0, stompTimer: 0,
       _lastBoomerangId: 0, _lastBoomerangPhase: ''
     }), (e) => {
-      e.burnTimer = 0; e.burnDps = 0; e.freezeTimer = 0; e.freezeFactor = 1.0;
+      e.burnTimer = 0; e.burnDps = 0; e.freezeTimer = 0; e.freezeFactor = 1.0; e.physicalResistance = 0;
       e.hitFlash = 0; e.hitStagger = 0; e._lastBoomerangId = 0; e._lastBoomerangPhase = '';
     }, 60, 150);
     this.particlePool = new ObjectPool(() => ({

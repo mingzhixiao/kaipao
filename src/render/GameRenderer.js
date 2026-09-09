@@ -394,14 +394,28 @@ export class GameRenderer {
       ctx.fillStyle = hpColor;
       ctx.fillRect(-barW / 2, hpY, barW * hpRatio, barH);
 
+      const armorPercent = Math.round((e.physicalResistance || 0) * 100);
+      if (armorPercent > 0 && !e.isBoss) {
+        ctx.font = 'bold 7px Rajdhani, monospace, sans-serif';
+        ctx.fillStyle = '#cbd5e1';
+        ctx.textAlign = 'right';
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 3;
+        ctx.fillText(`▣ 物抗 ${armorPercent}%`, barW / 2, barY - 4);
+        ctx.shadowBlur = 0;
+      }
+
       if (e.isBoss) {
-        ctx.font = 'bold 12px Rajdhani, monospace, sans-serif';
+        ctx.font = 'bold 11px Rajdhani, monospace, sans-serif';
         ctx.fillStyle = '#ff2a5f';
         ctx.textAlign = 'center';
         ctx.shadowColor = '#000';
         ctx.shadowBlur = 6;
-        const shieldText = hasShield ? ` [🛡️ ${Math.ceil(e.shield)}]` : '';
-        ctx.fillText(`👑 ${e.bossTitle || '战区首领'}${shieldText}`, 0, barY - 6);
+        ctx.fillText(`👑 ${e.bossTitle || '战区首领'}`, 0, barY - 15);
+        ctx.font = 'bold 8px Rajdhani, monospace, sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        const shieldText = hasShield ? ` · 护盾 ${Math.ceil(e.shield)}` : '';
+        ctx.fillText(`物抗 ${armorPercent}%${shieldText}`, 0, barY - 5);
         ctx.shadowBlur = 0;
       }
 
