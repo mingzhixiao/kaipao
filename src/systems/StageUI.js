@@ -153,18 +153,21 @@ export function showStageSelectModal(game) {
   modal.style.display = 'flex';
   game.isPaused = true;
   const btnForge = document.getElementById('btn-hub-forge');
-  if (btnForge) btnForge.onclick = () => { modal.style.display = 'none'; showRuneForgeModal(game); };
+  if (btnForge) {
+    btnForge.onclick = async () => {
+      modal.style.display = 'none';
+      const { homeLobbyUI } = await import('../ui/HomeLobbyUI.js');
+      homeLobbyUI.switchTab('runes');
+      homeLobbyUI.show();
+    };
+  }
 }
 
 export function showRuneForgeModal(game) {
-  const modal = document.getElementById('rune-forge-modal');
-  if (!modal) return;
-  game.isPaused = true;
-  runeSystem.reload();
-  renderRuneForgeList();
-  modal.style.display = 'flex';
-  const btnClose = document.getElementById('btn-forge-close');
-  if (btnClose) btnClose.onclick = () => { modal.style.display = 'none'; showStageSelectModal(game); };
+  import('../ui/HomeLobbyUI.js').then(({ homeLobbyUI }) => {
+    homeLobbyUI.switchTab('runes');
+    homeLobbyUI.show();
+  });
 }
 
 function renderRuneForgeList() {

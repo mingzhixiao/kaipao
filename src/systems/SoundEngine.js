@@ -129,6 +129,50 @@ export class SoundEngine {
     osc.stop(now + 0.075);
   }
 
+  playReload() {
+    if (!this.enabled || !this.init()) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(420, now);
+    osc.frequency.exponentialRampToValueAtTime(160, now + 0.12);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+    osc.connect(gain);
+    gain.connect(this.getSFXNode());
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+
+  playReloadComplete() {
+    if (!this.enabled || !this.init()) return;
+    const now = this.ctx.currentTime;
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(320, now);
+    osc1.frequency.exponentialRampToValueAtTime(840, now + 0.08);
+    gain1.gain.setValueAtTime(0.18, now);
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+    osc1.connect(gain1);
+    gain1.connect(this.getSFXNode());
+    osc1.start(now);
+    osc1.stop(now + 0.08);
+
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(540, now + 0.06);
+    osc2.frequency.exponentialRampToValueAtTime(1100, now + 0.14);
+    gain2.gain.setValueAtTime(0.14, now + 0.06);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+    osc2.connect(gain2);
+    gain2.connect(this.getSFXNode());
+    osc2.start(now + 0.06);
+    osc2.stop(now + 0.14);
+  }
+
   playHit() {
     if (!this.enabled || !this.init()) return;
     const now = this.ctx.currentTime;

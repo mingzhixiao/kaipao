@@ -24,10 +24,10 @@ export class SaveManager {
       weaponData: {
         equipped: 'assault',
         weapons: {
-          assault: { unlocked: true, level: 1 },
-          gatling: { unlocked: true, level: 1 },
-          gauss: { unlocked: false, level: 1, unlockCost: 160 },
-          plasma: { unlocked: false, level: 1, unlockCost: 260 }
+          assault: { unlocked: true, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1 },
+          gatling: { unlocked: true, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1 },
+          gauss: { unlocked: false, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1, unlockCost: 160 },
+          plasma: { unlocked: false, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1, unlockCost: 260 }
         }
       },
       skillData: {
@@ -43,6 +43,13 @@ export class SaveManager {
         gatling_part: 12,
         gauss_part: 8,
         plasma_part: 6,
+        // 枪械三维强化碎片
+        power_shard: 20,
+        bulletspeed_shard: 20,
+        attackspeed_shard: 20,
+        // 弹匣扩容与符文专属碎片
+        mag_shard: 20,
+        rune_shard: 25,
         // 宠物专属基因
         fluffy_shard: 15,
         dragon_shard: 6,
@@ -85,12 +92,23 @@ export class SaveManager {
     merged.petData.pets = { ...defaults.petData.pets, ...(data?.petData?.pets || {}) };
     merged.weaponData = { ...defaults.weaponData, ...(data?.weaponData || {}) };
     merged.weaponData.weapons = { ...defaults.weaponData.weapons, ...(data?.weaponData?.weapons || {}) };
+    Object.values(merged.weaponData.weapons).forEach(w => {
+      if (!w.magazineLevel) w.magazineLevel = 1;
+      if (!w.powerLevel) w.powerLevel = 1;
+      if (!w.bulletSpeedLevel) w.bulletSpeedLevel = 1;
+      if (!w.attackSpeedLevel) w.attackSpeedLevel = 1;
+    });
     merged.skillData = { ...defaults.skillData, ...(data?.skillData || {}) };
     merged.skillData.levels = { ...defaults.skillData.levels, ...(data?.skillData?.levels || {}) };
     if (!Array.isArray(merged.skillData.equipped) || merged.skillData.equipped.length === 0) {
       merged.skillData.equipped = [...defaults.skillData.equipped];
     }
     merged.inventory = { ...defaults.inventory, ...(data?.inventory || {}) };
+    if (merged.inventory.power_shard === undefined) merged.inventory.power_shard = 20;
+    if (merged.inventory.bulletspeed_shard === undefined) merged.inventory.bulletspeed_shard = 20;
+    if (merged.inventory.attackspeed_shard === undefined) merged.inventory.attackspeed_shard = 20;
+    if (merged.inventory.mag_shard === undefined) merged.inventory.mag_shard = 20;
+    if (merged.inventory.rune_shard === undefined) merged.inventory.rune_shard = 25;
     return merged;
   }
 
@@ -242,6 +260,22 @@ export class SaveManager {
     this.addItem(sc1, cnt3);
     dropped.push({ id: sc1, count: cnt3 });
 
+    // 随机 1 组弹匣碎片与符文碎片
+    const magCnt = 2 + Math.floor(Math.random() * 3);
+    this.addItem('mag_shard', magCnt);
+    dropped.push({ id: 'mag_shard', count: magCnt });
+
+    const runeCnt = 2 + Math.floor(Math.random() * 3);
+    this.addItem('rune_shard', runeCnt);
+    dropped.push({ id: 'rune_shard', count: runeCnt });
+
+    // 随机 1 组力量/射速/攻速碎片
+    const shardTypes = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard'];
+    const sType = shardTypes[Math.floor(Math.random() * shardTypes.length)];
+    const sCnt = 2 + Math.floor(Math.random() * 3);
+    this.addItem(sType, sCnt);
+    dropped.push({ id: sType, count: sCnt });
+
     this.save();
     return { scrap: droppedScrap, items: dropped };
   }
@@ -312,6 +346,7 @@ export class SaveManager {
     this.save();
     return true;
   }
+  // 枪械主等级升级（消耗专属零件 + 废料）同时提升攻击力、射速与攻速
   upgradeWeapon(id, scrapCost, partCost = 3) {
     const w = this.data.weaponData.weapons[id];
     if (!w || !w.unlocked) return false;
@@ -328,6 +363,111 @@ export class SaveManager {
     if (!w || w.unlocked) return false;
     if (!this.spendGems(cost)) return false;
     w.unlocked = true;
+    w.level = w.level || 1;
+    w.powerLevel = w.powerLevel || 1;
+    w.bulletSpeedLevel = w.bulletSpeedLevel || 1;
+    w.attackSpeedLevel = w.attackSpeedLevel || 1;
+    w.magazineLevel = w.magazineLevel || 1;
+    this.save();
+    return true;
+  }
+
+  // 枪械三维强化等级获取
+  getWeaponPowerLevel(id) {
+    return this.data.weaponData.weapons[id]?.powerLevel || 1;
+  }
+  getWeaponBulletSpeedLevel(id) {
+    return this.data.weaponData.weapons[id]?.bulletSpeedLevel || 1;
+  }
+  getWeaponAttackSpeedLevel(id) {
+    return this.data.weaponData.weapons[id]?.attackSpeedLevel || 1;
+  }
+  getWeaponMagazineLevel(id) {
+    return this.data.weaponData.weapons[id]?.magazineLevel || 1;
+  }
+
+  // 枪械最终综合属性计算（融合主等级 + 力量/射速/攻速/弹匣等级）
+  getWeaponDamage(id) {
+    const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
+    const w = this.data.weaponData.weapons[id] || { level: 1, powerLevel: 1 };
+    const levelBonus = ((w.level || 1) - 1) * (cfg.growth.damagePerLevel || 5);
+    const powerBonus = ((w.powerLevel || 1) - 1) * (cfg.growth.damagePerPowerLevel || 4);
+    return Math.round(cfg.baseStats.damage + levelBonus + powerBonus);
+  }
+
+  getWeaponBulletSpeed(id) {
+    const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
+    const w = this.data.weaponData.weapons[id] || { level: 1, bulletSpeedLevel: 1 };
+    const levelBonus = ((w.level || 1) - 1) * (cfg.growth.bulletSpeedPerLevel || 15);
+    const shardBonus = ((w.bulletSpeedLevel || 1) - 1) * (cfg.growth.bulletSpeedPerShardLevel || 25);
+    return Math.round(cfg.baseStats.bulletSpeed + levelBonus + shardBonus);
+  }
+
+  getWeaponFireInterval(id) {
+    const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
+    const w = this.data.weaponData.weapons[id] || { level: 1, attackSpeedLevel: 1 };
+    const base = cfg.baseStats.fireInterval;
+    // 枪械主等级提升略微压缩开火间隔（攻速提升）
+    const levelFactor = Math.max(0.7, 1 - ((w.level || 1) - 1) * (cfg.growth.fireRatePerLevel || 0.002));
+    // 攻速碎片强化进一步压缩开火间隔（攻速强化）
+    const shardRatio = cfg.growth.attackSpeedPerShardRatio || 0.03;
+    const shardFactor = Math.pow(1 - shardRatio, (w.attackSpeedLevel || 1) - 1);
+    const finalInterval = Math.max(0.06, base * levelFactor * shardFactor);
+    return parseFloat(finalInterval.toFixed(3));
+  }
+
+  getWeaponMagazineCapacity(id) {
+    const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
+    const magLevel = this.getWeaponMagazineLevel(id);
+    const base = cfg.baseStats.magazineCapacity || 30;
+    const growth = cfg.growth.magazinePerLevel || 4;
+    return base + (magLevel - 1) * growth;
+  }
+
+  // 力量碎片升级攻击力
+  upgradeWeaponPower(id, scrapCost, shardCost) {
+    const w = this.data.weaponData.weapons[id];
+    if (!w || !w.unlocked) return false;
+    if (!this.hasItem('power_shard', shardCost)) return false;
+    if (!this.spendScrap(scrapCost)) return false;
+    this.consumeItem('power_shard', shardCost);
+    w.powerLevel = (w.powerLevel || 1) + 1;
+    this.save();
+    return true;
+  }
+
+  // 射速碎片升级弹速
+  upgradeWeaponBulletSpeed(id, scrapCost, shardCost) {
+    const w = this.data.weaponData.weapons[id];
+    if (!w || !w.unlocked) return false;
+    if (!this.hasItem('bulletspeed_shard', shardCost)) return false;
+    if (!this.spendScrap(scrapCost)) return false;
+    this.consumeItem('bulletspeed_shard', shardCost);
+    w.bulletSpeedLevel = (w.bulletSpeedLevel || 1) + 1;
+    this.save();
+    return true;
+  }
+
+  // 攻速碎片升级攻速（缩短射击间隔）
+  upgradeWeaponAttackSpeed(id, scrapCost, shardCost) {
+    const w = this.data.weaponData.weapons[id];
+    if (!w || !w.unlocked) return false;
+    if (!this.hasItem('attackspeed_shard', shardCost)) return false;
+    if (!this.spendScrap(scrapCost)) return false;
+    this.consumeItem('attackspeed_shard', shardCost);
+    w.attackSpeedLevel = (w.attackSpeedLevel || 1) + 1;
+    this.save();
+    return true;
+  }
+
+  // 枪械弹匣容量扩展（消耗扩容弹匣碎片 mag_shard + 废料）
+  upgradeWeaponMagazine(id, scrapCost, shardCost) {
+    const w = this.data.weaponData.weapons[id];
+    if (!w || !w.unlocked) return false;
+    if (!this.hasItem('mag_shard', shardCost)) return false;
+    if (!this.spendScrap(scrapCost)) return false;
+    this.consumeItem('mag_shard', shardCost);
+    w.magazineLevel = (w.magazineLevel || 1) + 1;
     this.save();
     return true;
   }
@@ -383,8 +523,12 @@ export class SaveManager {
   calcCombatPower() {
     let power = 1000 + (this.getCommanderLevel() - 1) * 85;
     const equippedW = this.getEquippedWeapon();
-    const wLevel = this.data.weaponData.weapons[equippedW]?.level || 1;
-    power += wLevel * 120;
+    const wObj = this.data.weaponData.weapons[equippedW] || { level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1 };
+    power += (wObj.level || 1) * 120;
+    power += ((wObj.powerLevel || 1) - 1) * 40;
+    power += ((wObj.bulletSpeedLevel || 1) - 1) * 35;
+    power += ((wObj.attackSpeedLevel || 1) - 1) * 45;
+    power += ((wObj.magazineLevel || 1) - 1) * 30;
     const runeLevels = this.getRuneLevels();
     for (const lv of Object.values(runeLevels)) power += lv * 45;
     const selectedPet = this.data.petData.selected;

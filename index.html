@@ -1593,6 +1593,37 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+
+    /* 战术弹匣与换弹指示条 */
+    .vital-capsule.ammo {
+      border-color: rgba(250, 204, 21, 0.45);
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.18), rgba(15, 23, 42, 0.92));
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+    .vital-capsule.ammo:hover {
+      border-color: #facc15;
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.35);
+      transform: scale(1.02);
+    }
+    .vital-capsule.ammo:active {
+      transform: scale(0.96);
+    }
+    .ammo-fill {
+      background: linear-gradient(90deg, #f59e0b, #eab308);
+      box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
+      transition: width 0.12s ease, background 0.3s;
+    }
+    .ammo-fill.reloading {
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+      animation: reloadPulse 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes reloadPulse {
+      0% { opacity: 0.6; }
+      100% { opacity: 1; filter: brightness(1.3); }
+    }
   </style>
   <link rel="stylesheet" href="src/ui/lobby.css?v=20260908_items_v2">
 </head>
@@ -1647,6 +1678,13 @@
           </div>
         </div>
         <div class="top-vitals-row" id="top-vitals-container">
+          <div class="vital-capsule ammo" id="top-ammo-capsule" title="枪械弹匣 [点击或按R换弹]">
+            <div class="vital-bar-track">
+              <div class="vital-bar-fill ammo-fill" id="top-ammo-fill" style="width: 100%;"></div>
+            </div>
+            <span class="vital-icon">🔋</span>
+            <span class="vital-val" id="top-ammo-text">30/30</span>
+          </div>
           <div class="vital-capsule shield" id="top-shield-capsule" title="城防能量护盾">
             <div class="vital-bar-track">
               <div class="vital-bar-fill shield-fill" id="top-shield-fill" style="width: 100%;"></div>
@@ -1813,7 +1851,7 @@
         </div>
       </div>
     </div>
-    <script type="module" src="src/main.js?v=20260908_skills_right"></script>
+    <script type="module" src="src/main.js?v=20260909_power_speed_shards_v1"></script>
 </body>
 
 </html>

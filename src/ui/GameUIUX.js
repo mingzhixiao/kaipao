@@ -54,7 +54,9 @@ function injectStyles() {
     #home-lobby .filter-pill { min-height:38px; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; padding:0 13px!important; }
     #home-lobby #lobby-item-modal,#home-lobby #lobby-crate-modal { position:fixed!important; inset:0!important; z-index:20; padding:16px var(--ui-safe-right) calc(16px + var(--ui-safe-bottom)) var(--ui-safe-left); display:none; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.62); backdrop-filter:blur(7px); }
     #upgrade-modal,#gameover-modal,#stage-select-modal,#stage-clear-modal,#rune-forge-modal { padding:var(--ui-safe-top) var(--ui-safe-right) var(--ui-safe-bottom) var(--ui-safe-left)!important; overscroll-behavior:contain; }
-    #upgrade-modal .cards-container,#gameover-modal .report-card,#stage-select-modal > *,#stage-clear-modal > *,#rune-forge-modal > * { max-height:calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - 24px); overflow-y:auto; overscroll-behavior:contain; }
+    #upgrade-modal .cards-container,#gameover-modal .report-card,#stage-select-modal > *,#rune-forge-modal > * { max-height:calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - 24px); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
+    #stage-clear-modal { padding:max(8px,var(--ui-safe-top)) max(8px,var(--ui-safe-right)) max(8px,var(--ui-safe-bottom)) max(8px,var(--ui-safe-left))!important; }
+    #stage-clear-modal .stage-clear-card { max-height:calc(100dvh - max(8px,var(--ui-safe-top)) - max(8px,var(--ui-safe-bottom)))!important; overflow:hidden; }
     .primary-btn,.reroll-btn,.cheat-btn { min-height:44px; }
 
     /* 信息架构：七个并列入口收敛为“基地 / 构筑 / 养成 / 试炼 / 更多”。 */
@@ -151,32 +153,8 @@ function enhanceLobbyNavigation() {
   const nav = lobby.querySelector('.lobby-bottom-nav');
   if (!nav) return;
   lobby.dataset.uiNavEnhanced = '1';
-  const buttons = [...nav.querySelectorAll('.nav-tab-btn')];
-  const byTab = tab => buttons.find(b => b.dataset.tab === tab);
-  const weapons = byTab('weapons');
-  const skills = byTab('skills');
-  const backpack = byTab('backpack');
-  const pets = byTab('pets');
-  const runes = byTab('runes');
-  const trials = byTab('trials');
-
-  // 保留原 data-tab，避免破坏 HomeLobbyUI 的既有路由；这里只改变入口文案与层级。
-  if (weapons) { weapons.querySelector('.nav-tab-icon').textContent='🧩'; weapons.querySelector('.nav-tab-label').textContent='构筑'; }
-  if (skills) skills.style.display='none';
-  if (runes) runes.style.display='none';
-  if (backpack) { backpack.querySelector('.nav-tab-icon').textContent='📈'; backpack.querySelector('.nav-tab-label').textContent='养成'; }
-  if (pets) pets.style.display='none';
-  if (trials) trials.querySelector('.nav-tab-label').textContent='试炼';
-
-  const moreBtn = document.createElement('button');
-  moreBtn.type='button'; moreBtn.className='nav-tab-btn';
-  moreBtn.innerHTML='<span class="nav-tab-icon">☰</span><span class="nav-tab-label">更多</span>';
-  moreBtn.setAttribute('aria-label','更多管理');
-  nav.appendChild(moreBtn);
-  const panel = createLobbyMorePanel();
-  moreBtn.addEventListener('click', () => panel.classList.add('open'));
-  nav.setAttribute('aria-label','主导航');
-  nav.querySelectorAll('.nav-tab-btn').forEach(btn => btn.setAttribute('tabindex','0'));
+  nav.setAttribute('aria-label', '主导航');
+  nav.querySelectorAll('.nav-tab-btn').forEach(btn => btn.setAttribute('tabindex', '0'));
 }
 
 function applySafeAreaInsets() {

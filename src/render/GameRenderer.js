@@ -731,6 +731,86 @@ export class GameRenderer {
       ctx.restore();
     }
 
+    // 3. 弹匣余量与换弹状态指示 (Magazine Ammo & Tactical Reloading Visuals)
+    if (game.hero.isReloading) {
+      const progress = Math.min(1.0, game.hero.reloadTimer / (game.hero.reloadTime || 1.4));
+      const remTime = Math.max(0, (game.hero.reloadTime || 1.4) - game.hero.reloadTimer).toFixed(1);
+
+      // 周身换弹环形进度底轨
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, 36, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.28)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // 换弹流光充能环 (高亮渐变)
+      ctx.beginPath();
+      ctx.arc(0, 0, 36, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 4.5;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+
+      // 换弹文字浮标
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(-42, -54, 84, 18, 9);
+      } else {
+        ctx.rect(-42, -54, 84, 18);
+      }
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`🔄 换弹 ${remTime}s`, 0, -45);
+      ctx.restore();
+    } else {
+      // 正常战斗：指挥官底部微型弹药槽
+      const maxAmmo = game.hero.magazineCapacity || 30;
+      const curAmmo = game.hero.currentAmmo !== undefined ? game.hero.currentAmmo : maxAmmo;
+      const ammoPct = Math.max(0, Math.min(1.0, curAmmo / maxAmmo));
+
+      ctx.save();
+      const barW = 40;
+      const barH = 4;
+      const barY = 32;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2, 2);
+      } else {
+        ctx.rect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2);
+      }
+      ctx.fill();
+
+      // 弹药色彩：>50% 科技青蓝，20-50% 警告金黄，<=20% 危险猩红
+      let fillColor = '#00f0ff';
+      if (ammoPct <= 0.2) fillColor = '#f43f5e';
+      else if (ammoPct <= 0.5) fillColor = '#fbbf24';
+
+      ctx.fillStyle = fillColor;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = ammoPct <= 0.2 ? 8 : 4;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(-barW / 2, barY, barW * ammoPct, barH, 1.5);
+      } else {
+        ctx.rect(-barW / 2, barY, barW * ammoPct, barH);
+      }
+      ctx.fill();
+      ctx.restore();
+    }
+
     ctx.restore();
   }
 

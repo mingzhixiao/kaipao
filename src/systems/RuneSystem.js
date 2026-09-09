@@ -36,8 +36,12 @@ export function getRuneById(id) {
   return RUNE_CATALOG.find(r => r.id === id) || null;
 }
 
+export function getRuneUpgradeShardCost(rune, currentLevel) {
+  return 2 + Math.floor(currentLevel * 1.2);
+}
+
 export function getRuneUpgradeCost(rune, currentLevel) {
-  return Math.round(rune.costBase * (currentLevel + 1) * (1 + currentLevel * 0.15));
+  return Math.round(rune.costBase * (currentLevel + 1) * (1 + currentLevel * 0.12));
 }
 
 export class RuneSystem {
@@ -58,8 +62,11 @@ export class RuneSystem {
     if (!rune) return false;
     const lv = this.getLevel(id);
     if (lv >= rune.maxLevel) return false;
-    const cost = getRuneUpgradeCost(rune, lv);
-    if (!saveManager.spendScrap(cost)) return false;
+    const shardCost = getRuneUpgradeShardCost(rune, lv);
+    const scrapCost = getRuneUpgradeCost(rune, lv);
+    if (!saveManager.hasItem('rune_shard', shardCost)) return false;
+    if (!saveManager.spendScrap(scrapCost)) return false;
+    saveManager.consumeItem('rune_shard', shardCost);
     this.levels[id] = lv + 1;
     saveManager.setRuneLevel(id, lv + 1);
     return true;

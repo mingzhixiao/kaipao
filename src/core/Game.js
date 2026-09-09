@@ -57,7 +57,12 @@ export class Game {
       baseAttackInterval: GAME_CONFIG.hero.baseAttackInterval,
       recoil: 0, level: 1, exp: 0,
       expNeeded: GAME_CONFIG.hero.expNeededBase,
-      magnetRange: GAME_CONFIG.hero.magnetRange
+      magnetRange: GAME_CONFIG.hero.magnetRange,
+      magazineCapacity: 30,
+      currentAmmo: 30,
+      reloadTime: 1.4,
+      isReloading: false,
+      reloadTimer: 0
     };
     this.weapon = { ...GAME_CONFIG.weapon };
     this.skills = {
@@ -157,6 +162,11 @@ export class Game {
     this.canvas.addEventListener('touchstart', onPointer, { passive: true });
     this.canvas.addEventListener('touchmove', onPointer, { passive: true });
     window.addEventListener('pointerdown', unlockAudio, { once: true, passive: true });
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyR' && !this.isPaused && !this.isGameOver) {
+        this.reloadWeapon();
+      }
+    });
   }
 
   resetGame() {
@@ -166,8 +176,24 @@ export class Game {
     this.hero.level = 1; this.hero.exp = 0;
     this.hero.expNeeded = GAME_CONFIG.hero.expNeededBase;
     this.hero.magnetRange = GAME_CONFIG.hero.magnetRange;
-    this.hero.baseAttackInterval = GAME_CONFIG.hero.baseAttackInterval;
-    this.weapon = { ...GAME_CONFIG.weapon };
+    const equippedWeaponId = saveManager.getEquippedWeapon() || 'assault';
+    const weaponConfig = GAME_CONFIG.weapons[equippedWeaponId] || GAME_CONFIG.weapons.assault;
+    const weaponLevel = saveManager.getWeaponData().weapons[equippedWeaponId]?.level || 1;
+
+    this.weapon = {
+      ...GAME_CONFIG.weapon,
+      damage: saveManager.getWeaponDamage(equippedWeaponId),
+      bulletSpeed: saveManager.getWeaponBulletSpeed(equippedWeaponId),
+      pierceCount: weaponConfig.baseStats.pierce,
+      multishot: weaponConfig.baseStats.multishot,
+      critChance: weaponConfig.baseStats.critChance + (weaponLevel - 1) * (weaponConfig.growth.critPerLevel || 0)
+    };
+    this.hero.baseAttackInterval = saveManager.getWeaponFireInterval(equippedWeaponId);
+    this.hero.magazineCapacity = saveManager.getWeaponMagazineCapacity(equippedWeaponId);
+    this.hero.currentAmmo = this.hero.magazineCapacity;
+    this.hero.reloadTime = weaponConfig.baseStats.reloadTime || 1.4;
+    this.hero.isReloading = false;
+    this.hero.reloadTimer = 0;
     const sk = GAME_CONFIG.skills;
     const equipped = saveManager.getEquippedSkills();
     this.skills.rocket = { level: equipped.includes('rocket') ? 1 : 0, cooldown: sk.rocket.cooldown, timer: 3.0, damage: sk.rocket.damage, radius: sk.rocket.radius, burnDuration: sk.rocket.burnDuration, burnDps: sk.rocket.burnDps };
@@ -192,7 +218,29 @@ export class Game {
     gameEvents.emit('wave_changed', { wave: 1, stageId: this.stageId || 1 });
     gameEvents.emit('kill_changed', { kills: 0 });
     gameEvents.emit('scrap_changed', { scrap: 0 });
+    gameEvents.emit('ammo_changed', {
+      ammo: this.hero.currentAmmo,
+      maxAmmo: this.hero.magazineCapacity,
+      isReloading: false,
+      progress: 1.0,
+      remainingTime: 0
+    });
     this.hud.updateSkillHUD(this);
+  }
+
+  reloadWeapon() {
+    if (this.hero.isReloading || this.hero.currentAmmo >= this.hero.magazineCapacity) return;
+    this.hero.isReloading = true;
+    this.hero.reloadTimer = 0;
+    if (typeof sound.playReload === 'function') sound.playReload();
+    this.spawnDamageText(this.hero.x, this.hero.y - 30, '🔄 换弹中...', '#f59e0b', false, true);
+    gameEvents.emit('ammo_changed', {
+      ammo: 0,
+      maxAmmo: this.hero.magazineCapacity,
+      isReloading: true,
+      progress: 0,
+      remainingTime: this.hero.reloadTime
+    });
   }
 
   restart() { this.resetGame(); }
@@ -258,9 +306,12 @@ export class Game {
 
   gainExp(amount) {
     this.hero.exp += amount;
-    if (this.hero.exp >= this.hero.expNeeded) {
-      this.hero.exp -= this.hero.expNeeded; this.hero.level++;
+    let leveledUp = false;
+    while (this.hero.exp >= this.hero.expNeeded) {
+      this.hero.exp -= this.hero.expNeeded;
+      this.hero.level++;
       this.hero.expNeeded = Math.round(this.hero.expNeeded * GAME_CONFIG.hero.expNeededGrowth + GAME_CONFIG.hero.expNeededAdd);
+      leveledUp = true;
       this.triggerLevelUp();
     }
     gameEvents.emit('exp_changed', { exp: this.hero.exp, expNeeded: this.hero.expNeeded, level: this.hero.level });
@@ -350,11 +401,56 @@ export class Game {
     }
     this.waveSystem.update(dt);
     this.combatSystem.updateAutoTarget();
-    this.hero.attackTimer += dt;
-    if (this.hero.attackTimer >= this.hero.baseAttackInterval) {
-      this.hero.attackTimer = 0;
-      this.combatSystem.shootWeapon();
+
+    // 枪械射击与换弹冷却控制 (Magazine & Reloading Loop)
+    if (this.hero.isReloading) {
+      this.hero.reloadTimer += dt;
+      const progress = Math.min(1.0, this.hero.reloadTimer / this.hero.reloadTime);
+      gameEvents.emit('ammo_changed', {
+        ammo: 0,
+        maxAmmo: this.hero.magazineCapacity,
+        isReloading: true,
+        progress,
+        remainingTime: Math.max(0, this.hero.reloadTime - this.hero.reloadTimer)
+      });
+      if (this.hero.reloadTimer >= this.hero.reloadTime) {
+        this.hero.isReloading = false;
+        this.hero.reloadTimer = 0;
+        this.hero.currentAmmo = this.hero.magazineCapacity;
+        if (typeof sound.playReloadComplete === 'function') sound.playReloadComplete();
+        this.spawnDamageText(this.hero.x, this.hero.y - 32, '⚡ 装填完毕', '#38bdf8', false, true);
+        gameEvents.emit('ammo_changed', {
+          ammo: this.hero.currentAmmo,
+          maxAmmo: this.hero.magazineCapacity,
+          isReloading: false,
+          progress: 1.0,
+          remainingTime: 0
+        });
+      }
+    } else {
+      this.hero.attackTimer += dt;
+      if (this.hero.attackTimer >= this.hero.baseAttackInterval) {
+        this.hero.attackTimer = 0;
+        if (this.hero.currentAmmo <= 0) {
+          this.reloadWeapon();
+        } else {
+          this.combatSystem.shootWeapon();
+          this.hero.currentAmmo--;
+          if (this.hero.currentAmmo <= 0) {
+            this.reloadWeapon();
+          } else {
+            gameEvents.emit('ammo_changed', {
+              ammo: this.hero.currentAmmo,
+              maxAmmo: this.hero.magazineCapacity,
+              isReloading: false,
+              progress: this.hero.currentAmmo / this.hero.magazineCapacity,
+              remainingTime: 0
+            });
+          }
+        }
+      }
     }
+
     if (this.hero.recoil > 0) this.hero.recoil = Math.max(0, this.hero.recoil - dt * 35);
     this.updateSkills(dt);
     this.combatSystem.update(dt);

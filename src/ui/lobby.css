@@ -590,6 +590,194 @@
   cursor: not-allowed;
 }
 
+/* 枪械弹匣专属扩容区域 */
+.weapon-mag-box {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px dashed rgba(250, 204, 21, 0.4);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.weapon-mag-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.weapon-mag-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  color: #fde047;
+}
+
+.weapon-mag-stats {
+  font-weight: 800;
+  color: #38bdf8;
+  font-size: 12px;
+}
+
+.weapon-mag-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.weapon-mag-btn {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(161, 98, 7, 0.35));
+  border: 1px solid rgba(250, 204, 21, 0.6);
+  color: #fef08a;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.weapon-mag-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.4), rgba(202, 138, 4, 0.5));
+  border-color: #fef08a;
+  transform: translateY(-1px);
+}
+
+.weapon-mag-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+/* 枪械强化模组专区 (力量、射速、攻速、弹匣) */
+.weapon-modules-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.weapon-mod-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.weapon-mod-card.power { border-left: 3px solid #f97316; }
+.weapon-mod-card.bulletspeed { border-left: 3px solid #38bdf8; }
+.weapon-mod-card.attackspeed { border-left: 3px solid #eab308; }
+.weapon-mod-card.magazine { border-left: 3px solid #a855f7; }
+
+.weapon-mod-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.weapon-mod-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.weapon-mod-val {
+  font-weight: 800;
+  color: #38bdf8;
+  font-size: 11.5px;
+}
+
+.weapon-mod-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.weapon-mod-req {
+  font-size: 10.5px;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.weapon-mod-btn {
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.weapon-mod-btn.power {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.5);
+  color: #fdba74;
+}
+.weapon-mod-btn.bulletspeed {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #bae6fd;
+}
+.weapon-mod-btn.attackspeed {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.5);
+  color: #fef08a;
+}
+.weapon-mod-btn.magazine {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
+  color: #e9d5ff;
+}
+
+.weapon-mod-btn:hover:not(:disabled) {
+  filter: brightness(1.2);
+  transform: translateY(-1px);
+}
+
+.weapon-mod-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.rune-shard-summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(192, 132, 252, 0.5);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #f3e8ff;
+}
+
 /* ------------------- TAB 3: 技能管理 (Skills) ------------------- */
 .skills-catalog-grid {
   display: grid;

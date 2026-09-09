@@ -283,7 +283,7 @@ export class CombatSystem {
       game.feedback.triggerHitStop(0.08);
       dropScrap = 30 + Math.floor(Math.random() * 20);
 
-      // Boss 额外掉落晶核、军备箱与专属武器零件
+      // Boss 额外掉落晶核、军备箱、枪械零件与力量/射速/攻速碎片
       const bossGems = 6 + Math.floor(Math.random() * 6);
       game.battleLoot.gems = (game.battleLoot.gems || 0) + bossGems;
       game.battleLoot.items['supply_crate'] = (game.battleLoot.items['supply_crate'] || 0) + 1;
@@ -291,26 +291,42 @@ export class CombatSystem {
       const droppedItem = rarePool[Math.floor(Math.random() * rarePool.length)];
       game.battleLoot.items[droppedItem] = (game.battleLoot.items[droppedItem] || 0) + 1;
 
+      // Boss 必额外掉落 1~2 组强化碎片
+      const shardPool = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard', 'mag_shard'];
+      const shard1 = shardPool[Math.floor(Math.random() * shardPool.length)];
+      const sCnt1 = 2 + Math.floor(Math.random() * 2);
+      game.battleLoot.items[shard1] = (game.battleLoot.items[shard1] || 0) + sCnt1;
+
       game.spawnParticles(enemy.x, enemy.y, '#ff0055', 45, 'fire');
       game.spawnParticles(enemy.x, enemy.y, '#ffaa00', 35, 'spark');
-      game.spawnDamageText(enemy.x, enemy.y - 30, '👑 首领击破! 战利品已记录', '#ffaa00', true, true);
+      game.spawnDamageText(enemy.x, enemy.y - 30, '👑 首领击破! 战利品与强化碎片已入库', '#ffaa00', true, true);
       game.activeBoss = null;
     } else {
       if (enemy.type === 'behemoth') {
         game.feedback.addTrauma(0.32);
         game.feedback.triggerHitStop(0.03);
         dropScrap = 6 + Math.floor(Math.random() * 5);
-        if (Math.random() < 0.4) {
-          const matPool = ['assault_part', 'gatling_part', 'chip_truck', 'chip_freeze', 'fluffy_shard'];
+        if (Math.random() < 0.55) {
+          const matPool = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard', 'mag_shard', 'assault_part', 'gatling_part', 'chip_truck'];
           const droppedItem = matPool[Math.floor(Math.random() * matPool.length)];
           game.battleLoot.items[droppedItem] = (game.battleLoot.items[droppedItem] || 0) + 1;
         }
       } else if (enemy.type === 'charger') {
         game.feedback.addTrauma(0.18);
         dropScrap = 3 + Math.floor(Math.random() * 3);
+        if (Math.random() < 0.25) {
+          const fastShards = ['bulletspeed_shard', 'attackspeed_shard'];
+          const droppedShard = fastShards[Math.floor(Math.random() * fastShards.length)];
+          game.battleLoot.items[droppedShard] = (game.battleLoot.items[droppedShard] || 0) + 1;
+        }
       } else {
         game.feedback.addTrauma(0.12);
         dropScrap = Math.random() < 0.65 ? (1 + Math.floor(Math.random() * 2)) : 0;
+        if (Math.random() < 0.12) {
+          const basicShards = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard'];
+          const droppedShard = basicShards[Math.floor(Math.random() * basicShards.length)];
+          game.battleLoot.items[droppedShard] = (game.battleLoot.items[droppedShard] || 0) + 1;
+        }
       }
 
       game.spawnParticles(enemy.x, enemy.y, enemy.color || '#ff2a5f', 8, 'spark');

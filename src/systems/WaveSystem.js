@@ -48,6 +48,10 @@ export class WaveSystem {
     this.waveTransitionTimer = 0;
     this.waveUpgradeTriggered = false;
     this.game.waveIntermission = false;
+    this.waveStuckTimer = 0;
+    this.isBossWave = false;
+    this.bossSpawned = false;
+    this.bossSpawnTimer = 0;
     this.wavePlan = this.levelDesign.getPlan(this.stageId, 1, this.stageConfig);
     this.waveTotalToSpawn = this.calcEnemyCount(1);
     this.waveEnemySpawnInterval = this.calcSpawnInterval(1);
@@ -74,18 +78,18 @@ export class WaveSystem {
     this.waveTransitionTimer = 0;
     this.waveUpgradeTriggered = false;
     this.game.waveIntermission = false;
+    this.waveStuckTimer = 0;
     this.wavePlan = this.levelDesign.getPlan(this.stageId, waveNum, this.stageConfig);
     this.waveTotalToSpawn = this.calcEnemyCount(waveNum);
     this.waveEnemySpawnInterval = this.calcSpawnInterval(waveNum);
-    const isBossWave = this.wavePlan.boss;
+    this.isBossWave = !!this.wavePlan.boss;
+    this.bossSpawned = false;
+    this.bossSpawnTimer = 0;
     gameEvents.emit('wave_changed', { wave: waveNum, stageId: this.stageId, wavePlan: this.wavePlan });
-    this.game.hud.showWaveBanner(waveNum, isBossWave, this.stageConfig, this.wavePlan);
-    if (isBossWave) {
+    this.game.hud.showWaveBanner(waveNum, this.isBossWave, this.stageConfig, this.wavePlan);
+    if (this.isBossWave) {
       sound.playBossAlert();
       this.game.feedback.addTrauma(0.5);
-      setTimeout(() => {
-        if (!this.game.isGameOver && !this.stageCleared) this.spawnBoss();
-      }, 1200);
     } else {
       sound.playAlarm();
     }
@@ -95,33 +99,69 @@ export class WaveSystem {
     if (this.stageCleared || this.game.isGameOver) return;
     this.waveTimer += dt;
     this.waveSpawnTimer += dt;
+
+    // 首领波次平滑召唤计时（受暂停与时间缩放约束，彻底根除 setTimeout 异步漂移）
+    if (this.isBossWave && !this.bossSpawned) {
+      this.bossSpawnTimer += dt;
+      if (this.bossSpawnTimer >= 1.2) {
+        this.bossSpawned = true;
+        this.spawnBoss();
+      }
+    }
+
     if (this.waveSpawnedCount < this.waveTotalToSpawn) {
       if (this.waveSpawnTimer >= this.waveEnemySpawnInterval) {
         this.waveSpawnTimer = 0;
         this.spawnEnemy();
       }
-    } else if (this.game.enemies.length === 0 && (!this.game.activeBoss || !this.game.activeBoss.active)) {
-      const clearWaves = this.stageConfig?.clearWaves || 0;
-      const isEndless = !!this.stageConfig?.endless;
-      if (!isEndless && clearWaves > 0 && this.wave >= clearWaves) {
-        this.onStageClear();
-        return;
-      }
+    } else {
+      // 判定是否所有怪物（含 Boss）均已消灭
+      const bossPendingOrAlive = this.isBossWave && (!this.bossSpawned || (this.game.activeBoss && this.game.activeBoss.active));
+      const allDefeated = this.game.enemies.length === 0 && !bossPendingOrAlive;
 
-      // 每通过一波怪物时触发技能抽取 (5秒不选自动选取并开启下一波)
-      if (!this.waveUpgradeTriggered) {
-        this.waveUpgradeTriggered = true;
-        this.game.waveIntermission = true;
-        if (typeof sound.playWaveClearFanfare === 'function') {
-          sound.playWaveClearFanfare();
+      if (allDefeated) {
+        const clearWaves = this.stageConfig?.clearWaves || 0;
+        const isEndless = !!this.stageConfig?.endless;
+        if (!isEndless && clearWaves > 0 && this.wave >= clearWaves) {
+          this.onStageClear();
+          return;
         }
-        const nextWave = this.wave + 1;
-        this.game.hud.showLevelUpModal(this.game, () => {
-          this.game.waveIntermission = false;
-          this.startWave(nextWave);
-        });
-        return;
+
+        // 每通过一波怪物时触发技能抽取 (5秒不选自动选取并开启下一波)
+        if (!this.waveUpgradeTriggered) {
+          this.waveUpgradeTriggered = true;
+          this.game.waveIntermission = true;
+          if (typeof sound.playWaveClearFanfare === 'function') {
+            sound.playWaveClearFanfare();
+          }
+          const nextWave = this.wave + 1;
+          this.game.hud.showLevelUpModal(this.game, () => {
+            this.game.waveIntermission = false;
+            this.startWave(nextWave);
+          });
+          return;
+        }
       }
+    }
+
+    // ---------------- 防卡死自愈看门狗 (Anti-Softlock Watchdog) ----------------
+    // 当怪物已全部清空，且已标记波次结算，但游戏不在升级状态/弹窗未展示超过 0.8 秒时，自动推进波次或通关
+    if (this.waveUpgradeTriggered && !this.game.isUpgrading && !this.stageCleared && !this.game.isGameOver) {
+      this.waveStuckTimer = (this.waveStuckTimer || 0) + dt;
+      if (this.waveStuckTimer >= 0.8) {
+        this.waveStuckTimer = 0;
+        this.waveUpgradeTriggered = false;
+        this.game.waveIntermission = false;
+        const clearWaves = this.stageConfig?.clearWaves || 0;
+        const isEndless = !!this.stageConfig?.endless;
+        if (!isEndless && clearWaves > 0 && this.wave >= clearWaves) {
+          this.onStageClear();
+        } else {
+          this.startWave(this.wave + 1);
+        }
+      }
+    } else {
+      this.waveStuckTimer = 0;
     }
   }
 
@@ -137,7 +177,13 @@ export class WaveSystem {
     // 将通关奖励与本局战利品统一结算
     if (!this.game.battleLoot) this.game.battleLoot = { scrap: 0, gems: 0, items: {} };
     this.game.battleLoot.scrap = (this.game.battleLoot.scrap || 0) + stageClearScrap;
-    this.game.battleLoot.gems = (this.game.battleLoot.gems || 0) + (15 + this.stageId * 5);
+    // 通关保底奖励：获得 2~3 个强化碎片（力量/射速/攻速/弹匣）
+    const clearShards = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard', 'mag_shard'];
+    const drop1 = clearShards[Math.floor(Math.random() * clearShards.length)];
+    const drop2 = clearShards[Math.floor(Math.random() * clearShards.length)];
+    this.game.battleLoot.items[drop1] = (this.game.battleLoot.items[drop1] || 0) + 2;
+    this.game.battleLoot.items[drop2] = (this.game.battleLoot.items[drop2] || 0) + 2;
+
     if (Math.random() < 0.75) {
       this.game.battleLoot.items['supply_crate'] = (this.game.battleLoot.items['supply_crate'] || 0) + 1;
     }

@@ -11,26 +11,26 @@ export const GAME_CONFIG = {
     assault: {
       id: 'assault', name: '先锋电磁步枪', tag: '均衡输出', icon: '🔫', materialId: 'assault_part',
       desc: '联邦哨站标配电磁突击步枪，弹道平稳且具有出色的综合战术表现。',
-      baseStats: { damage: 36, fireInterval: 0.20, bulletSpeed: 760, pierce: 1, multishot: 1, critChance: 0.14 },
-      growth: { damagePerLevel: 5, critPerLevel: 0.015 }
+      baseStats: { damage: 36, fireInterval: 0.20, bulletSpeed: 760, pierce: 1, multishot: 1, critChance: 0.14, magazineCapacity: 30, reloadTime: 1.4 },
+      growth: { damagePerLevel: 5, critPerLevel: 0.015, magazinePerLevel: 4, bulletSpeedPerLevel: 15, fireRatePerLevel: 0.003, damagePerPowerLevel: 4, bulletSpeedPerShardLevel: 25, attackSpeedPerShardRatio: 0.03 }
     },
     gatling: {
       id: 'gatling', name: '毁灭加特林风暴', tag: '超频暴射', icon: '💥', materialId: 'gatling_part',
       desc: '六管重型转管机枪，以狂暴极速倾泻金属风暴，正前方压制一切尸潮！',
-      baseStats: { damage: 22, fireInterval: 0.09, bulletSpeed: 820, pierce: 1, multishot: 1, critChance: 0.10 },
-      growth: { damagePerLevel: 3.2, fireRatePerLevel: 0.001 }
+      baseStats: { damage: 22, fireInterval: 0.09, bulletSpeed: 820, pierce: 1, multishot: 1, critChance: 0.10, magazineCapacity: 100, reloadTime: 2.2 },
+      growth: { damagePerLevel: 3.2, critPerLevel: 0.01, magazinePerLevel: 15, bulletSpeedPerLevel: 18, fireRatePerLevel: 0.0015, damagePerPowerLevel: 2.5, bulletSpeedPerShardLevel: 30, attackSpeedPerShardRatio: 0.025 }
     },
     gauss: {
       id: 'gauss', name: '泰坦高斯穿甲狙', tag: '强力贯穿', icon: '⚡', materialId: 'gauss_part',
       desc: '战术重型轨道炮，发射超音速穿甲合金弹芯，直线贯穿整条道路敌人！',
-      baseStats: { damage: 125, fireInterval: 0.55, bulletSpeed: 1050, pierce: 4, multishot: 1, critChance: 0.28 },
-      growth: { damagePerLevel: 18, critPerLevel: 0.02 }
+      baseStats: { damage: 125, fireInterval: 0.55, bulletSpeed: 1050, pierce: 4, multishot: 1, critChance: 0.28, magazineCapacity: 6, reloadTime: 1.8 },
+      growth: { damagePerLevel: 18, critPerLevel: 0.02, magazinePerLevel: 1, bulletSpeedPerLevel: 30, fireRatePerLevel: 0.008, damagePerPowerLevel: 14, bulletSpeedPerShardLevel: 45, attackSpeedPerShardRatio: 0.035 }
     },
     plasma: {
       id: 'plasma', name: '离子散射爆能枪', tag: '三路散射', icon: '💠', materialId: 'plasma_part',
       desc: '等离子高能发射器，单次齐射 3 枚离子光束弹，大幅覆盖前方战区。',
-      baseStats: { damage: 28, fireInterval: 0.32, bulletSpeed: 720, pierce: 1, multishot: 3, critChance: 0.16 },
-      growth: { damagePerLevel: 4.2, critPerLevel: 0.015 }
+      baseStats: { damage: 28, fireInterval: 0.32, bulletSpeed: 720, pierce: 1, multishot: 3, critChance: 0.16, magazineCapacity: 24, reloadTime: 1.6 },
+      growth: { damagePerLevel: 4.2, critPerLevel: 0.015, magazinePerLevel: 3, bulletSpeedPerLevel: 16, fireRatePerLevel: 0.004, damagePerPowerLevel: 3.5, bulletSpeedPerShardLevel: 25, attackSpeedPerShardRatio: 0.03 }
     }
   },
 
@@ -117,6 +117,15 @@ export const GAME_CONFIG = {
     chip_boomerang: { id: 'chip_boomerang', name: '回旋合金谐振片', category: 'skill', rarity: 'rare', icon: 'assets/items/item_chip_boomerang.png', targetId: 'boomerang', targetType: 'skill', desc: '高周波飞刃的微晶压电晶片，赋予穿透回旋刃更高的往返飞行速度与切割伤害。', usage: '用于战术技能【回旋刃】专精强化' },
     chip_laser: { id: 'chip_laser', name: '湮灭偏振聚焦镜', category: 'skill', rarity: 'legendary', icon: 'assets/items/item_chip_laser.png', targetId: 'laser', targetType: 'skill', desc: '轨道歼灭炮的纯石英折射棱镜，使贯穿全屏的湮灭激光造成毁灭性光热灼烧。', usage: '用于战术技能【湮灭射线】专精强化' },
     chip_bomber: { id: 'chip_bomber', name: '轨道轰炸定位密钥', category: 'skill', rarity: 'epic', icon: 'assets/items/item_chip_bomber.png', targetId: 'bomber', targetType: 'skill', desc: '近地轨道轰炸网络加密数据密钥，加快集束航弹投下频率并强化范围震荡。', usage: '用于战术技能【轨道轰炸】专精强化' },
+
+    // 枪械三维强化专属碎片
+    power_shard: { id: 'power_shard', name: '力量碎片', category: 'weapon', rarity: 'rare', icon: 'assets/icons/icon_level.png', targetType: 'weapon', desc: '蕴含强效动能加速高纯晶体，用于在枪械库中持续强化主武器威力与攻击力。', usage: '用于枪械【力量强化】提升攻击威力' },
+    bulletspeed_shard: { id: 'bulletspeed_shard', name: '射速碎片', category: 'weapon', rarity: 'rare', icon: 'assets/cards/icon_pierce.png', targetType: 'weapon', desc: '超导磁流体弹道微粒，用于在枪械库中升级枪械弹药出膛与飞行极速。', usage: '用于枪械【射速强化】提升子弹弹速' },
+    attackspeed_shard: { id: 'attackspeed_shard', name: '攻速碎片', category: 'weapon', rarity: 'rare', icon: 'assets/cards/icon_firerate.png', targetType: 'weapon', desc: '高频击发共振合金晶片，用于在枪械库中升级击发机构并降低射击间隔。', usage: '用于枪械【攻速强化】提升开火频率' },
+
+    // 弹匣扩容与符文强化专属碎片
+    mag_shard: { id: 'mag_shard', name: '扩容弹匣碎片', category: 'weapon', rarity: 'rare', icon: 'assets/icons/icon_part.png', targetType: 'magazine', desc: '高密聚能微缩供弹匣扩展模组组件，用于在枪械库中不断升级扩充主武器弹匣容量。', usage: '用于枪械【弹匣扩容】升级提升载弹量' },
+    rune_shard: { id: 'rune_shard', name: '远古符文碎片', category: 'rune', rarity: 'epic', icon: 'assets/icons/icon_shard.png', targetType: 'rune', desc: '铭刻着古老战术共鸣铭文的高能晶体碎片，是符文工坊中强化永久战斗符文的关键素材。', usage: '用于【符文工坊】中强化各类永久战术符文' },
 
     // 军备补给与消耗道具
     energy_potion: { id: 'energy_potion', name: '高能战术能量剂', category: 'consumable', rarity: 'rare', icon: 'assets/items/item_energy_potion.png', targetType: 'energy', desc: '军工高纯度神经活性复合营养剂，使用后可立即恢复 25 点前线作战体能。', usage: '直接在背包中使用可恢复 25 点体能' },

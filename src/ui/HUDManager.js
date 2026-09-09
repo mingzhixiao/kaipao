@@ -22,6 +22,9 @@ export class HUDManager {
       topShieldCapsule: document.getElementById('top-shield-capsule'),
       topShieldFill: document.getElementById('top-shield-fill'),
       topShieldText: document.getElementById('top-shield-text'),
+      topAmmoCapsule: document.getElementById('top-ammo-capsule'),
+      topAmmoFill: document.getElementById('top-ammo-fill'),
+      topAmmoText: document.getElementById('top-ammo-text'),
       bossEncounter: document.getElementById('boss-encounter-container'),
       bossWarningOverlay: document.getElementById('boss-warning-overlay'),
       bossHpGhost: document.getElementById('boss-hp-ghost'),
@@ -109,6 +112,23 @@ export class HUDManager {
     // 监听资源掉落飞入动效
     gameEvents.on('scrap_gained', ({ amount, x, y }) => {
       this.spawnFloatingText(x, y, amount);
+    });
+
+    // 监听枪械弹匣与换弹状态 (Event-Driven Ammo HUD)
+    gameEvents.on('ammo_changed', ({ ammo, maxAmmo, isReloading, progress, remainingTime }) => {
+      if (this.dom.topAmmoText) {
+        if (isReloading) {
+          const secs = remainingTime > 0 ? `${remainingTime.toFixed(1)}s` : '';
+          this.dom.topAmmoText.textContent = `🔄 换弹中 ${secs}`;
+        } else {
+          this.dom.topAmmoText.textContent = `${ammo}/${maxAmmo}`;
+        }
+      }
+      if (this.dom.topAmmoFill) {
+        const pct = Math.max(0, Math.min(100, Math.round(progress * 100)));
+        this.dom.topAmmoFill.style.width = pct + '%';
+        this.dom.topAmmoFill.classList.toggle('reloading', !!isReloading);
+      }
     });
   }
 
@@ -609,6 +629,13 @@ export class HUDManager {
         import('./HomeLobbyUI.js').then(({ homeLobbyUI }) => {
           homeLobbyUI.show();
         });
+      });
+    }
+    if (this.dom.topAmmoCapsule) {
+      this.dom.topAmmoCapsule.addEventListener('click', () => {
+        if (game && typeof game.reloadWeapon === 'function') {
+          game.reloadWeapon();
+        }
       });
     }
     const btnGoForge = document.getElementById('btn-gameover-forge');

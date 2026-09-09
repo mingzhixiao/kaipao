@@ -1,7 +1,7 @@
 // ---------------- 现代流行 H5 游戏首页大厅、五大管理与背包系统控制器 ----------------
 import { saveManager } from '../systems/SaveManager.js';
 import { GAME_CONFIG } from '../core/Config.js';
-import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost } from '../systems/RuneSystem.js';
+import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost, getRuneUpgradeShardCost } from '../systems/RuneSystem.js';
 
 export class HomeLobbyUI {
   constructor() {
@@ -190,8 +190,11 @@ export class HomeLobbyUI {
         <!-- Tab 6: 符文秘境 (Runes) -->
         <div class="lobby-tab-view" id="view-runes">
           <div class="section-header">
-            <div class="section-title">💠 符文矩阵工坊</div>
-            <div class="section-subtitle">全方位永久提升枪械、防御与战术属性</div>
+            <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+              <span>💠 符文矩阵工坊</span>
+              <span class="rune-shard-summary-badge" id="lobby-rune-shard-badge">🧩 远古符文碎片: 0</span>
+            </div>
+            <div class="section-subtitle">全方位永久提升枪械、防御与战术属性（消耗远古符文碎片与废料）</div>
           </div>
           <div class="filter-bar" id="rune-filter-bar">
             <div class="filter-pill active" data-filter="all">全部</div>
@@ -407,19 +410,56 @@ export class HomeLobbyUI {
     const equippedId = weaponData.equipped;
 
     container.innerHTML = Object.entries(GAME_CONFIG.weapons).map(([id, cfg]) => {
-      const state = weaponData.weapons[id] || { unlocked: false, level: 1 };
+      const state = weaponData.weapons[id] || { unlocked: false, level: 1, powerLevel: 1, bulletSpeedLevel: 1, attackSpeedLevel: 1, magazineLevel: 1 };
       const isEquipped = id === equippedId;
       const partCost = 2 + (state.level - 1) * 2;
       const scrapCost = 60 + (state.level - 1) * 45;
       const unlockCost = state.unlockCost || 150;
-      const damage = Math.round(cfg.baseStats.damage + (state.level - 1) * cfg.growth.damagePerLevel);
-      const fireInterval = (cfg.baseStats.fireInterval * (cfg.growth.fireRatePerLevel ? Math.pow(0.98, state.level - 1) : 1)).toFixed(2);
+
+      // 实时动态综合数值
+      const damage = saveManager.getWeaponDamage(id);
+      const bulletSpeed = saveManager.getWeaponBulletSpeed(id);
+      const fireInterval = saveManager.getWeaponFireInterval(id);
 
       const partItem = GAME_CONFIG.items[cfg.materialId] || { name: '专属零件', icon: '🔩' };
       const heldParts = saveManager.getItemCount(cfg.materialId);
       const canAffordParts = heldParts >= partCost;
       const canAffordScrap = saveManager.getScrap() >= scrapCost;
       const canUpgrade = state.unlocked && canAffordParts && canAffordScrap;
+
+      // 1. 力量强化 (power_shard)
+      const pLevel = saveManager.getWeaponPowerLevel(id);
+      const nextDmg = damage + (cfg.growth.damagePerPowerLevel || 4);
+      const pShardCost = 2 + Math.floor((pLevel - 1) * 1.5);
+      const pScrapCost = 35 + (pLevel - 1) * 25;
+      const heldPShards = saveManager.getItemCount('power_shard');
+      const canUpgradePower = state.unlocked && heldPShards >= pShardCost && saveManager.getScrap() >= pScrapCost;
+
+      // 2. 射速强化 (bulletspeed_shard)
+      const bsLevel = saveManager.getWeaponBulletSpeedLevel(id);
+      const nextSpd = bulletSpeed + (cfg.growth.bulletSpeedPerShardLevel || 25);
+      const bsShardCost = 2 + Math.floor((bsLevel - 1) * 1.5);
+      const bsScrapCost = 35 + (bsLevel - 1) * 25;
+      const heldBsShards = saveManager.getItemCount('bulletspeed_shard');
+      const canUpgradeBulletSpeed = state.unlocked && heldBsShards >= bsShardCost && saveManager.getScrap() >= bsScrapCost;
+
+      // 3. 攻速强化 (attackspeed_shard)
+      const asLevel = saveManager.getWeaponAttackSpeedLevel(id);
+      const nextInterval = Math.max(0.06, fireInterval * (1 - (cfg.growth.attackSpeedPerShardRatio || 0.03))).toFixed(2);
+      const asShardCost = 2 + Math.floor((asLevel - 1) * 1.5);
+      const asScrapCost = 40 + (asLevel - 1) * 30;
+      const heldAsShards = saveManager.getItemCount('attackspeed_shard');
+      const canUpgradeAttackSpeed = state.unlocked && heldAsShards >= asShardCost && saveManager.getScrap() >= asScrapCost;
+
+      // 4. 弹匣扩容 (mag_shard)
+      const magLevel = saveManager.getWeaponMagazineLevel(id);
+      const magCapacity = saveManager.getWeaponMagazineCapacity(id);
+      const nextMagCapacity = magCapacity + (cfg.growth.magazinePerLevel || 4);
+      const reloadTime = (cfg.baseStats.reloadTime || 1.5).toFixed(1);
+      const magShardCost = 2 + Math.floor((magLevel - 1) * 1.5);
+      const magScrapCost = 40 + (magLevel - 1) * 30;
+      const heldMagShards = saveManager.getItemCount('mag_shard');
+      const canUpgradeMag = state.unlocked && heldMagShards >= magShardCost && saveManager.getScrap() >= magScrapCost;
 
       return `
         <div class="weapon-card ${isEquipped ? 'equipped' : ''}">
@@ -429,7 +469,7 @@ export class HomeLobbyUI {
               <div class="weapon-name-wrap">
                 <b>${cfg.name}</b>
                 <span class="weapon-tag">${cfg.tag}</span>
-                <div style="font-size:11px;color:#facc15;font-weight:800;margin-top:2px;">Lv.${state.level}</div>
+                <div style="font-size:11px;color:#facc15;font-weight:800;margin-top:2px;">枪械阶位: Lv.${state.level}</div>
               </div>
             </div>
             ${isEquipped ? '<span style="color:#38bdf8;font-size:11px;font-weight:800;">✓ 已装备</span>' : ''}
@@ -439,16 +479,28 @@ export class HomeLobbyUI {
 
           <div class="weapon-stats-grid">
             <div class="weapon-stat-item">
-              <span class="weapon-stat-label">基础威力</span>
-              <span class="weapon-stat-val">${damage}</span>
+              <span class="weapon-stat-label">综合威力</span>
+              <span class="weapon-stat-val" style="color:#fb923c;">${damage}</span>
             </div>
             <div class="weapon-stat-item">
               <span class="weapon-stat-label">射击间隔</span>
-              <span class="weapon-stat-val">${fireInterval}s</span>
+              <span class="weapon-stat-val" style="color:#fde047;">${fireInterval}s</span>
+            </div>
+            <div class="weapon-stat-item">
+              <span class="weapon-stat-label">弹丸射速</span>
+              <span class="weapon-stat-val" style="color:#38bdf8;">${bulletSpeed}</span>
+            </div>
+            <div class="weapon-stat-item">
+              <span class="weapon-stat-label">弹匣容量</span>
+              <span class="weapon-stat-val" style="color:#a855f7;">${magCapacity}发</span>
             </div>
             <div class="weapon-stat-item">
               <span class="weapon-stat-label">穿透/弹道</span>
               <span class="weapon-stat-val">${cfg.baseStats.pierce}穿 / ${cfg.baseStats.multishot}弹</span>
+            </div>
+            <div class="weapon-stat-item">
+              <span class="weapon-stat-label">换弹耗时</span>
+              <span class="weapon-stat-val" style="color:#94a3b8;">${reloadTime}s</span>
             </div>
           </div>
 
@@ -456,10 +508,69 @@ export class HomeLobbyUI {
             <div class="mat-req-box">
               <div class="mat-req-left">
                 <span>${this.formatItemIcon(partItem.icon, partItem.name, 'mat-req-icon-img')}</span>
-                <span>${partItem.name}</span>
+                <span>${partItem.name} (升级枪械主等级提升威力/射速/攻速)</span>
               </div>
               <div class="mat-req-status ${canAffordParts ? 'met' : 'unmet'}">
                 ${heldParts}/${partCost} ${canAffordParts ? '✓' : '✕ (缺少)'}
+              </div>
+            </div>
+
+            <!-- 碎片升级专区 (力量、射速、攻速、弹匣) -->
+            <div class="weapon-modules-container">
+              <!-- 力量强化 -->
+              <div class="weapon-mod-card power">
+                <div class="weapon-mod-header">
+                  <span class="weapon-mod-title">💪 力量模组 (Lv.${pLevel})</span>
+                  <span class="weapon-mod-val">${damage} ➔ <b style="color:#fb923c;">${nextDmg}</b> 威力</span>
+                </div>
+                <div class="weapon-mod-body">
+                  <span class="weapon-mod-req">力量碎片 ${heldPShards}/${pShardCost}</span>
+                  <button class="weapon-mod-btn power" data-action="upgrade-power" data-id="${id}" data-scost="${pScrapCost}" data-hcost="${pShardCost}" ${!canUpgradePower ? 'disabled' : ''}>
+                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${pScrapCost} 强击
+                  </button>
+                </div>
+              </div>
+
+              <!-- 射速强化 -->
+              <div class="weapon-mod-card bulletspeed">
+                <div class="weapon-mod-header">
+                  <span class="weapon-mod-title">🚀 射速模组 (Lv.${bsLevel})</span>
+                  <span class="weapon-mod-val">${bulletSpeed} ➔ <b style="color:#38bdf8;">${nextSpd}</b> 弹速</span>
+                </div>
+                <div class="weapon-mod-body">
+                  <span class="weapon-mod-req">射速碎片 ${heldBsShards}/${bsShardCost}</span>
+                  <button class="weapon-mod-btn bulletspeed" data-action="upgrade-bulletspeed" data-id="${id}" data-scost="${bsScrapCost}" data-hcost="${bsShardCost}" ${!canUpgradeBulletSpeed ? 'disabled' : ''}>
+                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${bsScrapCost} 提速
+                  </button>
+                </div>
+              </div>
+
+              <!-- 攻速强化 -->
+              <div class="weapon-mod-card attackspeed">
+                <div class="weapon-mod-header">
+                  <span class="weapon-mod-title">⚡ 攻速模组 (Lv.${asLevel})</span>
+                  <span class="weapon-mod-val">${fireInterval}s ➔ <b style="color:#fde047;">${nextInterval}s</b> 间隔</span>
+                </div>
+                <div class="weapon-mod-body">
+                  <span class="weapon-mod-req">攻速碎片 ${heldAsShards}/${asShardCost}</span>
+                  <button class="weapon-mod-btn attackspeed" data-action="upgrade-attackspeed" data-id="${id}" data-scost="${asScrapCost}" data-hcost="${asShardCost}" ${!canUpgradeAttackSpeed ? 'disabled' : ''}>
+                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${asScrapCost} 频发
+                  </button>
+                </div>
+              </div>
+
+              <!-- 弹匣扩容 -->
+              <div class="weapon-mod-card magazine">
+                <div class="weapon-mod-header">
+                  <span class="weapon-mod-title">🔋 弹匣扩容 (Lv.${magLevel})</span>
+                  <span class="weapon-mod-val">${magCapacity} ➔ <b style="color:#a855f7;">${nextMagCapacity} 发</b></span>
+                </div>
+                <div class="weapon-mod-body">
+                  <span class="weapon-mod-req">弹匣碎片 ${heldMagShards}/${magShardCost}</span>
+                  <button class="weapon-mod-btn magazine" data-action="upgrade-magazine" data-id="${id}" data-scost="${magScrapCost}" data-hcost="${magShardCost}" ${!canUpgradeMag ? 'disabled' : ''}>
+                    <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${magScrapCost} 扩容
+                  </button>
+                </div>
               </div>
             </div>
           ` : ''}
@@ -467,7 +578,7 @@ export class HomeLobbyUI {
           <div class="weapon-actions">
             ${state.unlocked ? `
               <button class="weapon-btn upgrade" data-action="upgrade-weapon" data-id="${id}" data-scost="${scrapCost}" data-pcost="${partCost}" ${!canUpgrade ? 'disabled' : ''}>
-                <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${scrapCost} 强化
+                <img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${scrapCost} 枪械升阶
               </button>
               <button class="weapon-btn primary" data-action="equip-weapon" data-id="${id}" ${isEquipped ? 'disabled' : ''}>
                 ${isEquipped ? '已出战' : '装备此枪'}
@@ -493,6 +604,22 @@ export class HomeLobbyUI {
           const scost = parseInt(btn.dataset.scost, 10);
           const pcost = parseInt(btn.dataset.pcost, 10);
           if (saveManager.upgradeWeapon(id, scost, pcost)) this.render();
+        } else if (action === 'upgrade-power') {
+          const scost = parseInt(btn.dataset.scost, 10);
+          const hcost = parseInt(btn.dataset.hcost, 10);
+          if (saveManager.upgradeWeaponPower(id, scost, hcost)) this.render();
+        } else if (action === 'upgrade-bulletspeed') {
+          const scost = parseInt(btn.dataset.scost, 10);
+          const hcost = parseInt(btn.dataset.hcost, 10);
+          if (saveManager.upgradeWeaponBulletSpeed(id, scost, hcost)) this.render();
+        } else if (action === 'upgrade-attackspeed') {
+          const scost = parseInt(btn.dataset.scost, 10);
+          const hcost = parseInt(btn.dataset.hcost, 10);
+          if (saveManager.upgradeWeaponAttackSpeed(id, scost, hcost)) this.render();
+        } else if (action === 'upgrade-magazine') {
+          const scost = parseInt(btn.dataset.scost, 10);
+          const hcost = parseInt(btn.dataset.hcost, 10);
+          if (saveManager.upgradeWeaponMagazine(id, scost, hcost)) this.render();
         } else if (action === 'unlock-weapon') {
           const cost = parseInt(btn.dataset.cost, 10);
           if (saveManager.unlockWeapon(id, cost)) this.render();
@@ -667,8 +794,10 @@ export class HomeLobbyUI {
     };
 
     let actionButtonHtml = '';
-    if (item.targetType === 'weapon') {
+    if (item.targetType === 'weapon' || item.targetType === 'magazine') {
       actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往改装枪械</button>`;
+    } else if (item.targetType === 'rune') {
+      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往符文矩阵</button>`;
     } else if (item.targetType === 'pet') {
       actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往培养宠物</button>`;
     } else if (item.targetType === 'skill') {
@@ -715,8 +844,10 @@ export class HomeLobbyUI {
     if (btnAction) {
       btnAction.onclick = () => {
         modal.style.display = 'none';
-        if (item.targetType === 'weapon') {
+        if (item.targetType === 'weapon' || item.targetType === 'magazine') {
           this.switchTab('weapons');
+        } else if (item.targetType === 'rune') {
+          this.switchTab('runes');
         } else if (item.targetType === 'pet') {
           this.switchTab('pets');
         } else if (item.targetType === 'skill') {
@@ -877,19 +1008,28 @@ export class HomeLobbyUI {
     });
   }
 
-  // 6. 符文管理
+  // 6. 符文管理 (消耗远古符文碎片 rune_shard + 废料)
   renderRunes() {
     const container = document.getElementById('runes-list');
     if (!container) return;
     runeSystem.reload();
+
+    const heldRuneShards = saveManager.getItemCount('rune_shard');
+    const badgeEl = document.getElementById('lobby-rune-shard-badge');
+    if (badgeEl) {
+      badgeEl.textContent = `🧩 远古符文碎片: ${heldRuneShards}`;
+    }
 
     const filtered = RUNE_CATALOG.filter(r => this.runeFilter === 'all' || r.category === this.runeFilter);
 
     container.innerHTML = filtered.map(rune => {
       const level = runeSystem.getLevel(rune.id);
       const isMax = level >= rune.maxLevel;
-      const cost = isMax ? 0 : getRuneUpgradeCost(rune, level);
-      const canAfford = saveManager.getScrap() >= cost && !isMax;
+      const scrapCost = isMax ? 0 : getRuneUpgradeCost(rune, level);
+      const shardCost = isMax ? 0 : getRuneUpgradeShardCost(rune, level);
+      const canAffordScrap = saveManager.getScrap() >= scrapCost;
+      const canAffordShards = heldRuneShards >= shardCost;
+      const canAfford = canAffordScrap && canAffordShards && !isMax;
 
       return `
         <div class="rune-item-card cat-${rune.category}">
@@ -901,10 +1041,17 @@ export class HomeLobbyUI {
             <div>
               <div class="rune-item-name">${rune.name} <span style="font-size:11px;color:#38bdf8;">Lv.${level}/${rune.maxLevel}</span></div>
               <div class="rune-item-desc">${rune.desc}</div>
+              ${!isMax ? `
+                <div style="font-size:11px;color:#cbd5e1;margin-top:3px;display:flex;align-items:center;gap:6px;">
+                  <span>需碎片: <b style="color:${canAffordShards ? '#4ade80' : '#ef4444'};">${heldRuneShards}/${shardCost}</b></span>
+                  <span>|</span>
+                  <span>需金币: <b style="color:${canAffordScrap ? '#fde047' : '#ef4444'};">${scrapCost}</b></span>
+                </div>
+              ` : ''}
             </div>
           </div>
           <button class="rune-item-btn" data-action="upgrade-rune" data-id="${rune.id}" ${!canAfford ? 'disabled' : ''}>
-            ${isMax ? '已满级' : `<img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${cost} 强化`}
+            ${isMax ? '已满级' : `<img class="ui-icon-inline" src="assets/icons/icon_coin.png" alt="Coin"> ${scrapCost} 强化`}
           </button>
         </div>
       `;
@@ -977,20 +1124,28 @@ export class HomeLobbyUI {
     }
     this.hide();
 
-    // 应用装备的枪械与强化等级属性
+    // 应用装备的枪械综合属性（主等级 + 力量/射速/攻速/弹匣碎片等级）
     const equippedWeaponId = saveManager.getEquippedWeapon();
     const weaponConfig = GAME_CONFIG.weapons[equippedWeaponId] || GAME_CONFIG.weapons.assault;
     const weaponLevel = saveManager.getWeaponData().weapons[equippedWeaponId]?.level || 1;
 
+    const actualDamage = saveManager.getWeaponDamage(equippedWeaponId);
+    const actualBulletSpeed = saveManager.getWeaponBulletSpeed(equippedWeaponId);
+    const actualFireInterval = saveManager.getWeaponFireInterval(equippedWeaponId);
+    const actualMagazineCapacity = saveManager.getWeaponMagazineCapacity(equippedWeaponId);
+
     this.game.weapon = {
       ...GAME_CONFIG.weapon,
-      damage: Math.round(weaponConfig.baseStats.damage + (weaponLevel - 1) * weaponConfig.growth.damagePerLevel),
-      bulletSpeed: weaponConfig.baseStats.bulletSpeed,
+      damage: actualDamage,
+      bulletSpeed: actualBulletSpeed,
       pierceCount: weaponConfig.baseStats.pierce,
       multishot: weaponConfig.baseStats.multishot,
       critChance: weaponConfig.baseStats.critChance + (weaponLevel - 1) * (weaponConfig.growth.critPerLevel || 0)
     };
-    this.game.hero.baseAttackInterval = weaponConfig.baseStats.fireInterval;
+    this.game.hero.baseAttackInterval = actualFireInterval;
+    this.game.hero.magazineCapacity = actualMagazineCapacity;
+    this.game.hero.currentAmmo = actualMagazineCapacity;
+    this.game.hero.reloadTime = weaponConfig.baseStats.reloadTime || 1.4;
 
     // 应用关卡与开战
     this.game.startStage(stageId);
