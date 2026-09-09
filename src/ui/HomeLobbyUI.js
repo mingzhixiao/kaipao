@@ -898,7 +898,7 @@ export class HomeLobbyUI {
     });
   }
 
-  // 4. 战术背包 (Backpack / Inventory)
+  // 4. 战术背包 (Backpack / Inventory) - 只展示数量大于 0 的物资
   renderBackpack() {
     const container = document.getElementById('backpack-items-list');
     const totalHeldEl = document.getElementById('backpack-total-held');
@@ -911,12 +911,24 @@ export class HomeLobbyUI {
     const filteredKeys = allItemKeys.filter(key => {
       const cfg = GAME_CONFIG.items[key];
       const count = inventory[key] || 0;
-      if (count > 0) totalItems++;
+      if (count <= 0) return false; // 数量为 0 不展示
+      totalItems++;
       if (this.backpackFilter === 'all') return true;
       return cfg.category === this.backpackFilter;
     });
 
     if (totalHeldEl) totalHeldEl.textContent = `当前仓位: ${totalItems} 种素材物资`;
+
+    if (filteredKeys.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 45px 20px; color: #64748b; text-align: center;">
+          <span style="font-size: 40px; margin-bottom: 8px;">🎒</span>
+          <div style="font-size: 14px; font-weight: bold; color: #94a3b8;">暂无可展示的物资</div>
+          <div style="font-size: 11px; margin-top: 4px; color: #64748b;">出击前线战区关卡或进行极速扫荡，即可收集各类战备素材与图纸！</div>
+        </div>
+      `;
+      return;
+    }
 
     container.innerHTML = filteredKeys.map(key => {
       const item = GAME_CONFIG.items[key];
