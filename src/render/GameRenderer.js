@@ -355,20 +355,44 @@ export class GameRenderer {
         this.renderBossWeapons(ctx, size, phase, isMoving, attackPhase);
       }
 
-      // 7. 极简科技血条
+      // 7. 极简科技生命条与高能护盾双层条
+      const hasShield = (e.maxShield > 0 && e.shield > 0);
+      const shieldRatio = hasShield ? Math.max(0, Math.min(1, e.shield / e.maxShield)) : 0;
+      
       const barW = (e.isBoss ? e.radius * 2.5 : e.radius * 1.9) * depthScale;
       const barH = e.isBoss ? 6 : 4;
-      const barY = (-e.radius - (e.isBoss ? 16 : 10)) * depthScale;
+      const shieldBarH = hasShield ? (e.isBoss ? 5 : 3) : 0;
+      const barY = (-e.radius - (e.isBoss ? 18 : 12) - (hasShield ? (shieldBarH + 2) : 0)) * depthScale;
       const hpRatio = Math.max(0, e.hp / e.maxHp);
 
-      // 血条外底框与黑边
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-      ctx.fillRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2);
+      // 护盾装甲电磁偏转力场环身光晕
+      if (hasShield) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, (e.radius + (e.isBoss ? 6 : 3.5)) * depthScale, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 240, 255, ${0.35 + 0.15 * Math.sin(phase * 4)})`;
+        ctx.lineWidth = e.isBoss ? 2.8 : 1.6;
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = e.isBoss ? 10 : 5;
+        ctx.stroke();
+        ctx.restore();
 
-      // 血条鲜明渐变
+        // 绘制顶部高能护盾条 (亮青蓝能量色 #00f0ff / #38bdf8)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(-barW / 2 - 1, barY - 1, barW + 2, shieldBarH + 2);
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillRect(-barW / 2, barY, barW * shieldRatio, shieldBarH);
+      }
+
+      // 生命条
+      const hpY = barY + (hasShield ? (shieldBarH + 2) : 0);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+      ctx.fillRect(-barW / 2 - 1, hpY - 1, barW + 2, barH + 2);
+
+      // 生命渐变色彩
       const hpColor = e.isBoss ? '#ff0055' : (e.type === 'behemoth' ? '#a855f7' : (e.type === 'charger' ? '#f97316' : '#22c55e'));
       ctx.fillStyle = hpColor;
-      ctx.fillRect(-barW / 2, barY, barW * hpRatio, barH);
+      ctx.fillRect(-barW / 2, hpY, barW * hpRatio, barH);
 
       if (e.isBoss) {
         ctx.font = 'bold 12px Rajdhani, monospace, sans-serif';
@@ -376,7 +400,8 @@ export class GameRenderer {
         ctx.textAlign = 'center';
         ctx.shadowColor = '#000';
         ctx.shadowBlur = 6;
-        ctx.fillText('👑 突变暴君-终结者', 0, barY - 6);
+        const shieldText = hasShield ? ` [🛡️ ${Math.ceil(e.shield)}]` : '';
+        ctx.fillText(`👑 ${e.bossTitle || '战区首领'}${shieldText}`, 0, barY - 6);
         ctx.shadowBlur = 0;
       }
 

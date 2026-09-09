@@ -3,34 +3,34 @@
 export const GAME_CONFIG = {
   viewport: { baseWidth: 450, baseHeight: 800, roadMargin: 24 },
   fortress: { maxHp: 1000, maxShield: 300, shieldRegenDelay: 3.0, shieldRegenRate: 25, height: 100 },
-  hero: { baseAttackInterval: 0.36, minAttackInterval: 0.10, expNeededBase: 25, expNeededGrowth: 1.32, expNeededAdd: 8, magnetRange: 130 },
+  hero: { baseAttackInterval: 0.52, minAttackInterval: 0.18, expNeededBase: 25, expNeededGrowth: 1.32, expNeededAdd: 8, magnetRange: 130 },
   weapon: { damage: 38, critChance: 0.12, critMult: 2.0, bulletSpeed: 720, bulletRadius: 4, bulletLife: 2.0, pierceCount: 1, multishot: 1, spreadAngle: 0.14 },
   
-  // 枪械武器库体系 (平衡初射速与手感)
+  // 枪械武器库体系 (平衡射速节奏，提供更扎实的射击后坐与打击质感)
   weapons: {
     assault: {
       id: 'assault', name: '先锋电磁步枪', tag: '均衡输出', icon: '🔫', materialId: 'assault_part',
       desc: '联邦哨站标配电磁突击步枪，弹道平稳且具有出色的综合战术表现。',
-      baseStats: { damage: 40, fireInterval: 0.36, bulletSpeed: 720, pierce: 1, multishot: 1, critChance: 0.14, magazineCapacity: 30, reloadTime: 1.4 },
-      growth: { damagePerLevel: 6, critPerLevel: 0.015, magazinePerLevel: 4, bulletSpeedPerLevel: 15, fireRatePerLevel: 0.005, damagePerPowerLevel: 4, bulletSpeedPerShardLevel: 25, attackSpeedPerShardRatio: 0.03 }
+      baseStats: { damage: 42, fireInterval: 0.52, bulletSpeed: 720, pierce: 1, multishot: 1, critChance: 0.14, magazineCapacity: 30, reloadTime: 1.4 },
+      growth: { damagePerLevel: 6, critPerLevel: 0.015, magazinePerLevel: 4, bulletSpeedPerLevel: 15, fireRatePerLevel: 0.003, damagePerPowerLevel: 4, bulletSpeedPerShardLevel: 25, attackSpeedPerShardRatio: 0.02 }
     },
     gatling: {
       id: 'gatling', name: '毁灭加特林风暴', tag: '超频暴射', icon: '💥', materialId: 'gatling_part',
       desc: '六管重型转管机枪，以狂暴极速倾泻金属风暴，正前方压制一切尸潮！',
-      baseStats: { damage: 24, fireInterval: 0.14, bulletSpeed: 800, pierce: 1, multishot: 1, critChance: 0.10, magazineCapacity: 80, reloadTime: 2.2 },
-      growth: { damagePerLevel: 3.5, critPerLevel: 0.01, magazinePerLevel: 12, bulletSpeedPerLevel: 18, fireRatePerLevel: 0.002, damagePerPowerLevel: 2.5, bulletSpeedPerShardLevel: 30, attackSpeedPerShardRatio: 0.025 }
+      baseStats: { damage: 26, fireInterval: 0.24, bulletSpeed: 800, pierce: 1, multishot: 1, critChance: 0.10, magazineCapacity: 80, reloadTime: 2.2 },
+      growth: { damagePerLevel: 3.5, critPerLevel: 0.01, magazinePerLevel: 12, bulletSpeedPerLevel: 18, fireRatePerLevel: 0.0015, damagePerPowerLevel: 2.5, bulletSpeedPerShardLevel: 30, attackSpeedPerShardRatio: 0.018 }
     },
     gauss: {
       id: 'gauss', name: '泰坦高斯穿甲狙', tag: '强力贯穿', icon: '⚡', materialId: 'gauss_part',
       desc: '战术重型轨道炮，发射超音速穿甲合金弹芯，直线贯穿整条道路敌人！',
-      baseStats: { damage: 135, fireInterval: 0.65, bulletSpeed: 1050, pierce: 4, multishot: 1, critChance: 0.28, magazineCapacity: 6, reloadTime: 1.8 },
-      growth: { damagePerLevel: 20, critPerLevel: 0.02, magazinePerLevel: 1, bulletSpeedPerLevel: 30, fireRatePerLevel: 0.008, damagePerPowerLevel: 14, bulletSpeedPerShardLevel: 45, attackSpeedPerShardRatio: 0.035 }
+      baseStats: { damage: 145, fireInterval: 0.92, bulletSpeed: 1050, pierce: 4, multishot: 1, critChance: 0.28, magazineCapacity: 6, reloadTime: 1.8 },
+      growth: { damagePerLevel: 20, critPerLevel: 0.02, magazinePerLevel: 1, bulletSpeedPerLevel: 30, fireRatePerLevel: 0.005, damagePerPowerLevel: 14, bulletSpeedPerShardLevel: 45, attackSpeedPerShardRatio: 0.025 }
     },
     plasma: {
       id: 'plasma', name: '离子散射爆能枪', tag: '三路散射', icon: '💠', materialId: 'plasma_part',
       desc: '等离子高能发射器，单次齐射 3 枚离子光束弹，大幅覆盖前方战区。',
-      baseStats: { damage: 32, fireInterval: 0.42, bulletSpeed: 680, pierce: 1, multishot: 3, critChance: 0.16, magazineCapacity: 24, reloadTime: 1.6 },
-      growth: { damagePerLevel: 4.8, critPerLevel: 0.015, magazinePerLevel: 3, bulletSpeedPerLevel: 16, fireRatePerLevel: 0.005, damagePerPowerLevel: 3.5, bulletSpeedPerShardLevel: 25, attackSpeedPerShardRatio: 0.03 }
+      baseStats: { damage: 35, fireInterval: 0.62, bulletSpeed: 680, pierce: 1, multishot: 3, critChance: 0.16, magazineCapacity: 24, reloadTime: 1.6 },
+      growth: { damagePerLevel: 4.8, critPerLevel: 0.015, magazinePerLevel: 3, bulletSpeedPerLevel: 16, fireRatePerLevel: 0.003, damagePerPowerLevel: 3.5, bulletSpeedPerShardLevel: 25, attackSpeedPerShardRatio: 0.02 }
     }
   },
 
@@ -55,8 +55,8 @@ export const GAME_CONFIG = {
 
   // 双模式配置 (普通 vs 精英)
   modes: {
-    normal: { id: 'normal', name: '普通模式', tag: '标准探索', color: '#38bdf8', hpMult: 1.0, atkMult: 1.0, countMult: 1.0, scrapMult: 1.0, shardMult: 1.0, gemChance: 0.15, desc: '标准的尸潮进攻强度，适合开荒推进与稳步收集素材。' },
-    elite: { id: 'elite', name: '精英模式', tag: '极度凶险', color: '#f43f5e', hpMult: 1.6, atkMult: 1.85, countMult: 1.35, scrapMult: 2.2, shardMult: 2.0, gemChance: 0.70, desc: '极度高危作战！感染者数量与破坏力大幅攀升，所有战利品掉落与稀有芯片翻倍！' }
+    normal: { id: 'normal', name: '普通模式', tag: '标准探索', color: '#38bdf8', hpMult: 1.0, shieldMult: 1.0, atkMult: 1.0, countMult: 1.0, scrapMult: 1.0, shardMult: 1.0, gemChance: 0.15, desc: '标准的尸潮进攻强度，适合开荒推进与稳步收集素材。' },
+    elite: { id: 'elite', name: '精英模式', tag: '极度凶险', color: '#f43f5e', hpMult: 1.85, shieldMult: 1.6, atkMult: 1.85, countMult: 1.35, scrapMult: 2.2, shardMult: 2.0, gemChance: 0.70, desc: '极度高危作战！感染者不仅血量与装甲护盾大幅强化，破坏力亦翻倍，所有战利品与芯片极高爆率！' }
   },
 
   // 五大递进战区 (5 大主题战区 x 10 关 = 50 关 + 无尽终极深渊)
@@ -186,22 +186,58 @@ export const GAME_CONFIG = {
     mag_shard: { id: 'mag_shard', name: '扩容弹匣碎片', category: 'weapon', rarity: 'rare', icon: 'assets/icons/icon_part.png', targetType: 'magazine', desc: '高密聚能微缩供弹匣扩展模组组件，用于在枪械库中不断升级扩充主武器弹匣容量。', usage: '用于枪械【弹匣扩容】升级提升载弹量' },
     rune_shard: { id: 'rune_shard', name: '远古符文碎片', category: 'rune', rarity: 'epic', icon: 'assets/icons/icon_shard.png', targetType: 'rune', desc: '铭刻着古老战术共鸣铭文的高能晶体碎片，是符文工坊中强化永久战斗符文的关键素材。', usage: '用于【符文工坊】中强化各类永久战术符文' },
 
+    // 精英模式专属稀有枪械核心 (用于 6 级以上千级突破强化)
+    rare_weapon_shard: { id: 'rare_weapon_shard', name: '稀有军工枪械核心', category: 'weapon', rarity: 'epic', icon: 'assets/items/item_assault_part.png', targetType: 'weapon', desc: '军工级精密稀土超导合金核心，仅在【精英模式】击破狂暴感染者或扫荡精英关卡产出。用于枪械 6 级以上千级强化突破！', usage: '用于枪械 Lv.6 后的千级强化突破' },
+
     // 军备补给与消耗道具
     energy_potion: { id: 'energy_potion', name: '高能战术能量剂', category: 'consumable', rarity: 'rare', icon: 'assets/items/item_energy_potion.png', targetType: 'energy', desc: '军工高纯度神经活性复合营养剂，使用后可立即恢复 25 点前线作战体能。', usage: '直接在背包中使用可恢复 25 点体能' },
     supply_crate: { id: 'supply_crate', name: '前线战略军备箱', category: 'consumable', rarity: 'epic', icon: 'assets/items/item_supply_crate.png', targetType: 'crate', desc: '前线空投的高规格密封物资箱，开启可随机获得多种枪械零件、技能芯片与稀有宠物基因。', usage: '直接在背包中开启抽取战术物资' }
   },
 
-  // 怪物基础数值体系 (平滑初期第 1 关难度)
+  // 枪械千级强化体系配置与消耗曲线 (理论上限 1000 级)
+  MAX_WEAPON_STAT_LEVEL: 1000,
+  getWeaponUpgradeRequirements(curLevel = 1) {
+    if (curLevel >= 1000) return null;
+    let scrapCost = 30;
+    let basicShardCost = 1;
+    let rareShardCost = 0;
+
+    if (curLevel <= 5) {
+      scrapCost = 30 + (curLevel - 1) * 25;
+      basicShardCost = 1 + Math.floor((curLevel - 1) * 0.5);
+      rareShardCost = 0; // 前 5 级无需稀有核心，轻松快速升级
+    } else if (curLevel <= 15) {
+      scrapCost = 150 + Math.floor(Math.pow(curLevel, 1.25) * 16);
+      basicShardCost = 2 + Math.floor(curLevel * 0.35);
+      rareShardCost = 1; // 6~15 级每次需要 1 个稀有核心
+    } else if (curLevel <= 50) {
+      scrapCost = 450 + Math.floor(Math.pow(curLevel, 1.35) * 20);
+      basicShardCost = 3 + Math.floor(curLevel * 0.45);
+      rareShardCost = 2 + Math.floor((curLevel - 15) / 12);
+    } else if (curLevel <= 200) {
+      scrapCost = 1600 + Math.floor(Math.pow(curLevel, 1.45) * 24);
+      basicShardCost = 8 + Math.floor(curLevel * 0.55);
+      rareShardCost = Math.min(25, 5 + Math.floor(curLevel / 20));
+    } else {
+      scrapCost = Math.min(500000, 8000 + Math.floor(Math.pow(curLevel, 1.5) * 28));
+      basicShardCost = Math.min(200, 15 + Math.floor(curLevel * 0.6));
+      rareShardCost = Math.min(50, 12 + Math.floor(curLevel / 35));
+    }
+
+    return { scrapCost, basicShardCost, rareShardCost };
+  },
+
+  // 怪物基础数值体系 (强化生命基数与护盾装甲偏振系数)
   enemies: {
-    runner: { radius: 20, baseHp: 52, speedMin: 48, speedMax: 68, attackPower: 20, attackCooldown: 1.2, expVal: 6, color: '#10b981', name: '普通感染者' },
-    charger: { radius: 18, baseHp: 46, speedMin: 95, speedMax: 125, attackPower: 22, attackCooldown: 0.9, expVal: 9, color: '#f59e0b', name: '疾行冲锋者' },
-    behemoth: { radius: 36, baseHp: 320, speedMin: 40, speedMax: 52, attackPower: 65, attackCooldown: 1.5, expVal: 22, color: '#ef4444', name: '重装巨尸' },
-    boss_overlord: { radius: 48, baseHp: 950, speed: 40, attackPower: 110, attackCooldown: 1.4, expVal: 65, color: '#ff2a5f', stompInterval: 4.0, name: '哨站行刑官' }
+    runner: { radius: 20, baseHp: 75, speedMin: 48, speedMax: 68, attackPower: 22, attackCooldown: 1.2, expVal: 6, color: '#10b981', name: '普通感染者', shieldMod: 0.6 },
+    charger: { radius: 18, baseHp: 68, speedMin: 95, speedMax: 125, attackPower: 24, attackCooldown: 0.9, expVal: 9, color: '#f59e0b', name: '疾行冲锋者', shieldMod: 0.8 },
+    behemoth: { radius: 36, baseHp: 580, speedMin: 40, speedMax: 52, attackPower: 70, attackCooldown: 1.5, expVal: 24, color: '#ef4444', name: '重装巨尸', shieldMod: 1.35 },
+    boss_overlord: { radius: 48, baseHp: 2400, speed: 40, attackPower: 120, attackCooldown: 1.4, expVal: 70, color: '#ff2a5f', stompInterval: 4.0, name: '哨站行刑官', shieldMod: 1.6 }
   },
 
   difficulty: {
-    getEnemyWaveScale(wave) { if (wave <= 1) return 0.85; return 0.85 + Math.pow(wave - 1, 0.86) * 0.22; },
-    getBossWaveScale(wave) { return 0.9 + (wave - 1) * 0.28; },
+    getEnemyWaveScale(wave) { if (wave <= 1) return 0.95; return 0.95 + Math.pow(wave - 1, 0.92) * 0.28; },
+    getBossWaveScale(wave) { return 1.0 + (wave - 1) * 0.35; },
     getWaveEnemyCount(wave) { return Math.round(10 + Math.pow(wave, 1.05) * 4); },
     getWaveSpawnInterval(wave) { return Math.max(0.35, 1.5 - Math.log2(wave + 1) * 0.35); }
   },
@@ -245,8 +281,26 @@ export const GAME_CONFIG = {
       else if (id < 50) clearWaves = 13 + Math.floor((id - 41) / 3);
       else clearWaves = 18; // 终极决战 18 波次
 
-      // 难度系数平滑幂次增长：0.85 -> 4.60
-      const difficulty = parseFloat((0.85 + (id - 1) * 0.065 + Math.pow((id - 1) / 10, 1.25) * 0.08).toFixed(2));
+      // 难度系数平滑幂次增长：Stage 1 为 1.0，第 50 关可达 8.5+，确保高关卡怪物血量坚韧有策略感
+      const difficulty = parseFloat((1.0 + (id - 1) * 0.10 + Math.pow((id - 1) / 7.5, 1.35) * 0.18).toFixed(2));
+      
+      // 护盾比例系数 (前3关零护盾上手，随后逐步装配能量装甲护盾)
+      let baseShieldRatio = 0;
+      if (id <= 3) {
+        baseShieldRatio = 0; // 新手前3关零护盾
+      } else if (id <= 10) {
+        baseShieldRatio = 0.20 + (id - 4) * 0.03; // 20% ~ 38% 护盾
+      } else if (id <= 20) {
+        baseShieldRatio = 0.40 + (id - 11) * 0.035; // 40% ~ 71% 护盾
+      } else if (id <= 30) {
+        baseShieldRatio = 0.75 + (id - 21) * 0.04; // 75% ~ 111% 护盾
+      } else if (id <= 40) {
+        baseShieldRatio = 1.15 + (id - 31) * 0.045; // 115% ~ 155% 护盾
+      } else {
+        baseShieldRatio = 1.60 + (id - 41) * 0.05; // 160% ~ 205% 终极装甲护盾
+      }
+      const shieldRatio = parseFloat(baseShieldRatio.toFixed(2));
+
       // 废料奖励增长
       const scrapReward = 80 + (id - 1) * 22 + Math.floor(Math.pow(id, 1.15) * 4);
 
@@ -324,6 +378,7 @@ export const GAME_CONFIG = {
         isMiniBoss,
         isChapterBoss,
         difficulty,
+        shieldRatio,
         featuredChip,
         chipDropCount,
         allowedEnemies,
@@ -339,9 +394,10 @@ export const GAME_CONFIG = {
       posInChapter: 1,
       name: '无尽深渊防线',
       clearWaves: 0,
-      scrapReward: 0,
+      scrapReward: 200,
       bossEvery: 5,
-      difficulty: 1.50,
+      difficulty: 9.99,
+      shieldRatio: 2.0,
       endless: true,
       allowedEnemies: ['runner', 'charger', 'behemoth'],
       desc: '无穷无尽的极限生存考验，尸潮生生不息，检验终极指挥官防线！',

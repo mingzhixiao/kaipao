@@ -52,6 +52,7 @@ export class SaveManager {
         // 枪械配件与三维碎片
         assault_part: 0, gatling_part: 0, gauss_part: 0, plasma_part: 0,
         power_shard: 0, bulletspeed_shard: 0, attackspeed_shard: 0, mag_shard: 0,
+        rare_weapon_shard: 0,
         rune_shard: 0,
         // 宠物基因碎片
         fluffy_shard: 0, dragon_shard: 0,
@@ -428,12 +429,12 @@ export class SaveManager {
     return this.data.weaponData.weapons[id]?.magazineLevel || 1;
   }
 
-  // 枪械最终综合属性计算（融合主等级 + 力量/射速/攻速/弹匣等级）
+  // 枪械最终综合属性计算（理论上限 1000 级，兼顾大后期深度追求与数值稳定性）
   getWeaponDamage(id) {
     const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
     const w = this.data.weaponData.weapons[id] || { level: 1, powerLevel: 1 };
     const levelBonus = ((w.level || 1) - 1) * (cfg.growth.damagePerLevel || 5);
-    const powerBonus = ((w.powerLevel || 1) - 1) * (cfg.growth.damagePerPowerLevel || 4);
+    const powerBonus = ((w.powerLevel || 1) - 1) * 3.5;
     return Math.round(cfg.baseStats.damage + levelBonus + powerBonus);
   }
 
@@ -441,7 +442,8 @@ export class SaveManager {
     const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
     const w = this.data.weaponData.weapons[id] || { level: 1, bulletSpeedLevel: 1 };
     const levelBonus = ((w.level || 1) - 1) * (cfg.growth.bulletSpeedPerLevel || 15);
-    const shardBonus = ((w.bulletSpeedLevel || 1) - 1) * (cfg.growth.bulletSpeedPerShardLevel || 25);
+    // 弹速平滑递增，硬上限 2000，防止物理穿透异常
+    const shardBonus = Math.min(1500, ((w.bulletSpeedLevel || 1) - 1) * 2.2);
     return Math.round(cfg.baseStats.bulletSpeed + levelBonus + shardBonus);
   }
 
@@ -449,12 +451,10 @@ export class SaveManager {
     const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
     const w = this.data.weaponData.weapons[id] || { level: 1, attackSpeedLevel: 1 };
     const base = cfg.baseStats.fireInterval;
-    // 枪械主等级提升略微压缩开火间隔（攻速提升）
-    const levelFactor = Math.max(0.7, 1 - ((w.level || 1) - 1) * (cfg.growth.fireRatePerLevel || 0.002));
-    // 攻速碎片强化进一步压缩开火间隔（攻速强化）
-    const shardRatio = cfg.growth.attackSpeedPerShardRatio || 0.03;
-    const shardFactor = Math.pow(1 - shardRatio, (w.attackSpeedLevel || 1) - 1);
-    const finalInterval = Math.max(0.06, base * levelFactor * shardFactor);
+    const levelFactor = Math.max(0.75, 1 - ((w.level || 1) - 1) * 0.001);
+    // 攻速强化采用平滑几何衰减，硬下限 0.18s（避免攻速过快失去射击打击质感与音效重叠）
+    const shardFactor = Math.pow(0.998, (w.attackSpeedLevel || 1) - 1);
+    const finalInterval = Math.max(0.18, base * levelFactor * shardFactor);
     return parseFloat(finalInterval.toFixed(3));
   }
 
@@ -462,56 +462,193 @@ export class SaveManager {
     const cfg = GAME_CONFIG.weapons[id] || GAME_CONFIG.weapons.assault;
     const magLevel = this.getWeaponMagazineLevel(id);
     const base = cfg.baseStats.magazineCapacity || 30;
-    const growth = cfg.growth.magazinePerLevel || 4;
-    return base + (magLevel - 1) * growth;
+    // 弹匣容量持续递增，千级可达 2000+ 发
+    return base + (magLevel - 1) * 2;
   }
 
-  // 力量碎片升级攻击力
-  upgradeWeaponPower(id, scrapCost, shardCost) {
+  // 力量强化 (Lv.1 ~ 1000，消耗金币 + 力量碎片 + 6级后消耗稀有枪械核心)
+  upgradeWeaponPower(id) {
     const w = this.data.weaponData.weapons[id];
-    if (!w || !w.unlocked) return false;
-    if (!this.hasItem('power_shard', shardCost)) return false;
-    if (!this.spendScrap(scrapCost)) return false;
-    this.consumeItem('power_shard', shardCost);
-    w.powerLevel = (w.powerLevel || 1) + 1;
+    if (!w || !w.unlocked) return { success: false, message: '枪械尚未解锁' };
+    const curLevel = w.powerLevel || 1;
+    const reqs = GAME_CONFIG.getWeaponUpgradeRequirements(curLevel);
+    if (!reqs) return { success: false, message: '已达到 1000 级强化极境！' };
+
+    if (!this.spendScrap(reqs.scrapCost)) {
+      return { success: false, message: `工业废料不足（需要 ${reqs.scrapCost}）` };
+    }
+    if (!this.hasItem('power_shard', reqs.basicShardCost)) {
+      this.addScrap(reqs.scrapCost);
+      return { success: false, message: `力量碎片不足（需要 ${reqs.basicShardCost} 个）` };
+    }
+    if (reqs.rareShardCost > 0 && !this.hasItem('rare_weapon_shard', reqs.rareShardCost)) {
+      this.addScrap(reqs.scrapCost);
+      return { success: false, message: `突破需要【稀有军工枪械核心】x${reqs.rareShardCost}（仅精英模式掉落）！` };
+    }
+
+    this.consumeItem('power_shard', reqs.basicShardCost);
+    if (reqs.rareShardCost > 0) this.consumeItem('rare_weapon_shard', reqs.rareShardCost);
+    w.powerLevel = curLevel + 1;
     this.save();
-    return true;
+    return { success: true, newLevel: curLevel + 1 };
   }
 
-  // 射速碎片升级弹速
-  upgradeWeaponBulletSpeed(id, scrapCost, shardCost) {
+  // 射速强化 (Lv.1 ~ 1000)
+  upgradeWeaponBulletSpeed(id) {
     const w = this.data.weaponData.weapons[id];
-    if (!w || !w.unlocked) return false;
-    if (!this.hasItem('bulletspeed_shard', shardCost)) return false;
-    if (!this.spendScrap(scrapCost)) return false;
-    this.consumeItem('bulletspeed_shard', shardCost);
-    w.bulletSpeedLevel = (w.bulletSpeedLevel || 1) + 1;
+    if (!w || !w.unlocked) return { success: false, message: '枪械尚未解锁' };
+    const curLevel = w.bulletSpeedLevel || 1;
+    const reqs = GAME_CONFIG.getWeaponUpgradeRequirements(curLevel);
+    if (!reqs) return { success: false, message: '已达到 1000 级强化极境！' };
+
+    if (!this.spendScrap(reqs.scrapCost)) {
+      return { success: false, message: `工业废料不足（需要 ${reqs.scrapCost}）` };
+    }
+    if (!this.hasItem('bulletspeed_shard', reqs.basicShardCost)) {
+      this.addScrap(reqs.scrapCost);
+      return { success: false, message: `射速碎片不足（需要 ${reqs.basicShardCost} 个）` };
+    }
+    if (reqs.rareShardCost > 0 && !this.hasItem('rare_weapon_shard', reqs.rareShardCost)) {
+      this.addScrap(reqs.scrapCost);
+      return { success: false, message: `突破需要【稀有军工枪械核心】x${reqs.rareShardCost}（仅精英模式掉落）！` };
+    }
+
+    this.consumeItem('bulletspeed_shard', reqs.basicShardCost);
+    if (reqs.rareShardCost > 0) this.consumeItem('rare_weapon_shard', reqs.rareShardCost);
+    w.bulletSpeedLevel = curLevel + 1;
     this.save();
-    return true;
+    return { success: true, newLevel: curLevel + 1 };
   }
 
-  // 攻速碎片升级攻速（缩短射击间隔）
-  upgradeWeaponAttackSpeed(id, scrapCost, shardCost) {
+  // 攻速强化 (Lv.1 ~ 1000)
+  upgradeWeaponAttackSpeed(id) {
     const w = this.data.weaponData.weapons[id];
-    if (!w || !w.unlocked) return false;
-    if (!this.hasItem('attackspeed_shard', shardCost)) return false;
-    if (!this.spendScrap(scrapCost)) return false;
-    this.consumeItem('attackspeed_shard', shardCost);
-    w.attackSpeedLevel = (w.attackSpeedLevel || 1) + 1;
+    if (!w || !w.unlocked) return { success: false, message: '枪械尚未解锁' };
+    const curLevel = w.attackSpeedLevel || 1;
+    const reqs = GAME_CONFIG.getWeaponUpgradeRequirements(curLevel);
+    if (!reqs) return { success: false, message: '已达到 1000 级强化极境！' };
+
+    if (!this.spendScrap(reqs.scrapCost)) {
+      return { success: false, message: `工业废料不足（需要 ${reqs.scrapCost}）` };
+    }
+    if (!this.hasItem('attackspeed_shard', reqs.basicShardCost)) {
+      this.addScrap(reqs.scrapCost);
+      return { success: false, message: `攻速碎片不足（需要 ${reqs.basicShardCost} 个）` };
+    }
+    if (reqs.rareShardCost > 0 && !this.hasItem('rare_weapon_shard', reqs.rareShardCost)) {
+      this.addScrap(reqs.scrapCost);
+      return { success: false, message: `突破需要【稀有军工枪械核心】x${reqs.rareShardCost}（仅精英模式掉落）！` };
+    }
+
+    this.consumeItem('attackspeed_shard', reqs.basicShardCost);
+    if (reqs.rareShardCost > 0) this.consumeItem('rare_weapon_shard', reqs.rareShardCost);
+    w.attackSpeedLevel = curLevel + 1;
     this.save();
-    return true;
+    return { success: true, newLevel: curLevel + 1 };
   }
 
-  // 枪械弹匣容量扩展（消耗扩容弹匣碎片 mag_shard + 废料）
-  upgradeWeaponMagazine(id, scrapCost, shardCost) {
+  // 弹匣容量扩展 (Lv.1 ~ 1000)
+  upgradeWeaponMagazine(id) {
     const w = this.data.weaponData.weapons[id];
-    if (!w || !w.unlocked) return false;
-    if (!this.hasItem('mag_shard', shardCost)) return false;
-    if (!this.spendScrap(scrapCost)) return false;
-    this.consumeItem('mag_shard', shardCost);
-    w.magazineLevel = (w.magazineLevel || 1) + 1;
+    if (!w || !w.unlocked) return { success: false, message: '枪械尚未解锁' };
+    const curLevel = w.magazineLevel || 1;
+    const reqs = GAME_CONFIG.getWeaponUpgradeRequirements(curLevel);
+    if (!reqs) return { success: false, message: '已达到 1000 级强化极境！' };
+
+    if (!this.spendScrap(reqs.scrapCost)) {
+      return { success: false, message: `工业废料不足（需要 ${reqs.scrapCost}）` };
+    }
+    if (!this.hasItem('mag_shard', reqs.basicShardCost)) {
+      this.addScrap(reqs.scrapCost);
+      return { success: false, message: `扩容弹匣碎片不足（需要 ${reqs.basicShardCost} 个）` };
+    }
+    if (reqs.rareShardCost > 0 && !this.hasItem('rare_weapon_shard', reqs.rareShardCost)) {
+      this.addScrap(reqs.scrapCost);
+      return { success: false, message: `突破需要【稀有军工枪械核心】x${reqs.rareShardCost}（仅精英模式掉落）！` };
+    }
+
+    this.consumeItem('mag_shard', reqs.basicShardCost);
+    if (reqs.rareShardCost > 0) this.consumeItem('rare_weapon_shard', reqs.rareShardCost);
+    w.magazineLevel = curLevel + 1;
     this.save();
-    return true;
+    return { success: true, newLevel: curLevel + 1 };
+  }
+
+  // 关卡一键即时扫荡 (已通关关卡开启，同样消耗 5 点体能并全额产出物资)
+  sweepStage(stageId, mode = 'normal') {
+    const isElite = mode === 'elite';
+    if (isElite) {
+      if (!this.isEliteCleared(stageId)) {
+        return { success: false, message: '需先通过该关卡的精英模式方可开启精英扫荡！' };
+      }
+    } else {
+      if ((this.data.highestStageCleared || 0) < stageId) {
+        return { success: false, message: '需先通关该关卡方可开启扫荡！' };
+      }
+    }
+
+    if (!this.useEnergy(5)) {
+      return { success: false, message: '作战体能不足（扫荡需要 5 点能量）！' };
+    }
+
+    const stageConfig = GAME_CONFIG.stages?.find(s => s.id === stageId) || GAME_CONFIG.stages?.[0];
+    const modeConfig = GAME_CONFIG.modes?.[mode] || GAME_CONFIG.modes.normal;
+
+    // 基础金币计算
+    const baseScrap = stageConfig.scrapReward || 80;
+    const scrapEarned = Math.round(baseScrap * modeConfig.scrapMult * (0.95 + Math.random() * 0.18));
+    // 钻石几率
+    const gemsEarned = isElite ? (Math.random() < modeConfig.gemChance ? (1 + Math.floor(Math.random() * 2)) : 0) : 0;
+
+    const itemsEarned = {};
+
+    // 1. 定向战术芯片
+    if (stageConfig.featuredChip) {
+      const dropMin = stageConfig.chipDropCount?.[0] || 2;
+      const dropMax = stageConfig.chipDropCount?.[1] || 4;
+      const chipCount = Math.round((dropMin + Math.floor(Math.random() * (dropMax - dropMin + 1))) * (isElite ? 2.0 : 1.0));
+      itemsEarned[stageConfig.featuredChip] = chipCount;
+    }
+
+    // 2. 基础素材与强化碎片
+    const pool = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard', 'mag_shard', 'rune_shard'];
+    const pick1 = pool[Math.floor(Math.random() * pool.length)];
+    const pick2 = pool[Math.floor(Math.random() * pool.length)];
+    const cnt1 = (1 + Math.floor(Math.random() * 2)) * (isElite ? 2 : 1);
+    const cnt2 = (1 + Math.floor(Math.random() * 2)) * (isElite ? 2 : 1);
+    itemsEarned[pick1] = (itemsEarned[pick1] || 0) + cnt1;
+    itemsEarned[pick2] = (itemsEarned[pick2] || 0) + cnt2;
+
+    // 3. 【关键特性】精英模式专属必掉：稀有军工枪械核心 (rare_weapon_shard)
+    if (isElite) {
+      const chId = stageConfig.chapter || Math.min(5, Math.ceil(stageId / 10));
+      const isBoss = stageConfig.isChapterBoss || stageConfig.isMiniBoss;
+      const rareCount = Math.max(1, Math.round(1 + chId * 0.7 + (isBoss ? 2 : 0)));
+      itemsEarned.rare_weapon_shard = rareCount;
+    }
+
+    // 入库结算
+    const settled = this.settleBattleLoot({
+      scrap: scrapEarned,
+      gems: gemsEarned,
+      items: itemsEarned
+    }, true, stageId);
+
+    const expGained = isElite ? (80 + stageId * 25) : (50 + stageId * 15);
+    this.addCommanderExp(expGained);
+
+    return {
+      success: true,
+      stageId,
+      stageName: stageConfig.name,
+      mode,
+      scrap: scrapEarned,
+      gems: gemsEarned,
+      items: itemsEarned,
+      exp: expGained,
+      totalScrap: settled.totalScrap,
+      totalGems: settled.totalGems
+    };
   }
 
   // 技能体系：碎片收集、合成解锁、装备与专精

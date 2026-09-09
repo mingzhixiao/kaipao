@@ -204,6 +204,14 @@ export class WaveSystem {
       this.game.battleLoot.gems = (this.game.battleLoot.gems || 0) + gemReward;
     }
 
+    // 精英模式专属必掉：稀有军工枪械核心 (rare_weapon_shard)
+    if (this.mode === 'elite') {
+      const chId = this.stageConfig?.chapter || Math.min(5, Math.ceil((this.stageId || 1) / 10));
+      const isBoss = this.stageConfig?.isChapterBoss || this.stageConfig?.isMiniBoss;
+      const rareCount = Math.max(1, Math.round(1 + chId * 0.7 + (isBoss ? 2 : 0)));
+      this.game.battleLoot.items['rare_weapon_shard'] = (this.game.battleLoot.items['rare_weapon_shard'] || 0) + rareCount;
+    }
+
     // 战略军备箱掉落
     if (Math.random() < (this.mode === 'elite' ? 0.85 : 0.45)) {
       this.game.battleLoot.items['supply_crate'] = (this.game.battleLoot.items['supply_crate'] || 0) + 1;
@@ -243,7 +251,18 @@ export class WaveSystem {
     const waveScale = GAME_CONFIG.difficulty.getEnemyWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0);
     const cfg = GAME_CONFIG.enemies[enemy.type] || GAME_CONFIG.enemies.runner;
     enemy.radius = cfg.radius;
-    enemy.maxHp = enemy.hp = Math.max(15, Math.round(cfg.baseHp * waveScale));
+    enemy.maxHp = enemy.hp = Math.max(25, Math.round(cfg.baseHp * waveScale));
+
+    // 怪物装甲护盾系统：由关卡 shieldRatio、怪物 shieldMod 以及模式 shieldMult 联合决定
+    const baseShieldRatio = this.stageConfig?.shieldRatio ?? 0;
+    const modeShieldMult = this.modeConfig?.shieldMult || 1.0;
+    const monsterShieldMod = cfg.shieldMod || 1.0;
+    let rawShield = 0;
+    if (baseShieldRatio > 0) {
+      rawShield = Math.round(enemy.maxHp * baseShieldRatio * monsterShieldMod * modeShieldMult);
+    }
+    enemy.maxShield = enemy.shield = rawShield;
+
     enemy.speed = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
     const atkMult = (this.modeConfig?.atkMult || 1.0) * (0.9 + (this.stageConfig?.difficulty || 1.0) * 0.1);
     enemy.attackPower = Math.round(cfg.attackPower * atkMult);
@@ -287,13 +306,18 @@ export class WaveSystem {
     boss.bossTitle = theme.name;
     boss.bossColor = theme.color;
 
-    // 首领倍率调整：中首领 1.2x，大首领 1.5x
-    const bossTierMult = isChapterBoss ? 1.5 : (isMiniBoss ? 1.2 : 1.0);
+    // 首领倍率调整：中首领 1.25x，大首领 1.6x
+    const bossTierMult = isChapterBoss ? 1.6 : (isMiniBoss ? 1.25 : 1.0);
     const bossScale = GAME_CONFIG.difficulty.getBossWaveScale(this.wave) * (this.stageConfig?.difficulty || 1.0) * (this.modeConfig?.hpMult || 1.0) * bossTierMult;
     const cfg = GAME_CONFIG.enemies.boss_overlord;
 
     boss.radius = isChapterBoss ? Math.round(cfg.radius * 1.15) : cfg.radius;
     boss.maxHp = boss.hp = Math.round(cfg.baseHp * bossScale);
+
+    // 首领专属高能偏转力场护盾：保底不低于生命值 45%，随战区递增可达 100%~200%
+    const bossShieldRatio = Math.max(0.45, (this.stageConfig?.shieldRatio || 0.35) * (cfg.shieldMod || 1.6));
+    boss.maxShield = boss.shield = Math.round(boss.maxHp * bossShieldRatio * (this.modeConfig?.shieldMult || 1.0));
+
     boss.speed = cfg.speed;
     boss.attackPower = Math.round(cfg.attackPower * (this.modeConfig?.atkMult || 1.0) * (this.stageConfig?.difficulty || 1.0) * (isChapterBoss ? 1.25 : 1.0));
     boss.attackCooldown = cfg.attackCooldown;
