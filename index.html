@@ -1668,6 +1668,7 @@
           <span class="resource-val" id="hud-scrap">0</span>
         </div>
         <div class="sys-controls-group">
+          <button class="battle-exit-btn" id="btn-exit-battle" title="撤离战斗" aria-label="撤离战斗">↩</button>
           <button class="settings-gear-btn" id="btn-settings-toggle" title="系统设置"><img class="ui-icon-inline" src="assets/icons/icon_settings.png" alt="Settings"></button>
           <div class="settings-dropdown" id="settings-dropdown-menu">
             <div class="dropdown-header">
@@ -1692,27 +1693,31 @@
             </div>
           </div>
         </div>
+      </div>
         <div class="top-vitals-row" id="top-vitals-container">
-          <div class="vital-capsule ammo" id="top-ammo-capsule" title="枪械弹匣 [点击或按R换弹]">
+          <div class="vital-capsule hp hp-high" id="top-hp-capsule" title="要塞核心装甲">
             <div class="vital-bar-track">
-              <div class="vital-bar-fill ammo-fill" id="top-ammo-fill" style="width: 100%;"></div>
+              <div class="vital-bar-fill hp-fill" id="top-hp-fill" style="width: 100%;"></div>
             </div>
-            <span class="vital-icon">🔋</span>
-            <span class="vital-val" id="top-ammo-text">30/30</span>
+            <span class="vital-icon"><img class="ui-icon-inline" src="assets/icons/icon_hp.png" alt="HP"></span>
+            <span class="vital-label">基地</span>
+            <span class="vital-val" id="top-hp-text">1000 (100%)</span>
           </div>
           <div class="vital-capsule shield" id="top-shield-capsule" title="城防能量护盾">
             <div class="vital-bar-track">
               <div class="vital-bar-fill shield-fill" id="top-shield-fill" style="width: 100%;"></div>
             </div>
             <span class="vital-icon"><img class="ui-icon-inline" src="assets/icons/icon_shield.png" alt="Shield"></span>
+            <span class="vital-label">护盾</span>
             <span class="vital-val" id="top-shield-text">300 (100%)</span>
           </div>
-          <div class="vital-capsule hp hp-high" id="top-hp-capsule" title="要塞核心装甲">
+          <div class="vital-capsule ammo" id="top-ammo-capsule" title="枪械弹匣 [点击或按R换弹]">
             <div class="vital-bar-track">
-              <div class="vital-bar-fill hp-fill" id="top-hp-fill" style="width: 100%;"></div>
+              <div class="vital-bar-fill ammo-fill" id="top-ammo-fill" style="width: 100%;"></div>
             </div>
-            <span class="vital-icon"><img class="ui-icon-inline" src="assets/icons/icon_hp.png" alt="HP"></span>
-            <span class="vital-val" id="top-hp-text">1000 (100%)</span>
+            <span class="vital-icon">🔋</span>
+            <span class="vital-label">弹匣</span>
+            <span class="vital-val" id="top-ammo-text">30/30</span>
           </div>
         </div>
         <div class="exp-bar-container">
@@ -1756,6 +1761,8 @@
         <button class="cheat-btn" id="cheat-heal">+ 修复防线</button>
         <button class="cheat-btn" id="cheat-skills">+ 解锁全技能</button>
         <button class="cheat-btn" id="cheat-boss">⚠️ 召唤Boss</button>
+        <button class="cheat-btn" id="cheat-fail">测试失守</button>
+        <button class="cheat-btn" id="cheat-clear">测试通关</button>
       </div>
       <div id="loading-screen">
         <div class="loading-logo">⚡ KAIPAO: DOOMSDAY</div>
@@ -1778,7 +1785,8 @@
       </div>
       <div id="gameover-modal">
         <div class="report-card">
-          <div class="report-title">防线失守</div>
+          <div class="report-title" id="gameover-title">防线失守</div>
+          <div class="report-subtitle" id="gameover-subtitle">基地生命归零，本次防守结束</div>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-label">抵御波次</div>
@@ -1816,6 +1824,17 @@
             style="margin-top:8px;background:linear-gradient(135deg,rgba(179,75,253,0.35),rgba(100,40,180,0.5));border-color:var(--neon-purple);">符文工坊</button>
         </div>
       </div>
+      <div id="retreat-confirm-modal" aria-hidden="true">
+        <div class="retreat-confirm-card" role="dialog" aria-modal="true" aria-labelledby="retreat-confirm-title">
+          <div class="retreat-confirm-icon">↩</div>
+          <div class="retreat-confirm-title" id="retreat-confirm-title">撤离当前战斗？</div>
+          <div class="retreat-confirm-desc">撤离后只结算击杀感染者获得的废料，晶核、道具与通关奖励全部放弃。</div>
+          <div class="retreat-confirm-actions">
+            <button class="retreat-cancel-btn" id="btn-retreat-cancel">继续防守</button>
+            <button class="retreat-confirm-btn" id="btn-retreat-confirm">确认撤离</button>
+          </div>
+        </div>
+      </div>
       <div id="stage-select-modal">
         <div class="stage-hub-card">
           <div class="hub-header">
@@ -1831,6 +1850,11 @@
       <div id="stage-clear-modal">
         <div class="stage-clear-card">
           <div class="stage-clear-title" id="stage-clear-title">关卡通关成功</div>
+          <div class="stage-result-summary">
+            <div class="stage-clear-stars" id="stage-clear-stars" aria-label="通关星级"></div>
+            <div class="stage-clear-rating" id="stage-clear-rating">1 星 · 险守成功</div>
+            <div class="stage-clear-hp" id="stage-clear-hp">基地生命 0/0 · 0%</div>
+          </div>
           <div class="stage-clear-reward">
             获得碎片 <span class="scrap-gain" id="stage-clear-scrap">+0</span>
             <div style="font-size:12px;color:#94a3b8;margin-top:4px;">当前持有 <span id="stage-clear-total-scrap">0</span>

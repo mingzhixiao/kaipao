@@ -132,13 +132,8 @@ export class LevelDesignSystem {
   }
 
   chooseLane(plan, spawnIndex = 0) {
-    const lanes = [0.18, 0.38, 0.62, 0.82];
-    switch (plan?.lane) {
-      case 'center': return lanes[Math.random() > 0.5 ? 1 : 2];
-      case 'flank': return lanes[spawnIndex % 2 === 0 ? 0 : 3];
-      case 'alternating': return lanes[spawnIndex % lanes.length];
-      default: return lanes[Math.floor(Math.random() * lanes.length)];
-    }
+    // 每只怪物独立随机选择道路横向位置，预留 12% 边缘空间避免大体型单位被裁切。
+    return 0.12 + Math.random() * 0.76;
   }
 
   getCountMultiplier(plan) {

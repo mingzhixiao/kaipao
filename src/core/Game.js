@@ -11,6 +11,7 @@ import { CombatSystem } from '../combat/CombatSystem.js';
 import { saveManager } from '../systems/SaveManager.js';
 import { gameEvents } from './GameEventBus.js';
 import { uiStack } from '../ui/UIStack.js';
+import { buildRetreatLoot } from '../systems/BattleRewardSystem.js';
 
 export class Game {
   constructor() {
@@ -170,6 +171,8 @@ export class Game {
   }
 
   resetGame() {
+    uiStack.clear();
+    document.body.classList.remove('battle-result-open');
     const fort = saveManager.getFortification ? saveManager.getFortification() : { hpLevel: 1, shieldLevel: 1, regenLevel: 1, armorLevel: 1 };
     const hpCfg = GAME_CONFIG.fortressUpgrades?.hp;
     const shieldCfg = GAME_CONFIG.fortressUpgrades?.shield;
@@ -217,6 +220,9 @@ export class Game {
     this.scrap = 0;
     this.battleLoot = { scrap: 0, gems: 0, items: {} };
     this.lastGameOverReward = null;
+    this.lastRunRecord = null;
+    this.battleSettled = false;
+    this.battleEndReason = null;
     this.bulletPool.releaseAll(this.bullets); this.enemyPool.releaseAll(this.enemies);
     this.gemPool.releaseAll(this.gems); this.particlePool.releaseAll(this.particles);
     this.textPool.releaseAll(this.damageTexts); this.hitRingPool.releaseAll(this.hitRings);
@@ -602,6 +608,28 @@ export class Game {
     ObjectPool.compact(this.hitRings);
   }
 
+  endBattle(reason = 'defeat') {
+    if (this.battleSettled) return false;
+    this.battleSettled = true;
+    this.battleEndReason = reason;
+    this.isGameOver = true;
+    this.isPaused = true;
+    this.fortress.hp = Math.max(0, this.fortress.hp);
+
+    // 主动撤离只带走击杀产生的废料，放弃本局掉落道具、晶核及全部通关奖励。
+    const sourceLoot = this.battleLoot || { scrap: 0, gems: 0, items: {} };
+    const lootToSettle = reason === 'retreat' ? buildRetreatLoot(sourceLoot) : sourceLoot;
+    const settled = saveManager.settleBattleLoot(lootToSettle, false, this.stageId || 1);
+    this.lastGameOverReward = { ...settled, reason };
+    this.lastRunRecord = saveManager.recordRun({ wave: this.waveSystem.wave, kills: this.kills, survivalTime: this.survivalTime, synergies: this.synergies });
+    this.hud.showGameOverModal(this);
+    return true;
+  }
+
+  exitBattle() {
+    return this.endBattle('retreat');
+  }
+
   damageFortress(dmg, sourceEnemy = null) {
     this.fortress.shieldRegenTimer = 0;
     this.fortress.hitFlash = 0.2;
@@ -622,18 +650,11 @@ export class Game {
     if (sourceEnemy && sourceEnemy.active && this.fortress.spikeArmor > 0) {
       this.combatSystem.onHit(sourceEnemy, this.fortress.spikeArmor, false, 'thorns');
     }
-    gameEvents.emit('shield_changed', { shield: this.fortress.shield, maxShield: this.fortress.maxShield });
-    gameEvents.emit('health_changed', { hp: this.fortress.hp, maxHp: this.fortress.maxHp });
     if (this.fortress.hp <= 0) {
       this.fortress.hp = 0;
-      this.isGameOver = true;
-      const settled = saveManager.settleBattleLoot(this.battleLoot, false, this.stageId || 1);
-      this.lastGameOverReward = settled;
-      saveManager.recordRun({
-        wave: this.waveSystem.wave, kills: this.kills,
-        survivalTime: this.survivalTime, synergies: this.synergies
-      });
-      this.hud.showGameOverModal(this);
     }
+    gameEvents.emit('shield_changed', { shield: this.fortress.shield, maxShield: this.fortress.maxShield });
+    gameEvents.emit('health_changed', { hp: this.fortress.hp, maxHp: this.fortress.maxHp });
+    if (this.fortress.hp <= 0) this.endBattle('defeat');
   }
 }

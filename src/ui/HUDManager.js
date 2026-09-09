@@ -5,6 +5,7 @@ import { gameEvents } from '../core/GameEventBus.js';
 import { uiStack } from './UIStack.js';
 import { focusManager } from './FocusManager.js';
 import { tr } from '../core/I18n.js';
+import { GAME_CONFIG } from '../core/Config.js';
 
 // ---------------- 高性能 事件驱动 HUD 与 UI 管理器 ----------------
 
@@ -36,12 +37,18 @@ export class HUDManager {
       btnReroll: document.getElementById('btn-reroll'),
       rerollCount: document.getElementById('reroll-count'),
       gameoverModal: document.getElementById('gameover-modal'),
+      retreatConfirmModal: document.getElementById('retreat-confirm-modal'),
+      btnRetreatCancel: document.getElementById('btn-retreat-cancel'),
+      btnRetreatConfirm: document.getElementById('btn-retreat-confirm'),
+      reportTitle: document.getElementById('gameover-title'),
+      reportSubtitle: document.getElementById('gameover-subtitle'),
       resWave: document.getElementById('res-wave'),
       resKills: document.getElementById('res-kills'),
       resTime: document.getElementById('res-time'),
       resLevel: document.getElementById('res-level'),
       resBest: document.getElementById('res-best'),
       btnRestart: document.getElementById('btn-restart'),
+      btnExitBattle: document.getElementById('btn-exit-battle'),
       btnSpeed: document.getElementById('btn-speed'),
       btnSound: document.getElementById('btn-sound'),
       btnPause: document.getElementById('btn-pause'),
@@ -577,12 +584,19 @@ export class HUDManager {
 
   showGameOverModal(game) {
     this.clearAutoSelectTimer();
+    const isRetreat = game.battleEndReason === 'retreat';
+    if (this.dom.reportTitle) this.dom.reportTitle.textContent = isRetreat ? '已撤离战场' : '防线失守';
+    if (this.dom.reportSubtitle) this.dom.reportSubtitle.textContent = isRetreat ? '仅结算击杀感染者获得的废料' : '基地生命归零，本次防守结束';
     if (this.dom.resWave) this.dom.resWave.textContent = game.wave;
     if (this.dom.resKills) this.dom.resKills.textContent = game.kills;
     const mins = Math.floor(game.survivalTime / 60).toString().padStart(2, '0');
     const secs = Math.floor(game.survivalTime % 60).toString().padStart(2, '0');
     if (this.dom.resTime) this.dom.resTime.textContent = `${mins}:${secs}`;
     if (this.dom.resLevel) this.dom.resLevel.textContent = game.hero.level;
+    if (this.dom.resBest) {
+      const record = game.lastRunRecord || {};
+      this.dom.resBest.textContent = `WAVE ${record.highWave || game.wave}（最高 ${record.maxKills || game.kills} 击杀）`;
+    }
 
     // 渲染战利品自动结算清单
     const lootGrid = document.getElementById('gameover-loot-grid');
@@ -621,10 +635,13 @@ export class HUDManager {
       lootGrid.innerHTML = pills.join('');
     }
 
+    document.body.classList.add('battle-result-open');
     uiStack.push({
       id: 'gameover_modal',
       element: this.dom.gameoverModal,
-      pauseGame: true
+      pauseGame: true,
+      defaultFocus: this.dom.btnRestart,
+      onClose: () => document.body.classList.remove('battle-result-open')
     });
   }
 
@@ -634,12 +651,24 @@ export class HUDManager {
     }
     if (this.dom.btnRestart) {
       this.dom.btnRestart.addEventListener('click', () => {
-        if (this.dom.gameoverModal) this.dom.gameoverModal.style.display = 'none';
+        if (uiStack.top()?.id === 'gameover_modal') uiStack.pop();
         import('./HomeLobbyUI.js').then(({ homeLobbyUI }) => {
           homeLobbyUI.show();
         });
       });
     }
+    if (this.dom.btnExitBattle) {
+      this.dom.btnExitBattle.addEventListener('click', () => {
+        if (uiStack.top()?.id === 'settings_menu') uiStack.pop();
+        if (!game || game.isGameOver || game.waveSystem?.stageCleared) return;
+        uiStack.push({ id: 'retreat_confirm_modal', element: this.dom.retreatConfirmModal, pauseGame: true, defaultFocus: this.dom.btnRetreatCancel });
+      });
+    }
+    if (this.dom.btnRetreatCancel) this.dom.btnRetreatCancel.addEventListener('click', () => { if (uiStack.top()?.id === 'retreat_confirm_modal') uiStack.pop(); });
+    if (this.dom.btnRetreatConfirm) this.dom.btnRetreatConfirm.addEventListener('click', () => {
+      if (uiStack.top()?.id === 'retreat_confirm_modal') uiStack.pop();
+      if (game && !game.isGameOver && !game.waveSystem?.stageCleared) game.exitBattle();
+    });
     if (this.dom.topAmmoCapsule) {
       this.dom.topAmmoCapsule.addEventListener('click', () => {
         if (game && typeof game.reloadWeapon === 'function') {
@@ -650,7 +679,7 @@ export class HUDManager {
     const btnGoForge = document.getElementById('btn-gameover-forge');
     if (btnGoForge) {
       btnGoForge.addEventListener('click', () => {
-        if (this.dom.gameoverModal) this.dom.gameoverModal.style.display = 'none';
+        if (uiStack.top()?.id === 'gameover_modal') uiStack.pop();
         import('./HomeLobbyUI.js').then(({ homeLobbyUI }) => {
           homeLobbyUI.switchTab('runes');
           homeLobbyUI.show();
