@@ -107,48 +107,63 @@ export class HomeLobbyUI {
       <main class="lobby-content-container">
         <!-- Tab 1: 首页大厅 (Lobby) -->
         <div class="lobby-tab-view active" id="view-lobby">
-          <div class="lobby-power-banner">
-            <span class="lobby-power-label"><img class="ui-icon-inline" src="assets/icons/icon_stamina.png" alt="Power"> 综合战力评分</span>
-            <span class="lobby-power-val" id="lobby-total-power">1280</span>
+          <div class="lobby-stage-heading">
+            <div class="lobby-stage-copy">
+              <div class="lobby-stage-info-title">当前作战区域</div>
+              <div class="lobby-stage-info-name" id="lobby-stage-name">STAGE 1 · 废土前哨</div>
+              <div class="lobby-stage-info-desc" id="lobby-stage-desc">抵御 5 波尸潮 · 首通奖励 80 废料</div>
+            </div>
+            <div class="lobby-stage-tools">
+              <div class="lobby-power-banner" title="综合战力评分">
+                <img class="ui-icon-inline" src="assets/icons/icon_stamina.png" alt="Power">
+                <span class="lobby-power-val" id="lobby-total-power">1280</span>
+              </div>
+              <button class="lobby-stage-change-btn" id="btn-switch-to-trials">切换关卡</button>
+            </div>
+          </div>
+
+          <div class="lobby-mode-selector" aria-label="作战模式">
+            <button class="lobby-mode-btn" type="button" data-lobby-mode="normal"><span>标准防守</span><small>基础奖励</small></button>
+            <button class="lobby-mode-btn elite" type="button" data-lobby-mode="elite"><span>精英突袭</span><small>双倍掉落</small></button>
           </div>
 
           <div class="lobby-stage-arena">
             <div class="lobby-stage-arena-glow"></div>
+            <div class="lobby-arena-callout"><span>前线整备完成</span><strong id="lobby-arena-stage">废土前哨</strong></div>
             <div class="lobby-fortress-truck" title="重型突击战车"></div>
             <div class="lobby-floating-pet" id="lobby-arena-pet" title="出战伙伴">
               <img id="lobby-arena-pet-img" src="assets/pets/fluffy.png" alt="Pet">
             </div>
           </div>
 
-          <div class="lobby-current-stage-card">
-            <div>
-              <div class="lobby-stage-info-title">当前作战区域</div>
-              <div class="lobby-stage-info-name" id="lobby-stage-name">STAGE 1 · 废土前哨</div>
-              <div class="lobby-stage-info-desc" id="lobby-stage-desc">抵御 5 波尸潮 · 首通奖励 80 废料</div>
-            </div>
-            <button class="lobby-stage-change-btn" id="btn-switch-to-trials">切换关卡</button>
+          <div class="lobby-reward-preview" aria-label="星级通关奖励预览">
+            <div class="lobby-reward-node"><span class="lobby-reward-stars">★</span><img src="assets/icons/icon_coin.png" alt="废料"><strong id="lobby-reward-scrap">55+</strong><small>险守奖励</small></div>
+            <div class="lobby-reward-line"></div>
+            <div class="lobby-reward-node featured"><span class="lobby-reward-stars">★★★</span><img id="lobby-reward-chip-img" src="assets/items/item_chip_rocket.png" alt="定向芯片"><strong id="lobby-reward-chip">定向芯片</strong><small>稳固防线</small></div>
+            <div class="lobby-reward-line"></div>
+            <div class="lobby-reward-node perfect"><span class="lobby-reward-stars">★★★★★</span><img src="assets/items/item_supply_crate.png" alt="军备箱"><strong id="lobby-reward-perfect">晶核 +5</strong><small>完美守卫</small></div>
           </div>
 
-          <!-- 城防加固科技专区 (通关第1关解锁) -->
+          <div class="lobby-battle-cta-wrap">
+            <button class="lobby-battle-btn" id="btn-lobby-battle">
+              <img class="ui-icon-inline" src="assets/icons/icon_level.png" alt="Battle" style="width:20px;height:20px;">
+              <span>开始防守</span>
+            </button>
+          </div>
+
+          <!-- 城防管理放在主战斗入口之后，首屏优先展示关卡与载具。 -->
           <div class="lobby-fortification-card" id="lobby-fortification-section">
             <div class="lobby-fortification-header">
               <div style="display:flex;align-items:center;gap:8px;">
                 <span style="font-size:18px;">🛡️</span>
                 <div>
                   <div style="font-weight:900;color:#f8fafc;font-size:13px;">基地城防加固工程</div>
-                  <div style="font-size:11px;color:#94a3b8;">强化外挂装甲壁、能量屏障与自愈反伤</div>
+                  <div style="font-size:11px;color:#94a3b8;">强化装甲、护盾、自愈与反伤</div>
                 </div>
               </div>
               <span id="lobby-fort-status-badge" style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:12px;background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);">Lv.1</span>
             </div>
             <div class="lobby-fort-grid" id="lobby-fort-grid"></div>
-          </div>
-
-          <div class="lobby-battle-cta-wrap">
-            <button class="lobby-battle-btn" id="btn-lobby-battle">
-              <img class="ui-icon-inline" src="assets/icons/icon_level.png" alt="Battle" style="width:20px;height:20px;">
-              <span>立即出击 BATTLE</span>
-            </button>
           </div>
         </div>
 
@@ -294,6 +309,19 @@ export class HomeLobbyUI {
       this.switchTab('trials');
     });
 
+    this.dom.root.querySelectorAll('[data-lobby-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.lobbyMode;
+        const stageId = saveManager.getEquippedStage();
+        if (mode === 'elite' && !saveManager.isEliteUnlocked(stageId)) {
+          this.switchTab('trials');
+          return;
+        }
+        saveManager.setMode(mode);
+        this.renderLobby();
+      });
+    });
+
     // 背包分类筛选
     const bpFilterBar = document.getElementById('backpack-filter-bar');
     if (bpFilterBar) {
@@ -437,9 +465,33 @@ export class HomeLobbyUI {
     const nameEl = document.getElementById('lobby-stage-name');
     const descEl = document.getElementById('lobby-stage-desc');
     const curMode = saveManager.getMode();
-    const modeTag = curMode === 'elite' ? '<span style="color:#f43f5e;font-weight:900;margin-left:6px;">[💀 精英模式]</span>' : '';
-    if (nameEl) nameEl.innerHTML = `STAGE ${stage.id} · ${stage.name} ${modeTag}`;
+    if (nameEl) nameEl.textContent = `STAGE ${stage.id} · ${stage.name}`;
     if (descEl) descEl.textContent = stage.endless ? '无尽模式 · 极限生存挑战' : `通关波次 ${stage.clearWaves} · 难度 x${stage.difficulty}`;
+
+    const arenaStageEl = document.getElementById('lobby-arena-stage');
+    if (arenaStageEl) arenaStageEl.textContent = stage.name;
+    this.dom.root.querySelectorAll('[data-lobby-mode]').forEach(btn => {
+      const mode = btn.dataset.lobbyMode;
+      const locked = mode === 'elite' && !saveManager.isEliteUnlocked(stage.id);
+      btn.classList.toggle('active', mode === curMode);
+      btn.classList.toggle('locked', locked);
+      btn.setAttribute('aria-pressed', mode === curMode ? 'true' : 'false');
+      btn.title = locked ? '通关本关标准模式后解锁' : '';
+      const hint = btn.querySelector('small');
+      if (hint) hint.textContent = locked ? '通关后解锁' : (mode === 'elite' ? '双倍掉落' : '基础奖励');
+    });
+
+    // 星级奖励预览直接对应结算规则，让玩家在出击前知道保住血量的价值。
+    const baseScrap = (stage.scrapReward || 60) + Math.max(1, stage.clearWaves || 1) * 5;
+    const firstDrop = stage.targetDrops?.[0];
+    const scrapEl = document.getElementById('lobby-reward-scrap');
+    const chipEl = document.getElementById('lobby-reward-chip');
+    const chipImgEl = document.getElementById('lobby-reward-chip-img');
+    const perfectEl = document.getElementById('lobby-reward-perfect');
+    if (scrapEl) scrapEl.textContent = `${Math.round(baseScrap * 0.65 * (curMode === 'elite' ? 1.8 : 1))}+`;
+    if (chipEl) chipEl.textContent = firstDrop?.name || '定向芯片';
+    if (chipImgEl && firstDrop?.icon) { chipImgEl.src = firstDrop.icon; chipImgEl.alt = firstDrop.name || '定向芯片'; }
+    if (perfectEl) perfectEl.textContent = curMode === 'elite' ? '晶核 +10' : '晶核 +5';
 
     // 渲染基地城防加固系统
     this.renderFortification();

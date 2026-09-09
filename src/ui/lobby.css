@@ -1680,6 +1680,237 @@
   50% { box-shadow: 0 0 18px rgba(234, 179, 8, 0.75); transform: scale(1.02); }
 }
 
+/* 首页战斗中枢：关卡、载具、星级奖励与出击操作按战前决策顺序排列。 */
+#view-lobby {
+  padding-top: 8px;
+}
+
+.lobby-stage-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 4px 7px;
+}
+
+.lobby-stage-copy {
+  min-width: 0;
+}
+
+.lobby-stage-tools {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lobby-stage-heading .lobby-stage-info-name {
+  font-size: 20px;
+  line-height: 1.2;
+  margin: 2px 0 4px;
+}
+
+.lobby-stage-heading .lobby-power-banner {
+  min-width: 62px;
+  min-height: 34px;
+  padding: 5px 8px;
+  margin: 0;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 8px;
+}
+
+.lobby-stage-heading .lobby-power-val {
+  font-size: 14px;
+}
+
+.lobby-mode-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(4, 10, 20, 0.82);
+}
+
+.lobby-mode-btn {
+  min-width: 0;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.lobby-mode-btn small {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.lobby-mode-btn.active {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: linear-gradient(180deg, rgba(14, 116, 144, 0.55), rgba(8, 47, 73, 0.72));
+  color: #ecfeff;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.18);
+}
+
+.lobby-mode-btn.elite.active {
+  border-color: rgba(244, 63, 94, 0.65);
+  background: linear-gradient(180deg, rgba(159, 18, 57, 0.62), rgba(76, 5, 25, 0.78));
+  color: #fff1f2;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.2);
+}
+
+.lobby-mode-btn.locked {
+  opacity: 0.58;
+}
+
+.lobby-stage-arena {
+  height: clamp(250px, 38dvh, 330px);
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background-position: center 62%;
+}
+
+.lobby-stage-arena::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.18), transparent 32%, rgba(2, 6, 23, 0.65));
+  pointer-events: none;
+}
+
+.lobby-arena-callout {
+  position: absolute;
+  top: 13px;
+  left: 14px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.lobby-arena-callout strong {
+  color: #f8fafc;
+  font-size: 13px;
+}
+
+.lobby-fortress-truck {
+  bottom: 25px;
+  width: min(52%, 210px);
+  height: min(66%, 220px);
+}
+
+.lobby-floating-pet {
+  bottom: 38%;
+  left: 69%;
+}
+
+.lobby-reward-preview {
+  display: grid;
+  grid-template-columns: minmax(78px, 1fr) 10px minmax(78px, 1fr) 10px minmax(78px, 1fr);
+  align-items: center;
+  gap: 2px;
+  padding: 8px 9px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 8px;
+  background: rgba(12, 17, 27, 0.92);
+}
+
+.lobby-reward-node {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.lobby-reward-node img {
+  width: 29px;
+  height: 29px;
+  margin-bottom: 2px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.7));
+}
+
+.lobby-reward-stars {
+  margin-bottom: 3px;
+  color: #facc15;
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.lobby-reward-node strong {
+  min-width: 0;
+  min-height: 22px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #f8fafc;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.lobby-reward-node small {
+  color: #64748b;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.lobby-reward-line {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.72), rgba(245, 158, 11, 0.2));
+}
+
+#view-lobby .lobby-battle-cta-wrap {
+  z-index: 4;
+  margin: 0;
+}
+
+#view-lobby .lobby-battle-btn {
+  height: 58px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fbbf24, #f97316);
+  color: #28120a;
+  box-shadow: 0 7px 20px rgba(249, 115, 22, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+#view-lobby .lobby-fortification-card {
+  margin-top: 10px;
+  border-radius: 8px;
+}
+
+@media (max-width: 420px) {
+  .lobby-stage-heading { gap: 7px; }
+  .lobby-stage-heading .lobby-stage-info-name { font-size: 17px; }
+  .lobby-stage-tools { flex-direction: column; align-items: stretch; }
+  .lobby-stage-heading .lobby-power-banner { min-height: 29px; }
+  .lobby-stage-change-btn { min-height: 29px; padding: 4px 8px; }
+  .lobby-mode-btn { min-height: 38px; }
+  .lobby-stage-arena { height: clamp(250px, 36dvh, 305px); }
+  .lobby-reward-preview { grid-template-columns: minmax(70px, 1fr) 7px minmax(70px, 1fr) 7px minmax(70px, 1fr); padding-left: 6px; padding-right: 6px; }
+  .lobby-reward-node img { width: 25px; height: 25px; }
+  .lobby-reward-node strong { font-size: 9px; }
+}
+
 /* 战区导航卡与霸主卡片样式 */
 .chapter-tab-btn:hover {
   transform: translateY(-2px);
