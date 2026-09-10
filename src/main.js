@@ -12,7 +12,10 @@ import { installGameOptimization } from './systems/GameOptimization.js';
 import { installRenderOptimization } from './systems/RenderOptimization.js';
 import { installPersistenceOptimization } from './systems/PersistenceOptimization.js';
 import { installBuildIdentity } from './systems/BuildIdentitySystem.js';
+import { saveManager } from './systems/SaveManager.js';
 import { gameEvents } from './systems/EventBus.js';
+
+installPersistenceOptimization(saveManager);
 
 function wireStageAndRunes(game) {
   game.startStage = function(stageId) {
@@ -159,7 +162,6 @@ window.addEventListener('DOMContentLoaded', () => {
       installGameOptimization(gameInstance);
       installRenderOptimization(gameInstance);
       installBuildIdentity(gameInstance);
-      installPersistenceOptimization(saveManagerForRuntime());
       bindFeatureTarget(gameInstance);
       window.gameInstance = gameInstance;
       window.gameEvents = gameEvents;
@@ -172,7 +174,3 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 280);
   });
 });
-
-function saveManagerForRuntime() {
-  return window.__kaipaoSaveManager || null;
-}
