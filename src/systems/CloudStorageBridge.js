@@ -28,7 +28,7 @@ function getDeviceId() {
   id = typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.randomUUID === 'function'
     ? globalThis.crypto.randomUUID()
     : `device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
-  try { localStorage.setItem(DEVICE_KEY, id); } catch (_) { /* private mode / quota */ }
+  try { localStorage.setItem(DEVICE_KEY, id); } catch (_) { /* 私有模式或存储空间不足时忽略 */ }
   return id;
 }
 
@@ -58,9 +58,10 @@ function setRuntimeState(state) {
       remoteRevision: state.remoteRevision || 0,
       updatedAt: Date.now()
     }));
-  } catch (_) { /* ignore */ }
+  } catch (_) { /* 状态提示写入失败不影响游戏 */ }
 }
 
+// 为网络请求增加超时控制，避免 Cloudflare 接口异常时一直阻塞游戏启动或存档流程。
 function withTimeout(requestFactory, ms = REQUEST_TIMEOUT_MS) {
   if (typeof AbortController === 'undefined') return requestFactory(undefined);
   const controller = new AbortController();
@@ -68,6 +69,7 @@ function withTimeout(requestFactory, ms = REQUEST_TIMEOUT_MS) {
   return requestFactory(controller.signal).finally(() => clearTimeout(timer));
 }
 
+// 统一封装所有云端 HTTP API 请求，自动设置 JSON 请求头和超时。
 async function fetchJson(url, options = {}) {
   return withTimeout((signal) => fetch(url, {
     ...options,
@@ -114,9 +116,22 @@ export async function installCloudStorage(saveManager) {
     try {
       const suffix = `${Date.now()}_${reason}`;
       localStorage.setItem(`starcore_vanguard_backup_${suffix}`, JSON.stringify(data));
-    } catch (_) { /* backup is best effort */ }
+    } catch (_) { /* 冲突备份属于尽力而为，不影响主流程 */ }
   };
 
+  // ============================================================
+  // 云端写入 API：PUT /api/save
+  // 请求头：X-Device-Id
+  // 请求体：
+  //   deviceId         当前匿名玩家设备 ID
+  //   baseRevision     客户端上次读取到的云端版本，用于乐观锁
+  //   clientUpdatedAt  客户端存档更新时间
+  //   data             完整玩家存档 JSON
+  //
+  // 成功：返回新的 revision。
+  // 409：表示云端版本已变化，执行冲突保护并采用云端版本。
+  // 网络异常：保留本地存档，并进入指数退避重试。
+  // ============================================================
   const requestSave = async ({ keepalive = false } = {}) => {
     if (!remoteDirty || savingRemote) {
       if (savingRemote) queuedAfterSave = true;
@@ -212,6 +227,16 @@ export async function installCloudStorage(saveManager) {
     scheduleRemoteSave(true);
   };
 
+  // ============================================================
+  // 云端读取 API：GET /api/save?deviceId=<设备ID>
+  // 请求头：X-Device-Id
+  // 返回：
+  //   data             完整玩家存档 JSON
+  //   revision         云端存档版本号
+  //   clientUpdatedAt  云端存档最后更新时间
+  //
+  // 启动时先读取云端，再创建 Game 实例，避免旧本地存档覆盖最新云端数据。
+  // ============================================================
   const loadRemote = async () => {
     try {
       const localSaveExists = hasLocalSave();
@@ -255,6 +280,7 @@ export async function installCloudStorage(saveManager) {
 
   const initResult = await loadRemote();
 
+  // 页面即将离开时再次尝试保存云端存档；keepalive 用于尽量让请求在页面卸载时继续完成。
   const flushOnExit = () => {
     if (!remoteDirty) return;
     void requestSave({ keepalive: true });
@@ -264,6 +290,8 @@ export async function installCloudStorage(saveManager) {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) flushOnExit();
   });
+
+  // 网络恢复后立即重试未完成的云端存档请求。
   window.addEventListener('online', () => {
     if (remoteDirty) {
       retryDelayMs = REMOTE_SAVE_DEBOUNCE_MS;
