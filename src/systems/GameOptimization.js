@@ -5,6 +5,7 @@ import { ObjectPool } from './ObjectPool.js';
 import { SpatialHash } from './SpatialHash.js';
 import { sound } from './SoundEngine.js';
 import { GAME_CONFIG } from '../core/Config.js';
+import { gameEvents } from '../core/GameEventBus.js';
 
 const EFFECT_ARRAYS = [
   'burnZones', 'activeTrucks', 'iceSpikes', 'teslaArcs', 'shockwaves', 'particles', 'damageTexts', 'hitRings'
@@ -20,6 +21,33 @@ function normalizeAngleDiff(diff) {
   return diff;
 }
 
+function chooseAnyActiveEnemy(game) {
+  const enemies = game.enemies;
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i];
+    if (enemy.active && enemy.hp > 0 && enemy.y - enemy.radius >= ENEMY_ENTRY_Y) return enemy;
+  }
+  return null;
+}
+
+function chooseRandomActiveEnemy(game) {
+  const enemies = game.enemies;
+  let activeCount = 0;
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i];
+    if (enemy.active && enemy.hp > 0 && enemy.y - enemy.radius >= ENEMY_ENTRY_Y) activeCount++;
+  }
+  if (activeCount === 0) return null;
+
+  let pick = Math.floor(Math.random() * activeCount);
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i];
+    if (!enemy.active || enemy.hp <= 0 || enemy.y - enemy.radius < ENEMY_ENTRY_Y) continue;
+    if (pick-- === 0) return enemy;
+  }
+  return null;
+}
+
 export function installGameOptimization(game) {
   if (!game || game.__optimizationInstalled) return;
   game.__optimizationInstalled = true;
@@ -32,7 +60,6 @@ export function installGameOptimization(game) {
     this.width = Math.max(1, rect.width);
     this.height = Math.max(1, rect.height);
 
-    // H5 游戏把 DPR 封顶到 2，避免 3x/4x 设备让 Canvas 像素量按 DPR² 激增。
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.max(1, Math.round(this.width * dpr));
     this.canvas.height = Math.max(1, Math.round(this.height * dpr));
@@ -52,21 +79,14 @@ export function installGameOptimization(game) {
   game.resize();
 
   // ---------------------------------------------------------------------------
-  // 2. 敌人空间索引。
-  //    注意：索引 token 跟“战斗 update tick”绑定，而不是跟独立 RAF 绑定，
-  //    因此不会出现 Game.update 已移动敌人但 hash 还是上一帧位置的问题。
+  // 2. 敌人空间索引：token 跟战斗 update tick 绑定。
   // ---------------------------------------------------------------------------
   const enemyHash = new SpatialHash(96);
   game.enemySpatialHash = enemyHash;
   let enemyHashToken = 0;
-
   const rebuildEnemyHash = () => {
     enemyHashToken++;
     enemyHash.rebuild(game.enemies, enemyHashToken);
-  };
-
-  const forEachEnemyNear = (x, y, radius, fn) => {
-    enemyHash.forEachInRadius(x, y, radius, fn);
   };
 
   // ---------------------------------------------------------------------------
@@ -95,7 +115,7 @@ export function installGameOptimization(game) {
     sound.playExplosion();
 
     rebuildEnemyHash();
-    forEachEnemyNear(x, y, rad + 32, (e) => {
+    enemyHash.forEachInRadius(x, y, rad + 32, (e) => {
       if (!e.active || e.y - e.radius < ENEMY_ENTRY_Y) return;
       const dx = e.x - x;
       const dy = e.y - y;
@@ -135,7 +155,7 @@ export function installGameOptimization(game) {
     }
 
     rebuildEnemyHash();
-    forEachEnemyNear(game.hero.x, game.hero.y, range + 32, (e) => {
+    enemyHash.forEachInRadius(game.hero.x, game.hero.y, range + 32, (e) => {
       if (!e.active) return;
       const dx = e.x - game.hero.x;
       const dy = e.y - game.hero.y;
@@ -152,26 +172,20 @@ export function installGameOptimization(game) {
   };
 
   // ---------------------------------------------------------------------------
-  // 5. 核心战斗 update：消除 bullets × enemies、iceSpikes × enemies、
-  //    burnZones × enemies、trucks × enemies 的全量嵌套扫描。
+  // 5. 核心战斗 update：统一使用 enemySpatialHash 做 broad-phase。
   // ---------------------------------------------------------------------------
   game.combatSystem.update = function optimizedCombatUpdate(dt) {
     const combat = this;
-
-    // 战斗 update 开始时统一建立一次最新敌人索引；以下所有碰撞查询复用。
     rebuildEnemyHash();
 
-    // 火箭
     for (let i = 0; i < this.activeRockets.length; i++) {
       const r = this.activeRockets[i];
       if (!r.active) continue;
-
       r.progress += dt / r.duration;
       const t = Math.min(1, r.progress);
       const cx = r.sx + (r.tx - r.sx) * t;
       const cy = r.sy + (r.ty - r.sy) * t - Math.sin(t * Math.PI) * 80;
       game.spawnParticles(cx, cy, '#ff7700', 2, 'fire');
-
       if (t >= 1) {
         r.active = false;
         combat.detonateRocket(r.tx, r.ty);
@@ -179,11 +193,10 @@ export function installGameOptimization(game) {
     }
     ObjectPool.compact(this.activeRockets);
 
-    // 子弹：先做点位置所在 cell 查询，再进行精确圆碰撞。
+    // 子弹使用当前位置附近 cell 查询，替代全量 bullets × enemies 双循环。
     for (let i = 0; i < game.bullets.length; i++) {
       const b = game.bullets[i];
       if (!b.active) continue;
-
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.life -= dt;
@@ -194,10 +207,8 @@ export function installGameOptimization(game) {
         continue;
       }
 
-      const queryRadius = b.radius + 32;
-      enemyHash.forEachInRadius(b.x, b.y, queryRadius, (e) => {
+      enemyHash.forEachInRadius(b.x, b.y, b.radius + 32, (e) => {
         if (!b.active || !e.active || e.y - e.radius < ENEMY_ENTRY_Y) return;
-
         const hitR = b.radius + e.radius;
         const dx = b.x - e.x;
         const dy = b.y - e.y;
@@ -206,7 +217,6 @@ export function installGameOptimization(game) {
 
         combat.onHit(e, b.damage, b.isCrit, 'normal', b.vx, b.vy);
         game.spawnParticles(b.x, b.y, b.isCrit ? '#ffcc00' : '#00f0ff', 4, 'spark');
-
         b.pierceLeft--;
         if (b.pierceLeft <= 0) {
           b.active = false;
@@ -216,15 +226,12 @@ export function installGameOptimization(game) {
     }
     ObjectPool.compact(game.bullets);
 
-    // 冰刺：同样走空间查询。
     for (let i = 0; i < game.iceSpikes.length; i++) {
       const spike = game.iceSpikes[i];
       if (!spike.active) continue;
-
       spike.x += spike.vx * dt;
       spike.y += spike.vy * dt;
       spike.life -= dt;
-
       if (spike.life <= 0 || spike.y < -50 || spike.x < 0 || spike.x > game.width) {
         spike.active = false;
         continue;
@@ -237,7 +244,6 @@ export function installGameOptimization(game) {
         const dy = e.y - spike.y;
         if (Math.abs(dy) > hitR + 4 || Math.abs(dx) > hitR + 4) return;
         if (dx * dx + dy * dy >= hitR * hitR) return;
-
         combat.onHit(e, spike.damage, false, 'freeze', spike.vx, spike.vy);
         game.spawnParticles(spike.x, spike.y, '#00f0ff', 3, 'spark');
         spike.pierce--;
@@ -246,11 +252,9 @@ export function installGameOptimization(game) {
     }
     ObjectPool.compact(game.iceSpikes);
 
-    // 灼烧区：只查询覆盖范围内的敌人。
     for (let i = 0; i < game.burnZones.length; i++) {
       const bz = game.burnZones[i];
       if (!bz.active) continue;
-
       bz.life -= dt;
       bz.tickTimer += dt;
 
@@ -280,16 +284,13 @@ export function installGameOptimization(game) {
           }
         });
       }
-
       if (bz.life <= 0) bz.active = false;
     }
     ObjectPool.compact(game.burnZones);
 
-    // 战车：空间查询 + hitEnemies Set 保持原有一次命中机制。
     for (let i = 0; i < game.activeTrucks.length; i++) {
       const truck = game.activeTrucks[i];
       if (!truck.active) continue;
-
       truck.y -= truck.speed * dt;
 
       if (game.synergies.truckInferno) {
@@ -311,7 +312,6 @@ export function installGameOptimization(game) {
       const tRoad = game.getRoadBounds(truck.y);
       const targetTruckX = tRoad.left + tRoad.roadWidth * (truck.laneRatio || 0.5);
       truck.x += (targetTruckX - truck.x) * Math.min(1, dt * 4.5);
-
       game.spawnParticles(truck.x + (Math.random() * 30 - 15), truck.y + 40, '#94a3b8', 2, 'smoke');
 
       const halfW = truck.width / 2;
@@ -335,7 +335,55 @@ export function installGameOptimization(game) {
   };
 
   // ---------------------------------------------------------------------------
-  // 6. 高频 HUD：战斗数值照常每帧计算，DOM 更新限制在约 15Hz。
+  // 6. remove a hot-path Array.filter allocation in Game.updateSkills.
+  //    Original behavior is preserved: pick one uniformly from currently active enemies.
+  // ---------------------------------------------------------------------------
+  game.updateSkills = function optimizedUpdateSkills(dt) {
+    const skills = this.skills;
+
+    if (skills.rocket.level > 0) {
+      skills.rocket.timer += dt;
+      if (skills.rocket.timer >= skills.rocket.cooldown) {
+        skills.rocket.timer = 0;
+        let targetX = this.width / 2;
+        let targetY = this.height * 0.38;
+        if (this.enemies.length > 0) {
+          const target = chooseRandomActiveEnemy(this);
+          if (target) {
+            targetX = target.x;
+            targetY = target.y;
+          }
+        }
+        this.combatSystem.launchRocket(targetX, targetY);
+      }
+    }
+
+    if (skills.truck.level > 0) {
+      skills.truck.timer += dt;
+      if (skills.truck.timer >= skills.truck.cooldown) {
+        skills.truck.timer = 0;
+        this.combatSystem.launchArmoredTruck();
+      }
+    }
+
+    if (skills.freeze.level > 0) {
+      skills.freeze.timer += dt;
+      if (skills.freeze.timer >= skills.freeze.cooldown) {
+        skills.freeze.timer = 0;
+        skills.freeze.activeTimer = skills.freeze.duration;
+        if (typeof sound.playFreezeSpray === 'function') sound.playFreezeSpray();
+      }
+      if (skills.freeze.activeTimer > 0) {
+        skills.freeze.activeTimer -= dt;
+        this.combatSystem.applyFreezeRay(dt);
+      }
+    }
+
+    this.hud.updateSkillHUD(this);
+  };
+
+  // ---------------------------------------------------------------------------
+  // 7. 高频 HUD：战斗数值照常每帧计算，DOM 更新限制在约 15Hz。
   // ---------------------------------------------------------------------------
   const originalHudUpdate = game.hud.updateSkillHUD?.bind(game.hud);
   if (originalHudUpdate) {
@@ -349,7 +397,22 @@ export function installGameOptimization(game) {
   }
 
   // ---------------------------------------------------------------------------
-  // 7. 粒子自适应预算：优先削减视觉对象，不改变敌人数和伤害。
+  // 8. ammo_changed 是换弹期间唯一明显的每帧 EventBus 热点，改为约 15Hz；
+  //    状态本身仍每帧更新，完成/开始换弹事件照常立即发送。
+  // ---------------------------------------------------------------------------
+  const originalEmit = gameEvents.emit.bind(gameEvents);
+  let lastAmmoEmit = 0;
+  gameEvents.emit = function optimizedEmit(eventName, payload) {
+    if (eventName === 'ammo_changed' && payload?.isReloading) {
+      const now = performance.now();
+      if (now - lastAmmoEmit < 66) return;
+      lastAmmoEmit = now;
+    }
+    return originalEmit(eventName, payload);
+  };
+
+  // ---------------------------------------------------------------------------
+  // 9. 粒子自适应预算：优先削减视觉对象，不改变敌人数和伤害。
   // ---------------------------------------------------------------------------
   const originalSpawnParticles = game.spawnParticles.bind(game);
   game.spawnParticles = function optimizedSpawnParticles(x, y, color, count, type = 'spark') {
@@ -366,7 +429,7 @@ export function installGameOptimization(game) {
   };
 
   // ---------------------------------------------------------------------------
-  // 8. 长局临时对象整理。
+  // 10. 长局临时对象整理。
   // ---------------------------------------------------------------------------
   game.compactTransientObjects = () => {
     for (const name of EFFECT_ARRAYS) {
@@ -380,7 +443,7 @@ export function installGameOptimization(game) {
   };
 
   // ---------------------------------------------------------------------------
-  // 9. 轻量性能指标，不创建 DOM。
+  // 11. 轻量性能指标，不创建 DOM。
   // ---------------------------------------------------------------------------
   const perf = {
     fps: 60,
@@ -437,6 +500,8 @@ export function installGameOptimization(game) {
     }
   });
 
+  // 暴露一个轻量辅助供未来技能/宠物模块复用，不改变现有 API。
+  game.findAnyActiveEnemy = () => chooseAnyActiveEnemy(game);
   game.effectBudget = {
     particles: 220,
     damageTexts: 28,
