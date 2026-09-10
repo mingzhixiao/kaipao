@@ -207,11 +207,11 @@
   letter-spacing: 1px;
 }
 
-/* 战场战车与伴飞宠物展示台 */
+/* 战场要塞与伴飞僚机展示台 */
 .lobby-stage-arena {
   position: relative;
   height: 230px;
-  background: radial-gradient(circle at 50% 65%, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.8) 75%), url('/assets/environment/bg_highway.png') center bottom / cover no-repeat;
+  background: radial-gradient(circle at 50% 65%, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.8) 75%), url('../../assets/environment/bg_highway.jpg?v=20260909_scifi_v3') center bottom / cover no-repeat;
   border-radius: 20px;
   border: 1.5px solid rgba(56, 189, 248, 0.3);
   margin-bottom: 14px;
@@ -231,7 +231,7 @@
   background: linear-gradient(to top, #020617, transparent);
 }
 
-/* 装甲战车投影 */
+/* 磁浮重装扫荡舰投影 */
 .lobby-fortress-truck {
   position: absolute;
   bottom: 30px;
@@ -239,7 +239,7 @@
   transform: translateX(-50%);
   width: 90px;
   height: 90px;
-  background: url('/assets/vehicles/truck.png') center center / contain no-repeat;
+  background: url('../../assets/vehicles/truck.png?v=20260909_scifi_v2') center center / contain no-repeat;
   filter: drop-shadow(0 15px 25px rgba(0,0,0,0.85));
   animation: truckIdleBreath 3.5s ease-in-out infinite;
 }
@@ -249,7 +249,7 @@
   50% { transform: translateX(-50%) translateY(-5px); }
 }
 
-/* 伴飞宠物浮空动效 */
+/* 伴飞僚机浮空动效 */
 .lobby-floating-pet {
   position: absolute;
   bottom: 75px;
@@ -858,7 +858,7 @@
   object-fit: cover;
 }
 
-/* ------------------- TAB 4: 宠物乐园 (Pets) ------------------- */
+/* ------------------- TAB 4: 伴飞僚机 (Pets) ------------------- */
 .pets-showcase-grid {
   display: grid;
   grid-template-columns: 1fr;

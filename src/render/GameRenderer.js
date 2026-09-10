@@ -10,6 +10,61 @@ export class GameRenderer {
     this.bgCtx = this.bgCanvas.getContext('2d');
     this.bgDirty = true;
     this.cachedStageId = -1;
+    this._shadowSpriteCanvas = null;
+    this.pixelRatio = 1;
+    this.bgLogicalWidth = 0;
+    this.bgLogicalHeight = 0;
+  }
+
+  // 主画布的 devicePixelRatio。离屏背景层必须按同一比例分配缓冲，
+  // 否则在高 DPR 屏上会被放大 DPR 倍而发虚。
+  setPixelRatio(ratio) {
+    const r = Math.max(1, Math.min(ratio || 1, 3));
+    if (r === this.pixelRatio) return;
+    this.pixelRatio = r;
+    this.bgDirty = true;
+  }
+
+  // 接触投影贴图：预烘焙一次，替代每个敌人每帧 createRadialGradient + 3 次 addColorStop。
+  // 原画法是「圆形径向渐变 + 椭圆路径裁剪」，这里把该 alpha 剖面连同椭圆遮罩一起烘焙进方形贴图，
+  // 再用 drawImage 拉伸到椭圆包围盒，结果与原实现一致但零渐变对象分配。
+  _shadowSprite() {
+    if (this._shadowSpriteCanvas) return this._shadowSpriteCanvas;
+    const S = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = S;
+    canvas.height = S;
+    const g = canvas.getContext('2d');
+    const imgData = g.createImageData(S, S);
+    const data = imgData.data;
+    // 椭圆纵横比 shadowH / shadowW 的代表值 (实际取值区间约 0.28 ~ 0.40)
+    const aspect = 0.33;
+    // 归一化空间下约 1 像素的椭圆边缘羽化，避免出现硬锯齿
+    const feather = 2 / S;
+    for (let y = 0; y < S; y++) {
+      const v = ((y + 0.5) / S) * 2 - 1;
+      for (let x = 0; x < S; x++) {
+        const u = ((x + 0.5) / S) * 2 - 1;
+        // 径向渐变按 shadowW 归一化后，纵向被 shadowH/shadowW 压缩
+        const t = Math.sqrt(u * u + aspect * aspect * v * v);
+        let a;
+        if (t >= 1) a = 0;
+        else if (t <= 0.65) a = 1 - (t / 0.65) * 0.6;   // 1.0 -> 0.4
+        else a = 0.4 - ((t - 0.65) / 0.35) * 0.4;       // 0.4 -> 0
+        // 椭圆裁剪遮罩
+        const r = Math.sqrt(u * u + v * v);
+        if (r >= 1) a = 0;
+        else if (r > 1 - feather) a *= (1 - r) / feather;
+        const i = (y * S + x) * 4;
+        data[i] = 5;
+        data[i + 1] = 8;
+        data[i + 2] = 16;
+        data[i + 3] = a > 0 ? (a * 255) | 0 : 0;
+      }
+    }
+    g.putImageData(imgData, 0, 0);
+    this._shadowSpriteCanvas = canvas;
+    return canvas;
   }
 
   // 标记背景需要重绘 (例如屏幕尺寸改变时)
@@ -28,7 +83,7 @@ export class GameRenderer {
       ctx.translate(shake.x, shake.y);
     }
 
-    // 1. 废土公路原画背景 (离屏 Canvas 预缓存)
+    // 1. 星河要塞前哨星轨背景 (离屏 Canvas 预缓存)
     this.renderBattlefield(ctx, game);
 
     // 2. 全屏冲击波 / EMP 光环
@@ -43,7 +98,7 @@ export class GameRenderer {
     // 5. 怪物与突变暴君
     this.renderEnemies(ctx, game);
 
-    // 6. 装甲战车
+    // 6. 磁浮重装扫荡舰
     this.renderTrucks(ctx, game);
 
     // 7. 特斯拉高压跳跃电弧
@@ -63,7 +118,7 @@ export class GameRenderer {
       this.renderMuzzleFlash(ctx, game);
     }
 
-    // 12. 极寒射线扇形光锥
+    // 12. 绝对零度射线扇形光锥
     if (game.skills.freeze.activeTimer > 0) {
       this.renderFreezeCone(ctx, game);
     }
@@ -80,9 +135,13 @@ export class GameRenderer {
   updateOffscreenBackground(width, height, stageId = 1) {
     const w = Math.max(1, Math.floor(width));
     const h = Math.max(1, Math.floor(height));
-    this.bgCanvas.width = w;
-    this.bgCanvas.height = h;
+    const ratio = this.pixelRatio;
+    // 缓冲按设备像素分配、绘制仍用逻辑像素，贴回主画布时即 1:1，高 DPR 下不再发虚
+    this.bgCanvas.width = Math.max(1, Math.round(w * ratio));
+    this.bgCanvas.height = Math.max(1, Math.round(h * ratio));
     const bctx = this.bgCtx;
+    // 重设 width/height 会清空上下文状态，变换需在之后设置
+    bctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 
     const stConfig = GAME_CONFIG.stages?.find(s => s.id === stageId) || GAME_CONFIG.stages?.[0];
     const chId = stConfig?.chapter || Math.min(5, Math.ceil((stageId || 1) / 10));
@@ -106,7 +165,7 @@ export class GameRenderer {
       bctx.fillRect(0, 0, w, h);
     }
 
-    // 废土远景灰霾层 (破桥远处纵深空气透视)
+    // 深空远景星云层 (纵深空间空气透视)
     const skyHaze = bctx.createLinearGradient(0, 0, 0, 180);
     skyHaze.addColorStop(0, amb.haze || 'rgba(15, 23, 42, 0.55)');
     skyHaze.addColorStop(0.7, 'rgba(20, 30, 48, 0.15)');
@@ -114,7 +173,7 @@ export class GameRenderer {
     bctx.fillStyle = skyHaze;
     bctx.fillRect(0, 0, w, 180);
 
-    // 电影级暗角 Vignette (聚焦中央公路与战斗核心区)
+    // 电影级暗角 Vignette (聚焦中央星轨防线与战斗核心区)
     const vig = bctx.createRadialGradient(
       w / 2, h / 2, w * 0.42,
       w / 2, h / 2, w * 0.92
@@ -124,6 +183,9 @@ export class GameRenderer {
     bctx.fillStyle = vig;
     bctx.fillRect(0, 0, w, h);
 
+    bctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.bgLogicalWidth = w;
+    this.bgLogicalHeight = h;
     this.bgDirty = false;
   }
 
@@ -131,12 +193,14 @@ export class GameRenderer {
     const w = Math.floor(game.width);
     const h = Math.floor(game.height);
 
-    if (this.bgDirty || this.bgCanvas.width !== w || this.bgCanvas.height !== h || this.cachedStageId !== game.stageId) {
+    if (this.bgDirty || this.cachedStageId !== game.stageId
+      || this.bgLogicalWidth !== w || this.bgLogicalHeight !== h) {
       this.cachedStageId = game.stageId;
       this.updateOffscreenBackground(w, h, game.stageId);
     }
 
-    ctx.drawImage(this.bgCanvas, 0, 0);
+    // 离屏层存的是设备像素，按逻辑尺寸贴回，等效于逐设备像素 1:1
+    ctx.drawImage(this.bgCanvas, 0, 0, game.width, game.height);
 
     // 防线前沿警戒线
     ctx.fillStyle = 'rgba(255, 42, 95, 0.12)';
@@ -201,6 +265,7 @@ export class GameRenderer {
   }
 
   renderEnemies(ctx, game) {
+    const shadowSprite = this._shadowSprite();
     for (let i = 0; i < game.enemies.length; i++) {
       const e = game.enemies[i];
       ctx.save();
@@ -282,17 +347,12 @@ export class GameRenderer {
       const shadowW = e.radius * (1.15 + (1 - stepSqueeze) * 0.24) * depthScale * scaleX;
       const shadowH = e.radius * 0.42 * depthScale;
       const shadowAlpha = 0.45 + (bobY / 5.0) * 0.2;
+      const shadowFootY = e.radius * 0.68 * depthScale;
 
-      ctx.save();
-      const shadowGrad = ctx.createRadialGradient(shadowFootShift, e.radius * 0.68 * depthScale, 0, shadowFootShift, e.radius * 0.68 * depthScale, shadowW);
-      shadowGrad.addColorStop(0, `rgba(5, 8, 16, ${shadowAlpha})`);
-      shadowGrad.addColorStop(0.65, `rgba(5, 8, 16, ${shadowAlpha * 0.4})`);
-      shadowGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = shadowGrad;
-      ctx.beginPath();
-      ctx.ellipse(shadowFootShift, e.radius * 0.68 * depthScale, shadowW, shadowH, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      const prevAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = prevAlpha * shadowAlpha;
+      ctx.drawImage(shadowSprite, shadowFootShift - shadowW, shadowFootY - shadowH, shadowW * 2, shadowH * 2);
+      ctx.globalAlpha = prevAlpha;
 
       // 4. Boss 霸气暗红辐射火圈与肩部排气喷烟
       if (e.isBoss) {
@@ -542,7 +602,7 @@ export class GameRenderer {
     ctx.stroke();
   }
 
-  // 疾行感染者狂暴爪刺
+  // 硅基噬矿兽能量刺足
   renderRunnerClaws(ctx, size, phase, isMoving) {
     if (!isMoving) return;
     const lOff = Math.sin(phase) * 7;
@@ -604,7 +664,7 @@ export class GameRenderer {
       ctx.ellipse(0, 10, t.width * 0.65, t.height * 0.55, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 尾部双重火箭喷射烈焰
+      // 尾部双重离子推进喷射光焰
       const flameH = 40 + Math.sin(t.timer * 50) * 18;
       const flameGrad = ctx.createLinearGradient(0, t.height * 0.42, 0, t.height * 0.42 + flameH);
       flameGrad.addColorStop(0, '#ffffff');
@@ -615,8 +675,8 @@ export class GameRenderer {
       ctx.fillRect(-t.width * 0.34, t.height * 0.42, 16, flameH);
       ctx.fillRect(t.width * 0.34 - 16, t.height * 0.42, 16, flameH);
 
-      // 装甲战车原画动态 Sprite
-      const truckSprite = assets.getTruck(t.timer * 12);
+      // 磁浮重装扫荡舰动态 Sprite
+      const truckSprite = assets.getTruck();
       if (truckSprite) {
         ctx.shadowColor = '#00f0ff';
         ctx.shadowBlur = 10;

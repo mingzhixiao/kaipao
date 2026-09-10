@@ -5,10 +5,10 @@
   "types": {
     "fluffy": {
       "id": "fluffy",
-      "name": "小毛球",
+      "name": "智械侦察机·光球",
       "tag": "速射突击 · 屏障防护",
       "asset": "assets/pets/fluffy.png",
-      "description": "发射多重连发能量弹幕，并用护盾抵挡前线敌人冲击。",
+      "description": "发射多重连发能量弹幕，并用偏振护盾抵挡前线敌对目标冲击。",
       "baseStats": {
         "hp": 70,
         "attack": 14,
@@ -20,17 +20,17 @@
       "skill": "BULLET_SPRAY",
       "skillParams": { "bulletCount": 3, "spread": 0.32 },
       "evolutions": [
-        { "level": 1, "title": "幼生毛球", "bulletCount": 3, "spread": 0.52, "frostSlow": 0 },
-        { "level": 5, "title": "觉醒·爆裂毛球", "bulletCount": 5, "spread": 0.65, "frostSlow": 0.15 },
-        { "level": 10, "title": "终极·机甲神球", "bulletCount": 7, "spread": 0.78, "frostSlow": 0.3 }
+        { "level": 1, "title": "一阶·光球侦察机", "bulletCount": 3, "spread": 0.52, "frostSlow": 0 },
+        { "level": 5, "title": "二阶·脉冲突击僚机", "bulletCount": 5, "spread": 0.65, "frostSlow": 0.15 },
+        { "level": 10, "title": "三阶·星界矩阵重装机", "bulletCount": 7, "spread": 0.78, "frostSlow": 0.3 }
       ]
     },
     "dragon": {
       "id": "dragon",
-      "name": "烈焰幼龙",
-      "tag": "火系吐息 · 范围灼烧",
+      "name": "突击先锋机·炽焰",
+      "tag": "离子聚能 · 范围灼烧",
       "asset": "assets/pets/dragon.png",
-      "description": "喷吐扇形炽烈龙炎，造成持续火焰灼烧并引燃战场。",
+      "description": "喷射扇形炽烈等离子射流，造成持续等离子灼烧并覆盖战场。",
       "baseStats": {
         "hp": 100,
         "attack": 22,
@@ -42,9 +42,9 @@
       "skill": "FIRE_BREATH",
       "skillParams": { "duration": 1.0, "angle": 1.0472 },
       "evolutions": [
-        { "level": 1, "title": "幼龙烈火", "angle": 1.05, "duration": 1.0, "burnDpsRatio": 0.3 },
-        { "level": 5, "title": "觉醒·狂炎巨龙", "angle": 1.57, "duration": 1.3, "burnDpsRatio": 0.5 },
-        { "level": 10, "title": "终极·灭世熔岩龙", "angle": 2.0, "duration": 1.6, "burnDpsRatio": 0.8 }
+        { "level": 1, "title": "一阶·离子喷射", "angle": 1.05, "duration": 1.0, "burnDpsRatio": 0.3 },
+        { "level": 5, "title": "二阶·等离子聚能狂涌", "angle": 1.57, "duration": 1.3, "burnDpsRatio": 0.5 },
+        { "level": 10, "title": "三阶·天启熔核风暴", "angle": 2.0, "duration": 1.6, "burnDpsRatio": 0.8 }
       ]
     }
   }

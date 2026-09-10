@@ -1,7 +1,7 @@
 {
   "skills": {
     "rocket": {
-      "name": "温压火箭",
+      "name": "裂变等离子重炮",
       "element": "fire",
       "cooldown": 4.5,
       "damage": 85,
@@ -9,10 +9,10 @@
       "flightDuration": 0.85,
       "burnDuration": 3.0,
       "burnDps": 24,
-      "description": "部署温压重型火箭，定点引发大范围核爆与持续烈焰灼烧区。"
+      "description": "部署裂变等离子重炮，定点引发大范围高能核爆与持续炽热电浆灼烧区。"
     },
     "truck": {
-      "name": "装甲战车",
+      "name": "磁浮重装扫荡舰",
       "element": "physical",
       "cooldown": 7.0,
       "damage": 120,
@@ -20,10 +20,10 @@
       "speed": 620,
       "width": 84,
       "height": 130,
-      "description": "呼叫重型突击装甲车，轰鸣冲撞碾压沿途所有敌人。"
+      "description": "呼叫高速重装磁浮扫荡舰，高速冲撞碾压沿途所有敌对目标。"
     },
     "freeze": {
-      "name": "极寒射线",
+      "name": "绝对零度射线",
       "element": "ice",
       "cooldown": 6.0,
       "duration": 2.2,
@@ -31,10 +31,10 @@
       "slowRatio": 0.35,
       "range": 320,
       "coneAngle": 0.52,
-      "description": "喷射大范围超低温冰雾，快速减速并冰冻前方敌人。"
+      "description": "喷射大范围超低温粒子束，快速减速并冰冻前方敌对目标。"
     },
     "laser": {
-      "name": "湮灭射线",
+      "name": "粒子歼灭切割器",
       "element": "thunder",
       "cooldown": 3.0,
       "width": 10,
@@ -42,10 +42,10 @@
       "burnDamage": 0.2,
       "burnDuration": 2.0,
       "displayDuration": 0.2,
-      "description": "释放高能贯穿电磁光束，对直线目标造成高额伤害并施加灼烧。"
+      "description": "释放高能贯穿粒子光束，对直线目标造成高额伤害并施加电离灼烧。"
     },
     "tornado": {
-      "name": "裂风涡流",
+      "name": "微型引力奇点",
       "element": "wind",
       "cooldown": 8.0,
       "duration": 4.0,
@@ -53,10 +53,10 @@
       "damagePerSecond": 0.3,
       "pullStrength": 0.03,
       "maxPullSpeed": 50,
-      "description": "生成持续风暴涡流，牵引敌人并持续造成风属性伤害。"
+      "description": "生成持续微型引力奇点，牵引敌对目标并持续造成引力撕裂伤害。"
     },
     "bomber": {
-      "name": "轨道轰炸",
+      "name": "天基动能天谴打击",
       "element": "fire",
       "cooldown": 12.0,
       "radius": 250,
@@ -65,10 +65,10 @@
       "damage": 0.8,
       "knockback": 100,
       "maxAimDistance": 300,
-      "description": "连续投放 3 枚轨道炸弹，对爆炸区域造成范围伤害并击退敌人。"
+      "description": "连续投放 3 枚天基动能聚能弹，对爆炸区域造成范围伤害并击退敌对目标。"
     },
     "boomerang": {
-      "name": "回旋刃",
+      "name": "高周波磁旋刃",
       "element": "physical",
       "cooldown": 5.0,
       "speed": 400,
@@ -76,7 +76,7 @@
       "damage": 1.0,
       "width": 20,
       "critBonus": 0.35,
-      "description": "高速合金回旋穿透飞刃，往返切割并对同一目标每一轮仅命中一次。"
+      "description": "高速合金高周波磁旋飞刃，往返切割并对同一目标每一轮仅命中一次。"
     }
   }
 }

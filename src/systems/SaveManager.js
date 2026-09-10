@@ -1,10 +1,29 @@
-// ---------------- 本地持久化：战报 + 关卡进度 + 符文 + 宠物 + 枪械 + 背包素材 + 指挥官 ----------------
+// ---------------- 本地持久化：战报 + 关卡进度 + 符文 + 僚机 + 枪械 + 背包素材 + 指挥官 ----------------
 import { GAME_CONFIG } from '../core/Config.js';
 
-const SAVE_KEY = 'kaipao_roguelike_save_v5';
+const SAVE_KEY = 'starcore_vanguard_save_v6';
+const LEGACY_KEYS = ['kaipao_roguelike_save_v5', 'kaipao_roguelike_save_v4'];
 
 export class SaveManager {
-  constructor() { this.data = this.load(); }
+  constructor() {
+    this.data = this.load();
+    this._flushTimer = 0;
+    this._dirty = false;
+    this._lifecycleBound = false;
+    this._bindLifecycleFlush();
+  }
+
+  // 页面隐藏/卸载时立刻落盘，保证防抖窗口内的改动不会丢
+  _bindLifecycleFlush() {
+    if (this._lifecycleBound || typeof window === 'undefined') return;
+    this._lifecycleBound = true;
+    const flushNow = () => this.flush();
+    window.addEventListener('pagehide', flushNow);
+    window.addEventListener('beforeunload', flushNow);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => { if (document.hidden) flushNow(); });
+    }
+  }
 
   getDefaultData() {
     return {
@@ -23,9 +42,9 @@ export class SaveManager {
         regenLevel: 1,
         armorLevel: 1
       },
-      // 宠物系统 (通关第3关解锁，需收集基因碎片合成)
+      // 伴飞僚机系统 (通关第6关解锁，需收集专属核心合成)
       petData: {
-        selected: null, // 初始无出战宠物
+        selected: null, // 初始无出战僚机
         pets: {
           fluffy: { unlocked: false, level: 1, unlockCost: 10 },
           dragon: { unlocked: false, level: 1, unlockCost: 10 }
@@ -54,7 +73,7 @@ export class SaveManager {
         power_shard: 0, bulletspeed_shard: 0, attackspeed_shard: 0, mag_shard: 0,
         rare_weapon_shard: 0,
         rune_shard: 0,
-        // 宠物基因碎片
+        // 僚机智能核心与能源晶体
         fluffy_shard: 0, dragon_shard: 0,
         // 技能芯片
         chip_rocket: 0, chip_freeze: 0, chip_truck: 0,
@@ -67,9 +86,18 @@ export class SaveManager {
 
   load() {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      let raw = localStorage.getItem(SAVE_KEY);
       if (!raw) {
-        // 升级自旧版本时，保证新机制的纯净体验
+        for (const legacyKey of LEGACY_KEYS) {
+          const oldRaw = localStorage.getItem(legacyKey);
+          if (oldRaw) {
+            raw = oldRaw;
+            localStorage.setItem(SAVE_KEY, raw);
+            break;
+          }
+        }
+      }
+      if (!raw) {
         return this.getDefaultData();
       }
       return this.mergeDefaults(JSON.parse(raw));
@@ -96,7 +124,29 @@ export class SaveManager {
     return merged;
   }
 
+  // 写盘防抖：settleBattleLoot / openSupplyCrate 这类流程会在同一轮里连续调用
+  // addScrap / addGems / addItem，每次都把整份存档 JSON.stringify 一遍纯属浪费。
+  // 这里合并成 200ms 一次，并在页面隐藏/卸载时立即落盘。
   save() {
+    this._dirty = true;
+    if (this._flushTimer) return;
+    this._flushTimer = setTimeout(() => this.flush(), 200);
+  }
+
+  // CloudStorageBridge 会包裹 flushSave 把本地落盘和云端同步串起来，
+  // 这里提供同义方法，避免还需要外部模块来挂载它。
+  flushSave() {
+    this.flush();
+  }
+
+  // 立即写盘（防抖窗口内也可主动调用）
+  flush() {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer);
+      this._flushTimer = 0;
+    }
+    if (!this._dirty) return;
+    this._dirty = false;
     try {
       this.data.lastPlayed = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
@@ -248,7 +298,9 @@ export class SaveManager {
     return true;
   }
   refillEnergy(amount = 25) {
-    this.data.energy = Math.min((this.data.maxEnergy || 50) + 50, (this.data.energy || 0) + amount);
+    // 上限就是 maxEnergy。原实现写成 maxEnergy + 50，会让体力变成 100/50，
+    // 且与 getEnergy() 按 maxEnergy 封顶的回复逻辑自相矛盾。
+    this.data.energy = Math.min(this.data.maxEnergy || 50, (this.data.energy || 0) + Math.max(0, amount));
     this.save();
     return this.data.energy;
   }
@@ -257,7 +309,8 @@ export class SaveManager {
   getInventory() { return this.data.inventory; }
   getItemCount(id) { return this.data.inventory[id] || 0; }
   addItem(id, amount = 1) {
-    this.data.inventory[id] = (this.data.inventory[id] || 0) + amount;
+    // 与 addScrap / addGems 保持一致：只接受非负增量，扣除请用 consumeItem
+    this.data.inventory[id] = (this.data.inventory[id] || 0) + Math.max(0, Math.round(amount));
     this.save();
     return this.data.inventory[id];
   }
@@ -357,7 +410,7 @@ export class SaveManager {
   getEquippedStage() { return this.data.equippedStage || 1; }
   setEquippedStage(stageId) { this.data.equippedStage = Math.max(1, stageId); this.save(); }
 
-  // 宠物 (消耗专属基因碎片 + 废料)
+  // 伴飞僚机 (消耗专属核心 + 废料)
   getPetData() { return this.data.petData; }
   setSelectedPet(id) { this.data.petData.selected = id || null; this.save(); }
   upgradePet(id, scrapCost, shardCost = 2) {
@@ -735,7 +788,7 @@ export class SaveManager {
     return true;
   }
 
-  // 综合战力评分 (综合计算武器、城防科技、符文、宠物、已解锁技能)
+  // 综合战力评分 (综合计算武器、城防科技、符文、伴飞僚机、已解锁技能)
   calcCombatPower() {
     let power = 800 + (this.getCommanderLevel() - 1) * 80;
     const equippedW = this.getEquippedWeapon();
@@ -757,7 +810,7 @@ export class SaveManager {
     const runeLevels = this.getRuneLevels();
     for (const lv of Object.values(runeLevels)) power += lv * 40;
 
-    // 宠物评分
+    // 伴飞僚机评分
     const selectedPet = this.data.petData.selected;
     if (selectedPet && this.data.petData.pets[selectedPet]?.unlocked) {
       const pLevel = this.data.petData.pets[selectedPet]?.level || 1;

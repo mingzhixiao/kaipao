@@ -2,6 +2,7 @@
 import { saveManager } from '../systems/SaveManager.js';
 import { GAME_CONFIG } from '../core/Config.js';
 import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost, getRuneUpgradeShardCost } from '../systems/RuneSystem.js';
+import { showToast } from './Toast.js';
 
 export class HomeLobbyUI {
   constructor() {
@@ -110,8 +111,8 @@ export class HomeLobbyUI {
           <div class="lobby-stage-heading">
             <div class="lobby-stage-copy">
               <div class="lobby-stage-info-title">当前作战区域</div>
-              <div class="lobby-stage-info-name" id="lobby-stage-name">STAGE 1 · 废土前哨</div>
-              <div class="lobby-stage-info-desc" id="lobby-stage-desc">抵御 5 波尸潮 · 首通奖励 80 废料</div>
+              <div class="lobby-stage-info-name" id="lobby-stage-name">STAGE 1 · 小行星前哨</div>
+              <div class="lobby-stage-info-desc" id="lobby-stage-desc">抵御 5 波异星狂潮 · 首通奖励 80 废料</div>
             </div>
             <div class="lobby-stage-tools">
               <div class="lobby-power-banner" title="综合战力评分">
@@ -129,19 +130,19 @@ export class HomeLobbyUI {
 
           <div class="lobby-stage-arena">
             <div class="lobby-stage-arena-glow"></div>
-            <div class="lobby-arena-callout"><span>前线整备完成</span><strong id="lobby-arena-stage">废土前哨</strong></div>
-            <div class="lobby-fortress-truck" title="重型突击战车"></div>
+            <div class="lobby-arena-callout"><span>前线整备完成</span><strong id="lobby-arena-stage">小行星前哨</strong></div>
+            <div class="lobby-fortress-truck" title="磁浮重装扫荡舰"></div>
             <div class="lobby-floating-pet" id="lobby-arena-pet" title="出战伙伴">
               <img id="lobby-arena-pet-img" src="assets/pets/fluffy.png" alt="Pet">
             </div>
           </div>
 
           <div class="lobby-reward-preview" aria-label="星级通关奖励预览">
-            <div class="lobby-reward-node"><span class="lobby-reward-stars">★</span><img src="assets/icons/icon_coin.png" alt="废料"><strong id="lobby-reward-scrap">55+</strong><small>险守奖励</small></div>
+            <div class="lobby-reward-node"><span class="lobby-reward-stars">★</span><img class="lobby-reward-node-img" src="assets/icons/icon_coin.png" alt="废料" style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;"><strong id="lobby-reward-scrap">55+</strong><small>险守奖励</small></div>
             <div class="lobby-reward-line"></div>
-            <div class="lobby-reward-node featured"><span class="lobby-reward-stars">★★★</span><img id="lobby-reward-chip-img" src="assets/items/item_chip_rocket.png" alt="定向芯片"><strong id="lobby-reward-chip">定向芯片</strong><small>稳固防线</small></div>
+            <div class="lobby-reward-node featured"><span class="lobby-reward-stars">★★★</span><img class="lobby-reward-node-img" id="lobby-reward-chip-img" src="assets/items/item_chip_rocket.png" alt="定向芯片" style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;"><strong id="lobby-reward-chip">定向芯片</strong><small>稳固防线</small></div>
             <div class="lobby-reward-line"></div>
-            <div class="lobby-reward-node perfect"><span class="lobby-reward-stars">★★★★★</span><img src="assets/items/item_supply_crate.png" alt="军备箱"><strong id="lobby-reward-perfect">晶核 +5</strong><small>完美守卫</small></div>
+            <div class="lobby-reward-node perfect"><span class="lobby-reward-stars">★★★★★</span><img class="lobby-reward-node-img" src="assets/items/item_supply_crate.png" alt="军备箱" style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;"><strong id="lobby-reward-perfect">晶核 +5</strong><small>完美守卫</small></div>
           </div>
 
           <div class="lobby-battle-cta-wrap">
@@ -193,7 +194,7 @@ export class HomeLobbyUI {
         <div class="lobby-tab-view" id="view-backpack">
           <div class="section-header">
             <div class="section-title">🎒 军备战术背包</div>
-            <div class="section-subtitle">管理各类枪械配件、技能芯片与宠物基因碎片</div>
+            <div class="section-subtitle">管理各类枪械配件、技能芯片与伴飞僚机核心</div>
           </div>
           <div class="backpack-summary-bar">
             <span class="backpack-count-tag" id="backpack-total-held">物资种类: 0 种</span>
@@ -203,17 +204,17 @@ export class HomeLobbyUI {
             <div class="filter-pill active" data-bfilter="all">全部物资</div>
             <div class="filter-pill" data-bfilter="weapon">枪械配件</div>
             <div class="filter-pill" data-bfilter="skill">技能芯片</div>
-            <div class="filter-pill" data-bfilter="pet">宠物基因</div>
+            <div class="filter-pill" data-bfilter="pet">僚机核心</div>
             <div class="filter-pill" data-bfilter="consumable">军备补给</div>
           </div>
           <div class="backpack-grid" id="backpack-items-list"></div>
         </div>
 
-        <!-- Tab 5: 宠物乐园 (Pets) -->
+        <!-- Tab 5: 伴飞战术僚机 (Pets) -->
         <div class="lobby-tab-view" id="view-pets">
           <div class="section-header">
-            <div class="section-title">🐾 战术宠物乐园</div>
-            <div class="section-subtitle">携带伴飞伙伴助阵（消耗专属基因碎片升级）</div>
+            <div class="section-title">🛸 伴飞战术僚机</div>
+            <div class="section-subtitle">配置伴飞突击僚机协同作战（消耗专属核心升级）</div>
           </div>
           <div class="pets-showcase-grid" id="pets-list"></div>
         </div>
@@ -250,7 +251,7 @@ export class HomeLobbyUI {
       <!-- 底部 7 大主流导航栏 -->
       <nav class="lobby-bottom-nav">
         <button class="nav-tab-btn active" data-tab="lobby">
-          <span class="nav-tab-icon">🏰</span>
+          <span class="nav-tab-icon">🛡️</span>
           <span class="nav-tab-label">基地</span>
         </button>
         <button class="nav-tab-btn" data-tab="weapons">
@@ -266,8 +267,8 @@ export class HomeLobbyUI {
           <span class="nav-tab-label">背包</span>
         </button>
         <button class="nav-tab-btn" data-tab="pets">
-          <span class="nav-tab-icon">🐾</span>
-          <span class="nav-tab-label">宠物</span>
+          <span class="nav-tab-icon">🛸</span>
+          <span class="nav-tab-label">僚机</span>
         </button>
         <button class="nav-tab-btn" data-tab="runes">
           <span class="nav-tab-icon">💠</span>
@@ -373,11 +374,11 @@ export class HomeLobbyUI {
 
   switchTab(tabId) {
     if (tabId === 'runes' && !saveManager.isSystemUnlocked('runes')) {
-      alert('🔒【符文矩阵工坊】尚未解锁！\n通关第 2 关【锈蚀公路】后开放。');
+      showToast('🔒【符文矩阵工坊】尚未解锁！\n通关第 3 关【环形山断层】后开放。', { tone: 'warn' });
       return;
     }
     if (tabId === 'pets' && !saveManager.isSystemUnlocked('pets')) {
-      alert('🔒【战术宠物乐园】尚未解锁！\n通关第 3 关【断裂立交】后开放。');
+      showToast('🔒【伴飞僚机机库】尚未解锁！\n通关第 6 关【陨石风蚀巨壁】后开放。', { tone: 'warn' });
       return;
     }
     this.activeTab = tabId;
@@ -430,7 +431,7 @@ export class HomeLobbyUI {
     if (elGems) elGems.textContent = saveManager.getGems();
 
     // 动态同步底部导航栏锁定角标
-    const navLabels = { lobby: '基地', weapons: '枪械', skills: '技能', backpack: '背包', pets: '宠物', runes: '符文', trials: '试炼' };
+    const navLabels = { lobby: '基地', weapons: '枪械', skills: '技能', backpack: '背包', pets: '僚机', runes: '符文', trials: '试炼' };
     this.dom.root.querySelectorAll('.nav-tab-btn').forEach(btn => {
       const tab = btn.dataset.tab;
       let locked = false;
@@ -508,7 +509,7 @@ export class HomeLobbyUI {
       if (badge) badge.textContent = '🔒 未解锁';
       grid.innerHTML = `
         <div style="grid-column:1/-1;text-align:center;padding:12px;background:rgba(15,23,42,0.6);border:1px dashed rgba(100,116,139,0.3);border-radius:8px;font-size:11px;color:#94a3b8;">
-          🔒 通关第 1 关【废土前哨】后解锁城防加固工程
+          🔒 通关第 1 关【小行星前哨】后解锁城防加固工程
         </div>
       `;
       return;
@@ -553,7 +554,7 @@ export class HomeLobbyUI {
         const key = btn.dataset.key;
         const res = saveManager.upgradeFortification(key);
         if (!res.success) {
-          alert(res.message);
+          showToast(res.message, { tone: 'warn' });
         } else {
           this.render();
         }
@@ -775,19 +776,19 @@ export class HomeLobbyUI {
           if (saveManager.upgradeWeapon(id, scost, pcost)) this.render();
         } else if (action === 'upgrade-power') {
           const res = saveManager.upgradeWeaponPower(id);
-          if (!res.success) alert(res.message);
+          if (!res.success) showToast(res.message, { tone: 'warn' });
           else this.render();
         } else if (action === 'upgrade-bulletspeed') {
           const res = saveManager.upgradeWeaponBulletSpeed(id);
-          if (!res.success) alert(res.message);
+          if (!res.success) showToast(res.message, { tone: 'warn' });
           else this.render();
         } else if (action === 'upgrade-attackspeed') {
           const res = saveManager.upgradeWeaponAttackSpeed(id);
-          if (!res.success) alert(res.message);
+          if (!res.success) showToast(res.message, { tone: 'warn' });
           else this.render();
         } else if (action === 'upgrade-magazine') {
           const res = saveManager.upgradeWeaponMagazine(id);
-          if (!res.success) alert(res.message);
+          if (!res.success) showToast(res.message, { tone: 'warn' });
           else this.render();
         } else if (action === 'unlock-weapon') {
           const cost = parseInt(btn.dataset.cost, 10);
@@ -924,7 +925,7 @@ export class HomeLobbyUI {
       btn.onclick = () => {
         const id = btn.dataset.id;
         const res = saveManager.synthesizeSkill(id);
-        alert(res.message);
+        showToast(res.message, { tone: res.success ? 'success' : 'warn' });
         if (res.success) this.render();
       };
     });
@@ -934,7 +935,7 @@ export class HomeLobbyUI {
         const id = btn.dataset.id;
         const res = saveManager.toggleEquipSkill(id);
         if (!res.success) {
-          alert(res.message);
+          showToast(res.message, { tone: 'warn' });
         } else {
           this.render();
         }
@@ -1031,7 +1032,7 @@ export class HomeLobbyUI {
     } else if (item.targetType === 'rune') {
       actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往符文矩阵</button>`;
     } else if (item.targetType === 'pet') {
-      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往培养宠物</button>`;
+      actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往整备僚机</button>`;
     } else if (item.targetType === 'skill') {
       actionButtonHtml = `<button class="weapon-btn primary" id="btn-modal-action">前往技能专精</button>`;
     } else if (item.targetType === 'crate') {
@@ -1099,7 +1100,7 @@ export class HomeLobbyUI {
   handleOpenCrate() {
     const res = saveManager.openSupplyCrate();
     if (!res) {
-      alert('军备箱库存不足！可通过通关关卡或指挥官升级获得。');
+      showToast('军备箱库存不足！可通过通关关卡或指挥官升级获得。', { tone: 'warn' });
       return;
     }
     this.render();
@@ -1138,7 +1139,7 @@ export class HomeLobbyUI {
     };
   }
 
-  // 5. 宠物乐园 (专属基因 + 废料)
+  // 5. 伴飞战术僚机 (专属核心 + 废料)
   renderPets() {
     const container = document.getElementById('pets-list');
     if (!container) return;
@@ -1152,13 +1153,14 @@ export class HomeLobbyUI {
       const scrapCost = 50 + (saved.level - 1) * 50 + (saved.level >= 5 ? (saved.level - 4) * 60 : 0);
       const unlockCost = cfg.unlockCost || 200;
 
-      const shardItem = GAME_CONFIG.items[cfg.materialId] || { name: '基因碎片', icon: 'assets/icons/icon_shard.png' };
+      const shardItem = GAME_CONFIG.items[cfg.materialId] || { name: '僚机核心', icon: 'assets/icons/icon_shard.png' };
       const heldShards = saveManager.getItemCount(cfg.materialId);
       const canAffordShards = heldShards >= shardCost;
       const canAffordScrap = saveManager.getScrap() >= scrapCost;
       const canUpgrade = saved.unlocked && canAffordShards && canAffordScrap;
 
-      const tierTitle = saved.level >= 10 ? '三阶·终极霸者' : (saved.level >= 5 ? '二阶·觉醒进阶' : '一阶·幼生形态');
+      const curEvo = (cfg.evolutions || []).slice().reverse().find(e => saved.level >= e.level);
+      const tierTitle = curEvo?.title || (saved.level >= 10 ? '三阶·重装机' : (saved.level >= 5 ? '二阶·突击机' : '一阶·侦察机'));
       const tierBadgeColor = saved.level >= 10 ? '#f59e0b' : (saved.level >= 5 ? '#a855f7' : '#38bdf8');
 
       const stats = {
@@ -1374,7 +1376,7 @@ export class HomeLobbyUI {
           </button>
         </div>
         <div style="font-size:11px;padding:6px 10px;border-radius:6px;margin-top:6px;border:1px solid ${curMode === 'elite' ? 'rgba(244,63,94,0.3);background:rgba(136,19,55,0.25);color:#fca5a5;' : 'rgba(56,189,248,0.2);background:rgba(12,74,110,0.2);color:#7dd3fc;'}">
-          ${curMode === 'elite' ? '⚠️ <b>极度凶险战区</b>：感染者狂暴化（攻击力+85% · 生命+60% · 密度更高），所有专属技能芯片与战利品翻倍掉落！' : '🌿 <b>标准防线推进</b>：稳步歼灭轻度感染者，获取基础物资与技能合成碎片。'}
+          ${curMode === 'elite' ? '⚠️ <b>极度凶险战区</b>：异星敌军狂暴化（攻击力+85% · 生命+60% · 密度更高），所有专属技能芯片与战利品翻倍掉落！' : '🌿 <b>标准防线推进</b>：稳步歼灭前线异兽，获取基础物资与技能合成碎片。'}
         </div>
       </div>
     `;
@@ -1395,7 +1397,7 @@ export class HomeLobbyUI {
       const isSelected = st.id === equipped;
       const isEliteCleared = curMode === 'elite' && saveManager.isEliteCleared(st.id);
       const isNormalCleared = (saveManager.getHighestStageCleared() || 0) >= st.id;
-      const goal = st.endless ? '无尽尸潮极限模式' : `防守 ${st.clearWaves} 波次`;
+      const goal = st.endless ? '无尽异兽极限模式' : `防守 ${st.clearWaves} 波次`;
 
       const lootBadges = (st.targetDrops || []).map(drop => `
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 6px;border-radius:4px;background:${drop.highlight ? 'rgba(234,179,8,0.2)' : 'rgba(30,41,59,0.8)'};border:1px solid ${drop.highlight ? '#eab308' : 'rgba(71,85,105,0.5)'};color:${drop.highlight ? '#fde047' : '#cbd5e1'};">
@@ -1512,13 +1514,13 @@ export class HomeLobbyUI {
   handleSweepStage(stageId, mode = 'normal') {
     const energy = saveManager.getEnergy();
     if (energy < 5) {
-      alert('作战体能不足（扫荡需要 5 点能量）！请等待恢复或稍后再试。');
+      showToast('作战体能不足（扫荡需要 5 点能量）！请等待恢复或稍后再试。', { tone: 'warn' });
       return;
     }
 
     const res = saveManager.sweepStage(stageId, mode);
     if (!res.success) {
-      alert(res.message || '扫荡失败！');
+      showToast(res.message || '扫荡失败！', { tone: 'warn' });
       return;
     }
 
@@ -1672,7 +1674,7 @@ export class HomeLobbyUI {
   // 发起战斗
   launchBattle(stageId) {
     if (!saveManager.useEnergy(5)) {
-      alert('作战体能不足（需要 5 点能量）！请等待恢复或在背包中使用高能能量剂。');
+      showToast('作战体能不足（需要 5 点能量）！请等待恢复或在背包中使用高能能量剂。', { tone: 'warn' });
       return;
     }
     this.hide();
@@ -1704,18 +1706,11 @@ export class HomeLobbyUI {
     this.game.startStage(stageId);
 
     // 同步出战佩戴的技能（初始默认携带且均为 Lv.1）
+    // 全部技能状态都在 game.skills，无需再分别处理核心技能与特性技能
     const equippedSkills = saveManager.getEquippedSkills();
-    for (const id of ['rocket', 'truck', 'freeze']) {
-      if (this.game.skills[id]) {
-        this.game.skills[id].level = equippedSkills.includes(id) ? 1 : 0;
-      }
-    }
-    if (this.game.feature?.skills) {
-      for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
-        if (this.game.feature.skills[id]) {
-          this.game.feature.skills[id].level = equippedSkills.includes(id) ? 1 : 0;
-        }
-      }
+    for (const id of ['rocket', 'truck', 'freeze', 'laser', 'tornado', 'boomerang', 'bomber']) {
+      const state = this.game.skills[id];
+      if (state) state.level = equippedSkills.includes(id) ? 1 : 0;
     }
 
     if (this.game.feature?.syncPet) {

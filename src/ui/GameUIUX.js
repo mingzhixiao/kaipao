@@ -70,8 +70,8 @@ function injectStyles() {
     #home-lobby .filter-bar::-webkit-scrollbar { display:none; }
     #home-lobby .filter-pill { min-height:38px; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; padding:0 13px!important; }
     #home-lobby #lobby-item-modal,#home-lobby #lobby-crate-modal { position:fixed!important; inset:0!important; z-index:20; padding:16px var(--ui-safe-right) calc(16px + var(--ui-safe-bottom)) var(--ui-safe-left); display:none; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.62); backdrop-filter:blur(7px); }
-    #upgrade-modal,#gameover-modal,#retreat-confirm-modal,#stage-select-modal,#stage-clear-modal,#rune-forge-modal { padding:var(--ui-safe-top) var(--ui-safe-right) var(--ui-safe-bottom) var(--ui-safe-left)!important; overscroll-behavior:contain; }
-    #gameover-modal .report-card,#stage-select-modal > *,#rune-forge-modal > * { max-height:calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - 24px); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
+    #upgrade-modal,#gameover-modal,#retreat-confirm-modal,#stage-clear-modal { padding:var(--ui-safe-top) var(--ui-safe-right) var(--ui-safe-bottom) var(--ui-safe-left)!important; overscroll-behavior:contain; }
+    #gameover-modal .report-card { max-height:calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - 24px); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
     #stage-clear-modal { padding:max(8px,var(--ui-safe-top)) max(8px,var(--ui-safe-right)) max(8px,var(--ui-safe-bottom)) max(8px,var(--ui-safe-left))!important; }
     #stage-clear-modal .stage-clear-card { max-height:calc(100dvh - max(8px,var(--ui-safe-top)) - max(8px,var(--ui-safe-bottom)))!important; overflow-y:auto; overflow-x:hidden; padding:15px 14px 12px; border-radius:8px; scrollbar-width:thin; }
     body.battle-result-open #kp-skill-hud,body.battle-result-open #kp-wave-tactic { display:none!important; }
@@ -103,7 +103,7 @@ function injectStyles() {
     #stage-clear-modal .rune-choice-desc { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; font-size:9px; line-height:1.35; }
     #stage-clear-modal .stage-clear-actions { position:sticky; bottom:-12px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; padding:8px 0 0; background:linear-gradient(180deg,transparent,rgba(10,14,24,.99) 22%); }
     #stage-clear-modal .stage-clear-btn { min-width:0; min-height:44px; padding:8px 4px; border-radius:8px; font-size:12px; }
-    .primary-btn,.reroll-btn,.cheat-btn { min-height:44px; }
+    .primary-btn,.reroll-btn { min-height:44px; }
 
     /* 波间强化保持战场可辨识，三项并排用于快速横向比较。 */
     #upgrade-modal { justify-content:center!important; gap:13px; padding:calc(var(--ui-safe-top) + 10px) max(8px,var(--ui-safe-right)) calc(var(--ui-safe-bottom) + 10px) max(8px,var(--ui-safe-left))!important; background:rgba(2,6,12,.82)!important; backdrop-filter:blur(2px) brightness(.55); }
@@ -189,18 +189,6 @@ function setTouchTargets(root) {
   });
 }
 
-function installScreenState(game) {
-  if (!game || game.__uiUxInstalled) return;
-  game.__uiUxInstalled = true;
-  game.uiState = {
-    stack:['game'],
-    push(screen) { if (!screen) return; this.stack.push(screen); game.isPaused=true; },
-    pop() { if (this.stack.length>1) this.stack.pop(); if (this.stack.length===1 && !game.isGameOver && !game.isUpgrading) game.isPaused=false; return this.stack[this.stack.length-1]; },
-    current() { return this.stack[this.stack.length-1]; }
-  };
-  window.gameUIState = game.uiState;
-}
-
 function openLobbyTab(tab) {
   const ui = window.homeLobbyUI;
   if (ui && typeof ui.switchTab === 'function') ui.switchTab(tab);
@@ -214,7 +202,7 @@ function createLobbyMorePanel() {
     <div class="kp-more-sheet" role="dialog" aria-modal="true" aria-label="更多管理">
       <div class="kp-more-head"><div class="kp-more-title">更多管理</div><button class="kp-more-close" type="button" aria-label="关闭">×</button></div>
       <div class="kp-more-group"><div class="kp-more-group-title">养成与资源</div><div class="kp-more-grid">
-        <button class="kp-more-action" data-more-tab="pets"><span>🐾</span><span><strong>宠物</strong><small>伙伴、等级与出战</small></span></button>
+        <button class="kp-more-action" data-more-tab="pets"><span>🛸</span><span><strong>僚机</strong><small>伴飞、等级与出战</small></span></button>
         <button class="kp-more-action" data-more-tab="backpack"><span>🎒</span><span><strong>背包</strong><small>材料与军备物资</small></span></button>
       </div></div>
       <div class="kp-more-group"><div class="kp-more-group-title">构筑管理</div><div class="kp-more-grid">
@@ -256,7 +244,6 @@ export function installGameUIUX(game = null) {
   window.addEventListener('orientationchange', applySafeAreaInsets, { passive: true });
   setTouchTargets(document.getElementById('game-container') || document.body);
   if (game) {
-    installScreenState(game);
     enhanceLobbyNavigation();
   }
 }

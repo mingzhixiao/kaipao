@@ -26,7 +26,7 @@ export const RUNE_CATALOG = [
     apply(game, level) { const m = 1 + 0.08 * level; game.skills.rocket.damage = Math.round(game.skills.rocket.damage * m); game.skills.truck.damage = Math.round(game.skills.truck.damage * m); game.skills.freeze.damagePerTick = Math.round(game.skills.freeze.damagePerTick * m); } },
   { id: 'skillCd', name: '冷却压缩', category: 'skill', desc: '技能冷却 -3% / 级', icon: '⏱️', asset: 'assets/runes/rune_skillCd.png', maxLevel: 6, costBase: 32,
     apply(game, level) { const m = Math.pow(0.97, level); game.skills.rocket.cooldown = Math.max(2.5, game.skills.rocket.cooldown * m); game.skills.truck.cooldown = Math.max(3.5, game.skills.truck.cooldown * m); game.skills.freeze.cooldown = Math.max(3.0, game.skills.freeze.cooldown * m); } },
-  { id: 'skillRange', name: '覆盖拓展', category: 'skill', desc: '火箭范围 / 冰雾距离 +5% / 级', icon: '🌀', asset: 'assets/runes/rune_skillRange.png', maxLevel: 5, costBase: 24,
+  { id: 'skillRange', name: '覆盖拓展', category: 'skill', desc: '重炮范围 / 射线射程 +5% / 级', icon: '🌀', asset: 'assets/runes/rune_skillRange.png', maxLevel: 5, costBase: 24,
     apply(game, level) { const m = 1 + 0.05 * level; game.skills.rocket.radius = Math.round(game.skills.rocket.radius * m); game.skills.freeze.range = Math.round(game.skills.freeze.range * m); } },
   { id: 'magnet', name: '磁吸阵列', category: 'util', desc: '拾取范围 +25 / 级', icon: '🧲', asset: 'assets/runes/rune_magnet.png', maxLevel: 6, costBase: 12,
     apply(game, level) { game.hero.magnetRange += 25 * level; } },
@@ -75,7 +75,12 @@ export class RuneSystem {
   }
   rollRewardChoices(count = 3) {
     const pool = RUNE_CATALOG.filter(r => this.getLevel(r.id) < r.maxLevel);
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    // Fisher-Yates：sort(() => Math.random() - 0.5) 的分布并不均匀
+    const shuffled = pool.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     return shuffled.slice(0, count).map(r => ({
       id: r.id, name: r.name, icon: r.icon, asset: r.asset, desc: r.desc, category: r.category,
       level: this.getLevel(r.id), nextLevel: this.getLevel(r.id) + 1, maxLevel: r.maxLevel

@@ -1,21 +1,23 @@
 import { saveManager } from '../systems/SaveManager.js';
 import { sound } from '../systems/SoundEngine.js';
+import { assets } from '../systems/AssetManager.js';
+import { GAME_CONFIG } from '../core/Config.js';
 
-export const SKILL_CONFIG = {
-  tornado: { cooldown: 7.5, duration: 4.2, radius: 190, damagePerSecond: 0.35, pullStrength: 0.025, maxPullSpeed: 50 },
-  boomerang: { cooldown: 4.8, speed: 420, maxRange: 560, damage: 1.15, width: 26, critBonus: 0.35 },
-  laser: { cooldown: 3.2, width: 14, damage: 1.6, burnDamage: 0.25, burnDuration: 2.2, displayDuration: 0.25 },
-  bomber: { cooldown: 11.0, radius: 240, bombCount: 3, bombInterval: 0.45, damage: 0.95, knockback: 90, maxAimDistance: 300 }
-};
+// 技能数值的唯一来源是 Config.js 的 GAME_CONFIG.skills。
+// 这里不再维护第二份手写副本（原先需要 SkillsPetsPolish 再把两者对齐，极易漂移）。
+export const SKILL_CONFIG = GAME_CONFIG.skills;
+
+// 由本特性包接管的技能 id。显式列出，避免误遍历 GAME_CONFIG.skills 中的核心技能。
+export const FEATURE_SKILL_IDS = ['tornado', 'boomerang', 'laser', 'bomber'];
 
 export const PET_TYPES = {
   fluffy: {
-    id: 'fluffy', name: '小毛球', asset: 'assets/pets/fluffy.png', description: '发射多重连发弹幕，并用护盾抵挡前线敌人冲击',
+    id: 'fluffy', name: '智械侦察机·光球', asset: 'assets/pets/fluffy.png', description: '发射多重连发高能弹幕，并用偏振护盾抵挡前线敌对目标冲击',
     baseStats: { hp: 70, attack: 14, attackSpeed: 1.1, moveSpeed: 210, range: 320, shield: 70 },
     skill: 'BULLET_SPRAY', skillParams: { bulletCount: 3, spread: 0.32 }
   },
   dragon: {
-    id: 'dragon', name: '幼龙', asset: 'assets/pets/dragon.png', description: '喷吐扇形炽烈龙炎，造成持续火焰灼烧并引燃战场',
+    id: 'dragon', name: '突击先锋机·炽焰', asset: 'assets/pets/dragon.png', description: '喷射扇形炽烈等离子射流，造成持续等离子灼烧并覆盖战场',
     baseStats: { hp: 100, attack: 22, attackSpeed: 0.85, moveSpeed: 160, range: 260, shield: 100 },
     skill: 'FIRE_BREATH', skillParams: { duration: 1.0, angle: Math.PI / 3 }
   }
@@ -271,7 +273,7 @@ function updateSkills(game, dt) {
     const target = f.target || nearestEnemy(game, game.hero.x, game.hero.y);
     if (!target && id !== 'laser') continue;
 
-    // 1. 裂风涡流 (风属性 · 触发元素扩散)
+    // 1. 微型引力奇点 (场能引力 · 触发元素扩散)
     if (id === 'tornado') {
       f.tornadoes.push({
         x: target.x,
@@ -280,10 +282,10 @@ function updateSkills(game, dt) {
         maxLife: SKILL_CONFIG.tornado.duration,
         tick: 0
       });
-      game.spawnDamageText(target.x, target.y - 15, '🌪️ 裂风涡流!', '#34d399', true, false);
+      game.spawnDamageText(target.x, target.y - 15, '🌀 微型引力奇点!', '#34d399', true, false);
     }
 
-    // 2. 回旋刃 (物理属性 · 高额暴击 · 无锁阶段去重)
+    // 2. 高周波磁旋刃 (动能物理 · 高额暴击 · 无锁阶段去重)
     if (id === 'boomerang') {
       const angle = Math.atan2(target.y - game.hero.y, target.x - game.hero.x);
       f.boomerangs.push({
@@ -299,7 +301,7 @@ function updateSkills(game, dt) {
       });
     }
 
-    // 3. 湮灭射线 (雷属性 · 触发感电与火焰超载爆轰)
+    // 3. 粒子歼灭切割器 (脉冲雷系 · 触发感电与超载爆轰)
     if (id === 'laser') {
       const angle = target ? Math.atan2(target.y - game.hero.y, target.x - game.hero.x) : -Math.PI / 2;
       f.lasers.push({
@@ -321,7 +323,7 @@ function updateSkills(game, dt) {
       }
     }
 
-    // 4. 轨道轰炸 (火属性 · 预瞄红圈指示器 + 连续连投)
+    // 4. 天基动能天谴打击 (天基高爆 · 预瞄红圈指示器 + 连续连投)
     if (id === 'bomber') {
       // 钳制落点在玩家防线 300px 内
       let aimX = target.x;
@@ -356,7 +358,7 @@ function updateSkills(game, dt) {
 function updateCombat(game, dt) {
   const f = game.feature;
 
-  // 1. 回旋刃：无锁时间/阶段戳去重 (杜绝 Set 野指针 Bug)
+  // 1. 高周波磁旋刃：无锁时间/阶段戳去重 (杜绝 Set 野指针 Bug)
   for (let i = f.boomerangs.length - 1; i >= 0; i--) {
     const b = f.boomerangs[i];
     if (b.outbound && distance(b, { x: b.sx, y: b.sy }) >= SKILL_CONFIG.boomerang.maxRange) {
@@ -381,7 +383,7 @@ function updateCombat(game, dt) {
       const enemy = game.enemies[j];
       if (!enemy.active || enemy.hp <= 0) continue;
 
-      // 阶段戳判定：如果本回旋刃在当前阶段已命中过该怪，则跳过
+      // 阶段戳判定：如果本高周波磁旋刃在当前阶段已命中过该怪，则跳过
       if (enemy._lastBoomerangId === b.id && enemy._lastBoomerangPhase === b.phase) continue;
 
       const r = enemy.radius + SKILL_CONFIG.boomerang.width / 2;
@@ -397,7 +399,7 @@ function updateCombat(game, dt) {
     }
   }
 
-  // 2. 裂风涡流：阻尼平滑牵引 + 击退状态互斥
+  // 2. 微型引力奇点：阻尼平滑牵引 + 击退状态互斥
   for (let i = f.tornadoes.length - 1; i >= 0; i--) {
     const t = f.tornadoes[i];
     t.life -= dt;
@@ -458,7 +460,7 @@ function updateCombat(game, dt) {
     if (f.bomberReticle.life <= 0) f.bomberReticle = null;
   }
 
-  // 4. 轨道轰炸投掷循环
+  // 4. 天基动能打击投掷循环
   if (f.bomber) {
     f.bomber.timer += dt;
     if (f.bomber.dropped < SKILL_CONFIG.bomber.bombCount && f.bomber.timer >= SKILL_CONFIG.bomber.bombInterval) {
@@ -612,7 +614,7 @@ function renderFeature(game) {
     ctx.restore();
   }
 
-  // 3. 回旋刃渲染 (高清合金等离子飞刃 + 高速旋转流光拖尾)
+  // 3. 高周波磁旋刃渲染 (高清合金等离子飞刃 + 高速旋转流光拖尾)
   for (const b of f.boomerangs) {
     ctx.save();
     ctx.translate(b.x, b.y);
@@ -671,7 +673,7 @@ function renderFeature(game) {
     ctx.restore();
   }
 
-  // 5. 轨道轰炸战术战机与航弹
+  // 5. 天基动能天谴打击战术卫星与动能弹
   if (f.bomber) {
     // 掠过战场的隐身轰炸巡航机
     ctx.save();
@@ -755,9 +757,11 @@ function renderFeature(game) {
   }
 }
 
+// 仅作为兜底：未登记进 AssetManager manifest 的动态宠物贴图走这里。
+// 带上统一版本号，避免绕过缓存策略。
 function asset(src) {
   const image = new Image();
-  image.src = src;
+  image.src = `${src}?v=${assets.assetVersion}`;
   return image;
 }
 
@@ -772,11 +776,16 @@ export function installSkillsPetsFeature(game) {
     }
   };
 
+  // 技能运行时状态只保留一份：4 个特性技能并入 game.skills，
+  // 并让 feature.skills 指向同一个对象，调用方无需再知道状态存在哪个容器里。
+  const equippedAtInit = getEquipped();
+  for (const id of FEATURE_SKILL_IDS) {
+    const cfg = SKILL_CONFIG[id];
+    game.skills[id] = { level: equippedAtInit.includes(id) ? 1 : 0, cooldown: cfg.cooldown, timer: cfg.cooldown };
+  }
+
   game.feature = {
-    skills: Object.fromEntries(Object.entries(SKILL_CONFIG).map(([id, cfg]) => {
-      const isEq = getEquipped().includes(id);
-      return [id, { level: isEq ? 1 : 0, cooldown: cfg.cooldown, timer: cfg.cooldown }];
-    })),
+    skills: game.skills,
     tornadoes: [],
     boomerangs: [],
     lasers: [],
@@ -786,11 +795,11 @@ export function installSkillsPetsFeature(game) {
     petBullets: [],
     petEffects: [],
     target: { x: game.hero.x, y: game.hero.y - 250 },
-    tornadoImage: asset('assets/skills/tornado.png'),
-    boomerangImage: asset('assets/skills/boomerang.png'),
-    bombImage: asset('assets/skills/bomber.png'),
-    petBulletImage: asset('assets/skills/pet-bullet.png'),
-    breathImage: asset('assets/skills/breath.png')
+    tornadoImage: assets.get('skill_tornado'),
+    boomerangImage: assets.get('skill_boomerang'),
+    bombImage: assets.get('skill_bomber'),
+    petBulletImage: assets.get('pet_bullet'),
+    breathImage: assets.get('skill_breath')
   };
 
   game.pet = null;
@@ -808,16 +817,17 @@ export function installSkillsPetsFeature(game) {
     game.pet = new Pet(id, saved.level);
     game.pet.x = game.hero.x - 65;
     game.pet.y = game.hero.y + 25;
-    game.pet.image = asset(PET_TYPES[id]?.asset || 'assets/pets/fluffy.png');
+    // 优先复用 AssetManager 已加载并去重的贴图，避免每次开战重新 new Image 拉取
+    game.pet.image = assets.get(`pet_${id}`) || asset(PET_TYPES[id]?.asset || 'assets/pets/fluffy.png');
   };
 
   const originalReset = game.resetGame.bind(game);
   game.resetGame = function() {
     originalReset();
     const equipped = getEquipped();
-    for (const [id, cfg] of Object.entries(SKILL_CONFIG)) {
-      const isEq = equipped.includes(id);
-      this.feature.skills[id] = { level: isEq ? 1 : 0, cooldown: cfg.cooldown, timer: cfg.cooldown };
+    for (const id of FEATURE_SKILL_IDS) {
+      const cfg = SKILL_CONFIG[id];
+      this.skills[id] = { level: equipped.includes(id) ? 1 : 0, cooldown: cfg.cooldown, timer: cfg.cooldown };
     }
     this.feature.tornadoes = [];
     this.feature.boomerangs = [];
@@ -830,6 +840,28 @@ export function installSkillsPetsFeature(game) {
     this.feature.syncPet();
   };
 
+  // 宠物 HUD 的元素引用与上一次写入值都缓存下来：原先每帧 4 次 getElementById，
+  // 并且无条件重写显示状态、名称、血条宽度与状态文本，即使内容一个字都没变。
+  let petHudEl = null;
+  let petHudRefs = null;
+  const petHudLast = { visible: null, name: null, hpWidth: null, hpText: null };
+
+  const ensurePetHud = () => {
+    const el = document.getElementById('kp-pet-hud');
+    if (!el) return null;
+    if (el !== petHudEl) {
+      // HUD 被重建过，缓存与「上次写入值」一起作废
+      petHudEl = el;
+      petHudRefs = {
+        name: document.getElementById('kp-pet-name'),
+        hp: document.getElementById('kp-pet-hp'),
+        hpText: document.getElementById('kp-pet-hp-text')
+      };
+      petHudLast.visible = petHudLast.name = petHudLast.hpWidth = petHudLast.hpText = null;
+    }
+    return petHudEl;
+  };
+
   const originalUpdate = game.update.bind(game);
   game.update = function(dt) {
     originalUpdate(dt);
@@ -839,15 +871,39 @@ export function installSkillsPetsFeature(game) {
     for (const effect of this.feature.petEffects) effect.life -= dt;
     this.feature.petEffects = this.feature.petEffects.filter(effect => effect.life > 0);
 
-    const hud = document.getElementById('kp-pet-hud');
+    const hud = ensurePetHud();
     if (hud && this.pet) {
-      hud.style.display = 'block';
-      const statusText = this.pet.isCurled ? `[休眠恢复 ${this.pet.curlTimer.toFixed(1)}s]` : `HP: ${Math.ceil(this.pet.hp)} / ${Math.ceil(this.pet.maxHp)}`;
-      document.getElementById('kp-pet-name').textContent = `${PET_TYPES[this.pet.type]?.name || '宠物'} Lv.${this.pet.level} (${this.pet.evolutionTitle})`;
-      document.getElementById('kp-pet-hp').style.width = `${clamp(this.pet.hp / this.pet.maxHp, 0, 1) * 100}%`;
-      document.getElementById('kp-pet-hp-text').textContent = statusText;
+      if (petHudLast.visible !== true) {
+        petHudLast.visible = true;
+        hud.style.display = 'block';
+      }
+      const pet = this.pet;
+
+      const nameText = `${PET_TYPES[pet.type]?.name || '宠物'} Lv.${pet.level} (${pet.evolutionTitle})`;
+      if (petHudLast.name !== nameText) {
+        petHudLast.name = nameText;
+        petHudRefs.name.textContent = nameText;
+      }
+
+      // 宽度按 0.1% 量化后比较，避免每帧都构造新字符串写 style
+      const hpWidth = `${Math.round(clamp(pet.hp / pet.maxHp, 0, 1) * 1000) / 10}%`;
+      if (petHudLast.hpWidth !== hpWidth) {
+        petHudLast.hpWidth = hpWidth;
+        petHudRefs.hp.style.width = hpWidth;
+      }
+
+      const statusText = pet.isCurled
+        ? `[休眠恢复 ${(Math.round(pet.curlTimer * 10) / 10).toFixed(1)}s]`
+        : `HP: ${Math.ceil(pet.hp)} / ${Math.ceil(pet.maxHp)}`;
+      if (petHudLast.hpText !== statusText) {
+        petHudLast.hpText = statusText;
+        petHudRefs.hpText.textContent = statusText;
+      }
     } else if (hud) {
-      hud.style.display = 'none';
+      if (petHudLast.visible !== false) {
+        petHudLast.visible = false;
+        hud.style.display = 'none';
+      }
     }
   };
 

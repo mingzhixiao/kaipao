@@ -85,52 +85,67 @@ export class FocusManager {
   }
 
   initGamepadSupport() {
+    this._gamepadRaf = 0;
+
     window.addEventListener('gamepadconnected', (e) => {
       console.log('[FocusManager] Gamepad connected:', e.gamepad.id);
       this.gamepadConnected = true;
+      this._startGamepadPoll();
     });
     window.addEventListener('gamepaddisconnected', () => {
       this.gamepadConnected = false;
+      // 没有手柄时不该再占着一帧一次的回调：绝大多数玩家全程都用不到它
+      this._stopGamepadPoll();
     });
+  }
 
+  _startGamepadPoll() {
+    if (this._gamepadRaf) return;
     const pollGamepad = () => {
-      if (this.gamepadConnected) {
-        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-        const gp = gamepads[0];
-        if (gp) {
-          const now = performance.now();
-          if (now - this.lastGamepadPoll > 200) { // 200ms 防抖
-            // D-Pad Left or Stick Left
-            if (gp.buttons[14]?.pressed || gp.axes[0] < -0.5) {
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
-              this.lastGamepadPoll = now;
-            }
-            // D-Pad Right or Stick Right
-            else if (gp.buttons[15]?.pressed || gp.axes[0] > 0.5) {
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
-              this.lastGamepadPoll = now;
-            }
-            // Button A (Cross / Select)
-            else if (gp.buttons[0]?.pressed) {
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-              this.lastGamepadPoll = now;
-            }
-            // Button B (Circle / Cancel)
-            else if (gp.buttons[1]?.pressed) {
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-              this.lastGamepadPoll = now;
-            }
-            // Button X (Square / Reroll)
-            else if (gp.buttons[2]?.pressed) {
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
-              this.lastGamepadPoll = now;
-            }
+      this._gamepadRaf = 0;
+      if (!this.gamepadConnected) return;
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      const gp = gamepads[0];
+      if (gp) {
+        const now = performance.now();
+        if (now - this.lastGamepadPoll > 200) { // 200ms 防抖
+          // D-Pad Left or Stick Left
+          if (gp.buttons[14]?.pressed || gp.axes[0] < -0.5) {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+            this.lastGamepadPoll = now;
+          }
+          // D-Pad Right or Stick Right
+          else if (gp.buttons[15]?.pressed || gp.axes[0] > 0.5) {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+            this.lastGamepadPoll = now;
+          }
+          // Button A (Cross / Select)
+          else if (gp.buttons[0]?.pressed) {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+            this.lastGamepadPoll = now;
+          }
+          // Button B (Circle / Cancel)
+          else if (gp.buttons[1]?.pressed) {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+            this.lastGamepadPoll = now;
+          }
+          // Button X (Square / Reroll)
+          else if (gp.buttons[2]?.pressed) {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
+            this.lastGamepadPoll = now;
           }
         }
       }
-      requestAnimationFrame(pollGamepad);
+      this._gamepadRaf = requestAnimationFrame(pollGamepad);
     };
-    requestAnimationFrame(pollGamepad);
+    this._gamepadRaf = requestAnimationFrame(pollGamepad);
+  }
+
+  _stopGamepadPoll() {
+    if (this._gamepadRaf) {
+      cancelAnimationFrame(this._gamepadRaf);
+      this._gamepadRaf = 0;
+    }
   }
 }
 

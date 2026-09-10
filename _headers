@@ -1,0 +1,21 @@
+# Cloudflare Pages 缓存策略
+#
+# 游戏代码是原生 ES Module，模块之间没有 hash 指纹；HTML 一旦更新就会去拉新的
+# 模块图，因此入口页与 src/ 必须每次回源校验，否则玩家会长时间停留在旧版本。
+# 美术资源体积占绝大部分，且通过 AssetManager 的 ?v=<assetVersion> 主动破缓存，
+# 可以放心交给浏览器缓存一天，换来二次进入的秒开。
+
+/index.html
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+
+/src/*
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+
+/config/*
+  Cache-Control: no-cache
+
+/assets/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  X-Content-Type-Options: nosniff
