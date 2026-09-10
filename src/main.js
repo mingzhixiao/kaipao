@@ -13,10 +13,15 @@ import { installRenderOptimization } from './systems/RenderOptimization.js';
 import { installFeatureRuntimeOptimization } from './systems/FeatureRuntimeOptimization.js';
 import { installPersistenceOptimization } from './systems/PersistenceOptimization.js';
 import { installBuildIdentity } from './systems/BuildIdentitySystem.js';
+import { installCloudStorage } from './systems/CloudStorageBridge.js';
 import { saveManager } from './systems/SaveManager.js';
 import { gameEvents } from './systems/EventBus.js';
 
 installPersistenceOptimization(saveManager);
+
+// 存储模式由 URL 参数决定：?storage=local | ?storage=d1
+// local 为兼容现有单机玩法的默认模式；d1 模式连接 Cloudflare Pages Function + D1。
+const storageReady = installCloudStorage(saveManager);
 
 function wireStageAndRunes(game) {
   game.startStage = function(stageId) {
@@ -152,6 +157,13 @@ window.addEventListener('DOMContentLoaded', () => {
       installSkillsPetsPolish();
     }
 
+    // 云端存档先完成一次拉取，再创建 Game，避免游戏先读到旧本地档后被云档异步覆盖。
+    try {
+      await storageReady;
+    } catch (storageErr) {
+      console.warn('[Storage] storage initialization failed, continue with local save:', storageErr);
+    }
+
     setTimeout(() => {
       if (loadingScreen) loadingScreen.classList.add('fade-out');
       const gameInstance = new Game();
@@ -172,7 +184,7 @@ window.addEventListener('DOMContentLoaded', () => {
       homeLobbyUI.init(gameInstance);
       // HomeLobbyUI 在这里才真正创建底部导航，因此 UI/UX 导航增强必须随后执行。
       installGameUIUX(gameInstance);
-      console.log('[Kaipao] UI/UX + gameplay polish + performance + rendering + persistence + feature runtime optimization + build identity ready');
+      console.log('[Kaipao] UI/UX + gameplay polish + performance + rendering + persistence + storage + feature runtime optimization + build identity ready');
     }, 280);
   });
 });
