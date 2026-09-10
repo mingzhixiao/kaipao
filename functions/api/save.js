@@ -106,6 +106,28 @@ function parseJson(value, fallback) {
   try { return JSON.parse(value); } catch (_) { return fallback; }
 }
 
+// 读取一行存档的并发控制字段。建档、更新冲突、并发冲突三处都要用同一段查询，
+// 抽出来避免把这条 SQL 抄三遍。
+function readSaveRow(db, playerId) {
+  return db.prepare(`
+    SELECT revision, client_updated_at, data
+    FROM player_saves
+    WHERE player_id = ?
+    LIMIT 1
+  `).bind(playerId).first();
+}
+
+// 统一的 409：把服务器当前版本和完整存档回传给客户端，供其做冲突合并。
+function revisionConflict(row, fallbackRevision = 0) {
+  return json({
+    ok: false,
+    code: 'REVISION_CONFLICT',
+    revision: Number(row?.revision ?? fallbackRevision),
+    clientUpdatedAt: Number(row?.client_updated_at || 0),
+    data: parseJson(row?.data, null)
+  }, 409);
+}
+
 // 将数据库记录组装成 API 返回对象。
 // profile 是结构化数据，data 是完整存档，二者同时返回方便后续扩展。
 function rowToResponse(row) {
@@ -283,23 +305,21 @@ export async function onRequestPut({ request, env }) {
 
   try {
     // 读取当前版本，为下面的乐观锁校验做准备。
-    const existing = await db.prepare(`
-      SELECT revision, client_updated_at, data
-      FROM player_saves
-      WHERE player_id = ?
-      LIMIT 1
-    `).bind(playerId).first();
+    const existing = await readSaveRow(db, playerId);
 
     const now = Date.now();
 
     if (!existing) {
       // 新玩家必须从 revision=0 开始创建，避免异常客户端覆盖不存在的存档。
       if (baseRevision !== 0) {
-        return json({ ok: false, code: 'REVISION_CONFLICT', revision: 0, data: null }, 409);
+        return revisionConflict(null);
       }
 
       // 首次写入：同时保存完整 JSON 和结构化玩家字段。
-      await db.prepare(`
+      // 用 ON CONFLICT DO NOTHING 做幂等建档：同一玩家的两个请求可能都先读到
+      // 「无此行」而双双走到这里，裸 INSERT 会让后到的那个撞 PRIMARY KEY 约束，
+      // 被下面的兜底 catch 误报成 500。这里改成谁先写谁赢，后到的按版本冲突处理。
+      const insertResult = await db.prepare(`
         INSERT INTO player_saves (
           player_id, revision, save_version, client_updated_at, data,
           high_wave, max_kills, total_kills, total_runs, max_survival_time, last_played,
@@ -321,6 +341,7 @@ export async function onRequestPut({ request, env }) {
           ?, ?, ?, ?,
           ?, ?
         )
+        ON CONFLICT(player_id) DO NOTHING
       `).bind(
         playerId, 1, projection.saveVersion, clientUpdatedAt, dataString,
         projection.highWave, projection.maxKills, projection.totalKills, projection.totalRuns,
@@ -336,6 +357,12 @@ export async function onRequestPut({ request, env }) {
         now, now
       ).run();
 
+      // changes=0 说明并发的另一个请求已经先一步建好档。重新读一次把它的版本
+      // 原样回传，让客户端走正常的 409 冲突合并，而不是收到一个 500。
+      if (!insertResult.meta?.changes) {
+        return revisionConflict(await readSaveRow(db, playerId));
+      }
+
       return json({ ok: true, revision: 1, clientUpdatedAt, profile: projection });
     }
 
@@ -344,13 +371,7 @@ export async function onRequestPut({ request, env }) {
     // 客户端版本不是服务器当前版本，说明其他设备已经修改过存档。
     // 返回 409 让前端执行冲突处理，而不是静默覆盖云端数据。
     if (baseRevision !== currentRevision) {
-      return json({
-        ok: false,
-        code: 'REVISION_CONFLICT',
-        revision: currentRevision,
-        clientUpdatedAt: Number(existing.client_updated_at || 0),
-        data: parseJson(existing.data, null)
-      }, 409);
+      return revisionConflict(existing, currentRevision);
     }
 
     const nextRevision = currentRevision + 1;
@@ -434,19 +455,7 @@ export async function onRequestPut({ request, env }) {
     // 理论上 revision 条件保证只有一个请求能更新成功。
     // 如果 changes=0，重新读取服务器数据并返回 409。
     if (!updateResult.meta?.changes) {
-      const latest = await db.prepare(`
-        SELECT revision, client_updated_at, data
-        FROM player_saves
-        WHERE player_id = ?
-        LIMIT 1
-      `).bind(playerId).first();
-      return json({
-        ok: false,
-        code: 'REVISION_CONFLICT',
-        revision: Number(latest?.revision || currentRevision),
-        clientUpdatedAt: Number(latest?.client_updated_at || 0),
-        data: parseJson(latest?.data, null)
-      }, 409);
+      return revisionConflict(await readSaveRow(db, playerId), currentRevision);
     }
 
     return json({ ok: true, revision: nextRevision, clientUpdatedAt, profile: projection });
