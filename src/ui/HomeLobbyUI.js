@@ -8,10 +8,19 @@ export class HomeLobbyUI {
   constructor() {
     this.game = null;
     this.activeTab = 'lobby';
-    this.selectedChapter = 1;
     this.runeFilter = 'all';
     this.backpackFilter = 'all';
     this.dom = {};
+    // 首页滑选轨道当前选中的关卡（浏览态，出击时才写回 SaveManager）
+    this.selectedStageId = 1;
+    this.selectedStageIndex = 0;
+    // 程序主动滚动轨道时会连续触发 scroll，这段时间内暂停反向同步，避免来回打架
+    this._suppressStageSync = false;
+    this._stageSyncTimer = 0;
+    // 手指停下后把卡片吸附到正中的延时句柄
+    this._stageSettleTimer = 0;
+    // rAF 节流的兜底同步句柄
+    this._stageTrailTimer = 0;
   }
 
   init(game) {
@@ -119,7 +128,21 @@ export class HomeLobbyUI {
                 <img class="ui-icon-inline" src="assets/icons/icon_stamina.png" alt="Power">
                 <span class="lobby-power-val" id="lobby-total-power">1280</span>
               </div>
-              <button class="lobby-stage-change-btn" id="btn-switch-to-trials">切换关卡</button>
+            </div>
+          </div>
+
+          <!-- 关卡滑选轨道：左右滑动浏览全部关卡，点卡片选中，点「详情」看掉落 -->
+          <div class="lobby-stage-picker">
+            <div class="lobby-stage-picker-head">
+              <span class="lobby-stage-picker-tip">◀ 左右滑动选择关卡 ▶</span>
+              <span class="lobby-stage-picker-pos" id="lobby-stage-pos">1 / 51</span>
+            </div>
+            <div class="lobby-stage-carousel-shell">
+              <div class="lobby-stage-carousel" id="lobby-stage-carousel">
+                <div class="lobby-stage-track" id="lobby-stage-track"></div>
+              </div>
+              <button class="lobby-stage-nav-btn prev" id="lobby-stage-prev" type="button" aria-label="上一关">‹</button>
+              <button class="lobby-stage-nav-btn next" id="lobby-stage-next" type="button" aria-label="下一关">›</button>
             </div>
           </div>
 
@@ -238,17 +261,9 @@ export class HomeLobbyUI {
           <div class="runes-grid" id="runes-list"></div>
         </div>
 
-        <!-- Tab 7: 试炼之路 (Trials) -->
-        <div class="lobby-tab-view" id="view-trials">
-          <div class="section-header">
-            <div class="section-title">⚔️ 试炼之路</div>
-            <div class="section-subtitle">战役章节推进与无尽挑战</div>
-          </div>
-          <div class="stages-flow-list" id="stages-list"></div>
-        </div>
       </main>
 
-      <!-- 底部 7 大主流导航栏 -->
+      <!-- 底部主流导航栏 -->
       <nav class="lobby-bottom-nav">
         <button class="nav-tab-btn active" data-tab="lobby">
           <span class="nav-tab-icon">🛡️</span>
@@ -274,10 +289,6 @@ export class HomeLobbyUI {
           <span class="nav-tab-icon">💠</span>
           <span class="nav-tab-label">符文</span>
         </button>
-        <button class="nav-tab-btn" data-tab="trials">
-          <span class="nav-tab-icon">⚔️</span>
-          <span class="nav-tab-label">试炼</span>
-        </button>
       </nav>
 
       <!-- 物品详情抽屉弹窗容器 -->
@@ -299,29 +310,58 @@ export class HomeLobbyUI {
       btn.addEventListener('touchend', handleTab);
     });
 
-    // 首页出击按钮
+    // 首页出击按钮：打的就是滑选轨道上当前选中的那一关
     document.getElementById('btn-lobby-battle').addEventListener('click', () => {
-      const stageId = saveManager.getEquippedStage();
-      this.launchBattle(stageId);
-    });
-
-    // 首页“切换关卡”跳转试炼之路
-    document.getElementById('btn-switch-to-trials').addEventListener('click', () => {
-      this.switchTab('trials');
+      this.confirmStageAndLaunch();
     });
 
     this.dom.root.querySelectorAll('[data-lobby-mode]').forEach(btn => {
       btn.addEventListener('click', () => {
         const mode = btn.dataset.lobbyMode;
-        const stageId = saveManager.getEquippedStage();
+        const stageId = this.selectedStageId || saveManager.getEquippedStage();
         if (mode === 'elite' && !saveManager.isEliteUnlocked(stageId)) {
-          this.switchTab('trials');
+          showToast(`🔒 第 ${stageId} 关的【精英突袭】尚未解锁！\n先通关本关标准模式后再来挑战。`, { tone: 'warn' });
           return;
         }
         saveManager.setMode(mode);
         this.renderLobby();
       });
     });
+
+    // 关卡滑选轨道：滚动时把居中卡片同步为当前选中关卡
+    const carousel = document.getElementById('lobby-stage-carousel');
+    const track = document.getElementById('lobby-stage-track');
+    if (carousel && track) {
+      let ticking = false;
+      carousel.addEventListener('scroll', () => {
+        // 用 rAF 节流跟随滑动，避免每像素都算一次最近卡片
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(() => {
+            ticking = false;
+            this.syncStageFromScroll();
+          });
+        }
+        // 兜底：rAF 那一帧被拖后时，甩动的最后一帧位置不能丢
+        clearTimeout(this._stageTrailTimer);
+        this._stageTrailTimer = setTimeout(() => this.syncStageFromScroll(), 120);
+      }, { passive: true });
+
+      // 卡片内容每次渲染都会重建，所以用事件委托绑定一次
+      track.addEventListener('click', (e) => {
+        const detailBtn = e.target.closest('[data-action="stage-detail"]');
+        if (detailBtn) {
+          e.stopPropagation();
+          this.showStageDetail(parseInt(detailBtn.dataset.id, 10));
+          return;
+        }
+        const card = e.target.closest('.lobby-stage-card');
+        if (card) this.pickStage(parseInt(card.dataset.stageId, 10), { scroll: true });
+      });
+
+      document.getElementById('lobby-stage-prev').onclick = () => this.stepStage(-1);
+      document.getElementById('lobby-stage-next').onclick = () => this.stepStage(1);
+    }
 
     // 背包分类筛选
     const bpFilterBar = document.getElementById('backpack-filter-bar');
@@ -394,6 +434,9 @@ export class HomeLobbyUI {
   show() {
     this.dom.root.style.display = 'flex';
     if (this.game) this.game.isPaused = true;
+    // 每次回到大厅都从实际出战的关卡开始浏览
+    this.selectedStageId = saveManager.getEquippedStage();
+    this.selectedStageIndex = this.stageIndexOf(this.selectedStageId);
     this.render();
   }
 
@@ -409,7 +452,6 @@ export class HomeLobbyUI {
     else if (this.activeTab === 'backpack') this.renderBackpack();
     else if (this.activeTab === 'pets') this.renderPets();
     else if (this.activeTab === 'runes') this.renderRunes();
-    else if (this.activeTab === 'trials') this.renderTrials();
   }
 
   renderHeader() {
@@ -431,7 +473,7 @@ export class HomeLobbyUI {
     if (elGems) elGems.textContent = saveManager.getGems();
 
     // 动态同步底部导航栏锁定角标
-    const navLabels = { lobby: '基地', weapons: '枪械', skills: '技能', backpack: '背包', pets: '僚机', runes: '符文', trials: '试炼' };
+    const navLabels = { lobby: '基地', weapons: '枪械', skills: '技能', backpack: '背包', pets: '僚机', runes: '符文' };
     this.dom.root.querySelectorAll('.nav-tab-btn').forEach(btn => {
       const tab = btn.dataset.tab;
       let locked = false;
@@ -447,6 +489,13 @@ export class HomeLobbyUI {
 
   // 1. 首页大厅
   renderLobby() {
+    this.renderStageCarousel();
+    this.renderStageSummary();
+    this.renderFortification();
+  }
+
+  // 首页「当前作战区域」文案、竞技场与星级奖励预览：跟随滑选轨道当前选中的关卡
+  renderStageSummary() {
     const powerEl = document.getElementById('lobby-total-power');
     if (powerEl) powerEl.textContent = saveManager.calcCombatPower().toLocaleString();
 
@@ -461,7 +510,7 @@ export class HomeLobbyUI {
       }
     }
 
-    const currentStageId = saveManager.getEquippedStage();
+    const currentStageId = this.selectedStageId || saveManager.getEquippedStage();
     const stage = GAME_CONFIG.stages.find(s => s.id === currentStageId) || GAME_CONFIG.stages[0];
     const nameEl = document.getElementById('lobby-stage-name');
     const descEl = document.getElementById('lobby-stage-desc');
@@ -494,9 +543,6 @@ export class HomeLobbyUI {
     if (chipEl) chipEl.textContent = firstDrop?.name || '定向芯片';
     if (chipImgEl && firstDrop?.icon) { chipImgEl.src = firstDrop.icon; chipImgEl.alt = firstDrop.name || '定向芯片'; }
     if (perfectEl) perfectEl.textContent = curMode === 'elite' ? '晶核 +10' : '晶核 +5';
-
-    // 渲染基地城防加固系统
-    this.renderFortification();
   }
 
   renderFortification() {
@@ -1301,213 +1347,292 @@ export class HomeLobbyUI {
     });
   }
 
-  // 7. 试炼之路 (5 大主题战区切换 & 普通/精英双难度)
-  renderTrials() {
-    const container = document.getElementById('stages-list');
-    if (!container) return;
+  // 7. 关卡滑选轨道：全部关卡铺成一条横向卡片流，左右滑动浏览
+  renderStageCarousel() {
+    const track = document.getElementById('lobby-stage-track');
+    if (!track) return;
+
+    const stages = GAME_CONFIG.stages || [];
     const curMode = saveManager.getMode() || 'normal';
-    const unlocked = saveManager.getUnlockedStage();
-    const equipped = saveManager.getEquippedStage();
+    const isElite = curMode === 'elite';
+    const highestCleared = saveManager.getHighestStageCleared() || 0;
 
-    const equippedStage = GAME_CONFIG.stages.find(s => s.id === equipped) || GAME_CONFIG.stages[0];
-    const equippedChapter = equippedStage?.chapter || 1;
-    if (!this.selectedChapter) {
-      this.selectedChapter = equippedChapter;
-    }
+    track.innerHTML = stages.map(st => {
+      const lock = this.getStageLockState(st, curMode);
+      const isSelected = st.id === this.selectedStageId;
+      const chapter = (GAME_CONFIG.chapters || []).find(c => c.id === st.chapter);
 
-    const chapters = GAME_CONFIG.chapters || [];
+      // 只显示当前模式下的通关状态，避免两种模式的标记混在一起
+      let stateHtml;
+      if (lock.locked) stateHtml = '<span class="lobby-stage-card-state locked">🔒 未解锁</span>';
+      else if (isElite && saveManager.isEliteCleared(st.id)) stateHtml = '<span class="lobby-stage-card-state cleared">★ 精英已通关</span>';
+      else if (!isElite && highestCleared >= st.id) stateHtml = '<span class="lobby-stage-card-state cleared">✓ 已通关</span>';
+      else stateHtml = `<span class="lobby-stage-card-state">${isElite ? '精英待攻克' : '待攻克'}</span>`;
 
-    // 1. 战区选择器选项卡 (Chapters Tabs)
-    const chapterTabsHtml = `
-      <div class="lobby-chapter-nav" style="grid-column: 1 / -1; display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px; -webkit-overflow-scrolling:touch;">
-        ${chapters.map(ch => {
-          const isActive = ch.id === this.selectedChapter;
-          const isChLocked = curMode === 'normal' && ch.stages[0] > unlocked && ch.id !== 6;
-          return `
-            <button class="chapter-tab-btn ${isActive ? 'active-chapter' : ''}" data-action="switch-chapter" data-chapter-id="${ch.id}" style="flex:0 0 auto; display:flex; align-items:center; gap:5px; padding:7px 12px; border-radius:10px; border:1px solid ${isActive ? ch.color : 'rgba(59,130,246,0.25)'}; background:${isActive ? `linear-gradient(135deg, ${ch.color}22, rgba(15,23,42,0.95))` : 'rgba(15,23,42,0.75)'}; color:${isActive ? '#fff' : '#94a3b8'}; cursor:pointer; font-size:12px; font-weight:700; transition:all 0.2s ease; box-shadow:${isActive ? `0 0 14px ${ch.color}44` : 'none'};">
-              <span>${ch.icon}</span>
-              <span>${ch.shortName}</span>
-              <span style="font-size:10px; opacity:0.75;">(${ch.stages[0] === ch.stages[1] ? ch.stages[0] : `${ch.stages[0]}-${ch.stages[1]}`})</span>
-              ${isChLocked ? '<span style="font-size:10px;">🔒</span>' : ''}
-            </button>
-          `;
-        }).join('')}
-      </div>
-    `;
-
-    // 2. 当前选中战区的信息横幅
-    const curChapter = chapters.find(c => c.id === this.selectedChapter) || chapters[0];
-    const chStages = GAME_CONFIG.stages.filter(s => s.chapter === this.selectedChapter);
-    const chClearedCount = chStages.filter(s => (saveManager.getHighestStageCleared() || 0) >= s.id).length;
-    
-    const chapterBannerHtml = `
-      <div style="grid-column: 1 / -1; margin-bottom:10px; padding:10px 14px; border-radius:12px; background:linear-gradient(135deg, rgba(30,41,59,0.75), rgba(15,23,42,0.95)); border:1px solid ${curChapter.color}44; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <div>
-          <div style="font-size:14px; font-weight:900; color:${curChapter.color}; display:flex; align-items:center; gap:6px;">
-            <span>${curChapter.icon}</span>
-            <span>${curChapter.name}</span>
-          </div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:3px;">${curChapter.desc}</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:11px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,0.06); color:#cbd5e1;">
-            战区进度: <b style="color:${curChapter.color};">${chClearedCount} / ${chStages.length}</b>
-          </span>
-          ${equippedChapter !== this.selectedChapter ? `
-            <button class="quick-jump-btn" data-action="jump-current" style="font-size:11px; padding:4px 9px; border-radius:6px; border:1px solid rgba(56,189,248,0.4); background:rgba(2,132,199,0.25); color:#38bdf8; cursor:pointer;">
-              🎯 直达当前防线 (S${equipped})
-            </button>
-          ` : ''}
-        </div>
-      </div>
-    `;
-
-    // 3. 难度模式选择栏
-    const modeSelectorHtml = `
-      <div style="grid-column: 1 / -1; margin-bottom: 8px;">
-        <div style="display:flex; gap:8px; background:rgba(15,23,42,0.8); padding:4px; border-radius:10px; border:1px solid rgba(59,130,246,0.3);">
-          <button class="mode-toggle-btn ${curMode === 'normal' ? 'active-normal' : ''}" data-action="switch-mode" data-mode="normal" style="flex:1;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;${curMode === 'normal' ? 'background:linear-gradient(135deg,#0284c7,#38bdf8);color:#0f172a;box-shadow:0 0 12px rgba(56,189,248,0.4);' : 'background:transparent;color:#94a3b8;'}">
-            <span>🛡️ 普通模式</span>
-            <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:${curMode === 'normal' ? 'rgba(15,23,42,0.2)' : 'rgba(51,65,85,0.5)'};">标准探索</span>
-          </button>
-          <button class="mode-toggle-btn ${curMode === 'elite' ? 'active-elite' : ''}" data-action="switch-mode" data-mode="elite" style="flex:1;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#f43f5e);color:#fff;box-shadow:0 0 14px rgba(244,63,94,0.5);' : 'background:transparent;color:#94a3b8;'}">
-            <span>💀 精英模式</span>
-            <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:${curMode === 'elite' ? 'rgba(255,255,255,0.25)' : 'rgba(244,63,94,0.15)'};color:${curMode === 'elite' ? '#fff' : '#f43f5e'};">200% 战利品</span>
-          </button>
-        </div>
-        <div style="font-size:11px;padding:6px 10px;border-radius:6px;margin-top:6px;border:1px solid ${curMode === 'elite' ? 'rgba(244,63,94,0.3);background:rgba(136,19,55,0.25);color:#fca5a5;' : 'rgba(56,189,248,0.2);background:rgba(12,74,110,0.2);color:#7dd3fc;'}">
-          ${curMode === 'elite' ? '⚠️ <b>极度凶险战区</b>：异星敌军狂暴化（攻击力+85% · 生命+60% · 密度更高），所有专属技能芯片与战利品翻倍掉落！' : '🌿 <b>标准防线推进</b>：稳步歼灭前线异兽，获取基础物资与技能合成碎片。'}
-        </div>
-      </div>
-    `;
-
-    // 4. 当前战区的关卡卡片
-    const stagesHtml = chStages.map(st => {
-      let isLocked = false;
-      let lockReason = '';
-      if (curMode === 'normal') {
-        isLocked = st.id > unlocked;
-        lockReason = '未解锁';
-      } else {
-        const isEliteUnlocked = saveManager.isEliteUnlocked(st.id);
-        isLocked = !isEliteUnlocked;
-        lockReason = `需先通关普通第${st.id}关`;
-      }
-
-      const isSelected = st.id === equipped;
-      const isEliteCleared = curMode === 'elite' && saveManager.isEliteCleared(st.id);
-      const isNormalCleared = (saveManager.getHighestStageCleared() || 0) >= st.id;
-      const goal = st.endless ? '无尽异兽极限模式' : `防守 ${st.clearWaves} 波次`;
-
-      const lootBadges = (st.targetDrops || []).map(drop => `
-        <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 6px;border-radius:4px;background:${drop.highlight ? 'rgba(234,179,8,0.2)' : 'rgba(30,41,59,0.8)'};border:1px solid ${drop.highlight ? '#eab308' : 'rgba(71,85,105,0.5)'};color:${drop.highlight ? '#fde047' : '#cbd5e1'};">
-          ${this.formatItemIcon(drop.icon, drop.name, 'mat-req-icon-img')}
-          <span>${drop.name}</span>
-        </span>
-      `).join('');
-
-      let bossBadge = '';
-      if (st.isChapterBoss) {
-        bossBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:linear-gradient(135deg,#e11d48,#be123c);color:#fff;font-weight:900;letter-spacing:0.5px;box-shadow:0 0 8px rgba(225,29,72,0.6);">👑 战区霸主</span>';
-      } else if (st.isMiniBoss) {
-        bossBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(249,115,22,0.2);color:#fb923c;border:1px solid rgba(249,115,22,0.5);font-weight:800;">💀 中阶首领</span>';
-      }
+      let bossHtml = '';
+      if (st.isChapterBoss) bossHtml = '<span class="lobby-stage-card-boss chapter">👑 霸主</span>';
+      else if (st.isMiniBoss) bossHtml = '<span class="lobby-stage-card-boss mini">💀 首领</span>';
 
       return `
-        <div class="stage-flow-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''} ${curMode === 'elite' ? 'elite-stage-card' : ''} ${st.isChapterBoss ? 'chapter-boss-card' : ''}" data-stage-id="${st.id}" style="${curMode === 'elite' && !isLocked ? 'border-color:rgba(244,63,94,0.4);background:linear-gradient(135deg, rgba(30,10,20,0.8), rgba(15,23,42,0.9));' : ''}">
-          <div class="stage-flow-left" style="flex:1;">
-            <div class="stage-flow-badge" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#be123c);color:#fff;' : (st.isChapterBoss ? 'background:linear-gradient(135deg,#eab308,#f59e0b);color:#0f172a;' : '')}">${st.id}</div>
-            <div style="flex:1;">
-              <div class="stage-flow-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <span style="font-weight:800;">${st.name}</span>
-                ${bossBadge}
-                ${curMode === 'elite' ? '<span style="font-size:10px;color:#f43f5e;font-weight:900;background:rgba(244,63,94,0.15);padding:1px 4px;border-radius:4px;">ELITE</span>' : ''}
-                ${isEliteCleared ? '<span style="font-size:10px;color:#22c55e;">★已通关</span>' : (isNormalCleared && curMode === 'normal' ? '<span style="font-size:10px;color:#38bdf8;">✓ 已通关</span>' : '')}
-                ${isLocked ? '🔒' : ''}
-              </div>
-              <div class="stage-flow-sub" style="margin-top:2px;">${goal} · 难度系数 x${(st.difficulty * (curMode === 'elite' ? 1.6 : 1.0)).toFixed(2)} · 物抗 ${Math.round(Math.min(0.6, (st.physicalResistance || 0) + (GAME_CONFIG.modes?.[curMode]?.physicalResistanceBonus || 0)) * 100)}%+</div>
-              <div style="font-size:10px;color:#64748b;margin-top:2px;">${st.desc || ''}</div>
-              <!-- 定向掉落物预览 -->
-              <div style="margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-                <span style="font-size:10px;color:#94a3b8;font-weight:bold;">特色产出:</span>
-                ${lootBadges}
-              </div>
-            </div>
+        <div class="lobby-stage-card ${isSelected ? 'selected' : ''} ${lock.locked ? 'locked' : ''} ${isElite ? 'elite' : ''}" data-stage-id="${st.id}">
+          <div class="lobby-stage-card-top">
+            <span class="lobby-stage-card-no"${chapter ? ` style="--chapter-color:${chapter.color};"` : ''}>${st.id}</span>
+            ${bossHtml}
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;margin-left:8px;gap:6px;">
-            ${!isLocked ? `
-              <button class="stage-flow-btn" data-action="pick-stage" data-id="${st.id}" style="${curMode === 'elite' ? 'background:linear-gradient(135deg,#e11d48,#f43f5e);border-color:#fb7185;color:#fff;' : (st.isChapterBoss ? 'background:linear-gradient(135deg,#d97706,#f59e0b);border-color:#fde047;color:#0f172a;font-weight:900;' : '')}">
-                ${isSelected ? (curMode === 'elite' ? '出击精英' : '出击此关') : '选定此关'}
-              </button>
-              ${((curMode === 'normal' && isNormalCleared) || (curMode === 'elite' && isEliteCleared)) ? `
-                <button class="stage-sweep-btn ${curMode === 'elite' ? 'elite-sweep-btn' : ''}" data-action="sweep-stage" data-id="${st.id}" data-mode="${curMode}" title="快速消耗5点体能扫荡本关，瞬间获取对应物资掉落" style="padding:4px 10px;font-size:11px;font-weight:900;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:4px;border:1px solid ${curMode === 'elite' ? '#f43f5e' : '#38bdf8'};background:${curMode === 'elite' ? 'rgba(244,63,94,0.2)' : 'rgba(56,189,248,0.2)'};color:${curMode === 'elite' ? '#fecdd3' : '#bae6fd'};">
-                  ⚡ ${curMode === 'elite' ? '精英扫荡' : '极速扫荡'}
-                </button>
-              ` : ''}
-            ` : `<span style="font-size:11px;color:#ef4444;background:rgba(239,68,68,0.15);padding:3px 6px;border-radius:4px;">${lockReason}</span>`}
-          </div>
+          <div class="lobby-stage-card-name">${st.name}</div>
+          <div class="lobby-stage-card-meta">${chapter ? chapter.shortName : ''} · x${st.difficulty}</div>
+          <div class="lobby-stage-card-waves">${st.endless ? '无尽波次' : `防守 ${st.clearWaves} 波`}</div>
+          ${stateHtml}
+          <button class="lobby-stage-card-detail" type="button" data-action="stage-detail" data-id="${st.id}">详情</button>
         </div>
       `;
     }).join('');
 
-    container.innerHTML = chapterTabsHtml + chapterBannerHtml + modeSelectorHtml + stagesHtml;
+    // 卡片是整段重建的，scrollLeft 会归零，必须重新对准当前选中的关卡
+    this.updateStagePosLabel(this.selectedStageIndex);
+    this.scrollStageTo(this.selectedStageIndex, false);
+  }
 
-    // 战区切换
-    container.querySelectorAll('[data-action="switch-chapter"]').forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        this.selectedChapter = parseInt(btn.dataset.chapterId, 10);
-        this.renderTrials();
-      };
-    });
+  // 关卡在指定模式下的解锁状态
+  getStageLockState(stage, mode) {
+    if (mode === 'elite') {
+      return saveManager.isEliteUnlocked(stage.id)
+        ? { locked: false, reason: '' }
+        : { locked: true, reason: `需先通关第 ${stage.id} 关的标准模式` };
+    }
+    return stage.id <= saveManager.getUnlockedStage()
+      ? { locked: false, reason: '' }
+      : { locked: true, reason: '请先通关前面的关卡' };
+  }
 
-    // 直达当前防线
-    const jumpBtn = container.querySelector('[data-action="jump-current"]');
-    if (jumpBtn) {
-      jumpBtn.onclick = (e) => {
-        e.stopPropagation();
-        this.selectedChapter = equippedChapter;
-        this.renderTrials();
-      };
+  // 关卡 ID 在轨道中的下标
+  stageIndexOf(stageId) {
+    const idx = (GAME_CONFIG.stages || []).findIndex(s => s.id === stageId);
+    return idx < 0 ? 0 : idx;
+  }
+
+  // 把某张卡片滚到可视区正中
+  scrollStageTo(index, smooth = true) {
+    const carousel = document.getElementById('lobby-stage-carousel');
+    const track = document.getElementById('lobby-stage-track');
+    if (!carousel || !track || !track.children.length) return;
+
+    const cards = track.children;
+    const clamped = Math.max(0, Math.min(cards.length - 1, index));
+    const card = cards[clamped];
+    const target = card.offsetLeft - (carousel.clientWidth - card.offsetWidth) / 2;
+
+    // 程序滚动会连续触发 scroll 事件，期间挂起反向同步，避免和手势来回打架
+    this._suppressStageSync = true;
+    const left = Math.max(0, target);
+    // 老 WebView 不认 scrollTo 的 options 形式，会静默不滚动，所以先探测再降级
+    if (typeof carousel.scrollTo === 'function' && 'scrollBehavior' in document.documentElement.style) {
+      carousel.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' });
+    } else {
+      carousel.scrollLeft = left;
+    }
+    clearTimeout(this._stageSyncTimer);
+    this._stageSyncTimer = setTimeout(() => {
+      this._suppressStageSync = false;
+      // 抑制窗口盖住了这期间的滚动事件，结束后按最终位置补一次校准
+      this.syncStageFromScroll();
+    }, smooth ? 450 : 0);
+  }
+
+  // 手指滑动结束后，取离可视区中心最近的一张卡片作为选中项
+  syncStageFromScroll() {
+    if (this._suppressStageSync) return;
+    const carousel = document.getElementById('lobby-stage-carousel');
+    const track = document.getElementById('lobby-stage-track');
+    if (!carousel || !track || !track.children.length) return;
+
+    const cards = track.children;
+    const center = carousel.scrollLeft + carousel.clientWidth / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < cards.length; i++) {
+      const dist = Math.abs(cards[i].offsetLeft + cards[i].offsetWidth / 2 - center);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    }
+    this.applyStageSelection(parseInt(cards[best].dataset.stageId, 10), best);
+
+    // 已经对准正中就不用再动，否则「吸附 -> 触发滚动 -> 再吸附」会自己转起来
+    if (bestDist <= 2) return;
+
+    // 手指停下后把卡片吸附到正中。CSS scroll-snap 也能吸附，但它和程序滚动
+    // 会互相抢位置，所以这里自己来，等滚动真正静下来再动手。
+    clearTimeout(this._stageSettleTimer);
+    this._stageSettleTimer = setTimeout(() => {
+      if (this._suppressStageSync) return;
+      this.scrollStageTo(this.selectedStageIndex, true);
+    }, 160);
+  }
+
+  // 切换选中关卡：只更新浏览态与高亮，不重建轨道（否则会打断滑动）
+  applyStageSelection(stageId, index) {
+    if (!stageId) return;
+    this.selectedStageId = stageId;
+    this.selectedStageIndex = index;
+
+    const track = document.getElementById('lobby-stage-track');
+    if (track) {
+      track.querySelectorAll('.lobby-stage-card').forEach(card => {
+        card.classList.toggle('selected', parseInt(card.dataset.stageId, 10) === stageId);
+      });
+    }
+    this.updateStagePosLabel(index);
+    this.renderStageSummary();
+  }
+
+  // 点卡片：选中并把它滚到中间
+  pickStage(stageId, { scroll = false } = {}) {
+    const index = this.stageIndexOf(stageId);
+    if (scroll) this.scrollStageTo(index, true);
+    this.applyStageSelection(stageId, index);
+  }
+
+  // 左右箭头：移动一关
+  stepStage(delta) {
+    const stages = GAME_CONFIG.stages || [];
+    const next = Math.max(0, Math.min(stages.length - 1, this.selectedStageIndex + delta));
+    if (next === this.selectedStageIndex) return;
+    this.scrollStageTo(next, true);
+    this.applyStageSelection(stages[next].id, next);
+  }
+
+  updateStagePosLabel(index) {
+    const el = document.getElementById('lobby-stage-pos');
+    if (!el) return;
+    const total = (GAME_CONFIG.stages || []).length;
+    el.textContent = `${Math.max(0, Math.min(total - 1, index)) + 1} / ${total}`;
+  }
+
+  // 开始防守：打的就是轨道上当前选中的那一关
+  confirmStageAndLaunch() {
+    const stageId = this.selectedStageId || saveManager.getEquippedStage();
+    const stage = (GAME_CONFIG.stages || []).find(s => s.id === stageId);
+    if (!stage) return;
+
+    const lock = this.getStageLockState(stage, saveManager.getMode() || 'normal');
+    if (lock.locked) {
+      showToast(`🔒 第 ${stageId} 关【${stage.name}】尚未解锁！\n${lock.reason}。`, { tone: 'warn' });
+      return;
     }
 
-    // 模式切换
-    container.querySelectorAll('[data-action="switch-mode"]').forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const mode = btn.dataset.mode;
-        saveManager.setMode(mode);
-        this.renderTrials();
-      };
-    });
+    // 出击时才把浏览到的关卡写回存档，纯滑动浏览不产生存档写入
+    saveManager.setEquippedStage(stageId);
+    this.launchBattle(stageId);
+  }
 
-    // 出击与选定
-    container.querySelectorAll('[data-action="pick-stage"]').forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const id = parseInt(btn.dataset.id, 10);
-        saveManager.setEquippedStage(id);
-        this.launchBattle(id);
-      };
-    });
+  // 关卡详情：列出该关的全部掉落产出，扫荡入口也收在这里
+  showStageDetail(stageId) {
+    const stage = (GAME_CONFIG.stages || []).find(s => s.id === stageId);
+    if (!stage) return;
 
-    // 关卡扫荡
-    container.querySelectorAll('[data-action="sweep-stage"]').forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const id = parseInt(btn.dataset.id, 10);
-        const mode = btn.dataset.mode || 'normal';
-        this.handleSweepStage(id, mode);
-      };
-    });
+    const oldModal = document.getElementById('stage-detail-modal');
+    if (oldModal) oldModal.remove();
 
-    container.querySelectorAll('.stage-flow-card:not(.locked)').forEach(card => {
-      card.onclick = () => {
-        const id = parseInt(card.dataset.stageId, 10);
-        saveManager.setEquippedStage(id);
-        this.render();
+    const curMode = saveManager.getMode() || 'normal';
+    const isElite = curMode === 'elite';
+    const modeCfg = GAME_CONFIG.modes?.[curMode] || GAME_CONFIG.modes?.normal || {};
+    const lock = this.getStageLockState(stage, curMode);
+    const normalCleared = (saveManager.getHighestStageCleared() || 0) >= stage.id;
+    const canSweep = isElite ? saveManager.isEliteCleared(stage.id) : normalCleared;
+    const chapter = (GAME_CONFIG.chapters || []).find(c => c.id === stage.chapter);
+    const accent = isElite ? '#f43f5e' : (chapter?.color || '#38bdf8');
+
+    const dropRow = (id, name, icon, sub, highlight = false) => `
+      <div class="stage-detail-drop${highlight ? ' highlight' : ''}">
+        ${this.formatItemIcon(icon, name, 'stage-detail-drop-icon', id)}
+        <div>
+          <div class="stage-detail-drop-name">${name}</div>
+          <div class="stage-detail-drop-sub">${sub}</div>
+        </div>
+      </div>
+    `;
+
+    // 特色产出：关卡配置里写死的定向掉落
+    const featuredHtml = (stage.targetDrops || []).map(drop =>
+      dropRow(drop.id, drop.name, drop.icon, '本关定向产出', !!drop.highlight)
+    ).join('') || '<div class="stage-detail-empty">本关无定向产出</div>';
+
+    // 常规产出：与扫荡结算共用同一个素材池
+    const commonHtml = ['power_shard', 'bulletspeed_shard', 'attackspeed_shard', 'mag_shard', 'rune_shard']
+      .map(id => {
+        const cfg = GAME_CONFIG.items?.[id] || {};
+        return dropRow(id, cfg.name || id, cfg.icon || id, '随机 1~2 份');
+      }).join('');
+
+    const eliteHtml = isElite
+      ? dropRow(
+          'rare_weapon_shard',
+          GAME_CONFIG.items?.rare_weapon_shard?.name || '稀有军工枪械核心',
+          GAME_CONFIG.items?.rare_weapon_shard?.icon,
+          '精英模式必掉 · 枪械 6 级以上突破素材',
+          true
+        )
+      : '';
+
+    const scrapAvg = Math.round((stage.scrapReward || 80) * (modeCfg.scrapMult || 1));
+    const resistance = Math.min(0.6, (stage.physicalResistance || 0) + (modeCfg.physicalResistanceBonus || 0));
+
+    const modal = document.createElement('div');
+    modal.id = 'stage-detail-modal';
+    modal.className = 'stage-detail-backdrop';
+    modal.innerHTML = `
+      <div class="stage-detail-dialog${isElite ? ' elite' : ''}" style="--stage-accent:${accent};">
+        <div class="stage-detail-header">
+          <div class="stage-detail-title-box">
+            <span class="stage-detail-no">${stage.id}</span>
+            <div>
+              <div class="stage-detail-name">${stage.name}</div>
+              <div class="stage-detail-sub">${chapter ? `${chapter.icon} ${chapter.name}` : ''} · ${isElite ? '💀 精英突袭' : '🛡️ 标准防守'}</div>
+            </div>
+          </div>
+          <button class="stage-detail-close" id="stage-detail-close-x" type="button" aria-label="关闭">✕</button>
+        </div>
+
+        <div class="stage-detail-stats">
+          <div><span>通关波次</span><strong>${stage.endless ? '无尽' : stage.clearWaves}</strong></div>
+          <div><span>难度系数</span><strong>x${(stage.difficulty * (isElite ? 1.6 : 1.0)).toFixed(2)}</strong></div>
+          <div><span>物理抗性</span><strong>${Math.round(resistance * 100)}%</strong></div>
+          <div><span>废料产出</span><strong>约 ${scrapAvg}</strong></div>
+        </div>
+
+        ${stage.desc ? `<div class="stage-detail-desc">${stage.desc}</div>` : ''}
+
+        <div class="stage-detail-section-title">🎯 特色产出</div>
+        <div class="stage-detail-drops">${featuredHtml}</div>
+
+        ${eliteHtml ? `<div class="stage-detail-section-title">👑 精英专属</div><div class="stage-detail-drops">${eliteHtml}</div>` : ''}
+
+        <div class="stage-detail-section-title">📦 常规素材（随机掉落）</div>
+        <div class="stage-detail-drops">${commonHtml}</div>
+
+        <div class="stage-detail-actions">
+          ${canSweep
+            ? `<button class="stage-sweep-btn${isElite ? ' elite-sweep-btn' : ''}" id="stage-detail-sweep" type="button">⚡ ${isElite ? '精英扫荡' : '极速扫荡'}（消耗 5 体能）</button>`
+            : `<span class="stage-detail-lock-hint">${lock.locked ? `🔒 ${lock.reason}，暂不可出击` : '通关本关后可开启扫荡'}</span>`}
+          <button class="stage-detail-ok" id="stage-detail-confirm" type="button">确定</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('#stage-detail-close-x').onclick = closeModal;
+    modal.querySelector('#stage-detail-confirm').onclick = closeModal;
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+    const sweepBtn = modal.querySelector('#stage-detail-sweep');
+    if (sweepBtn) {
+      sweepBtn.onclick = () => {
+        // 扫荡结果弹窗会盖在详情之上，先把详情收掉
+        closeModal();
+        this.handleSweepStage(stageId, curMode);
       };
-    });
+    }
   }
 
   // 扫荡已通关的关卡
@@ -1524,9 +1649,10 @@ export class HomeLobbyUI {
       return;
     }
 
-    // 刷新大厅顶栏能量/货币与试炼界面
+    // 扫荡会消耗体能、推进指挥官等级并入库战利品，顶栏与轨道状态都要跟着刷新
     this.renderHeader();
-    this.renderTrials();
+    this.renderStageCarousel();
+    this.renderStageSummary();
 
     // 弹出炫酷的扫荡战利品清单
     this.showSweepResultModal(res, stageId, mode);
@@ -1546,71 +1672,46 @@ export class HomeLobbyUI {
 
     const lootCards = [];
 
-    // 金币
+    // 废料：sweepStage 返回的字段是 scrap
     lootCards.push(`
       <div class="sweep-loot-card">
         <span style="font-size:24px;">💰</span>
         <div>
-          <div style="font-size:11px;color:#94a3b8;">废料金币</div>
-          <div style="font-size:15px;font-weight:900;color:#facc15;">+${res.scrapEarned}</div>
+          <div style="font-size:11px;color:#94a3b8;">工业废料</div>
+          <div style="font-size:15px;font-weight:900;color:#facc15;">+${res.scrap || 0}</div>
         </div>
       </div>
     `);
 
-    // 军工芯片
-    if (res.gemsEarned > 0) {
+    // 高能晶核（精英模式有几率掉落）
+    if (res.gems > 0) {
       lootCards.push(`
         <div class="sweep-loot-card">
           <span style="font-size:24px;">💎</span>
           <div>
-            <div style="font-size:11px;color:#94a3b8;">军工核心晶石</div>
-            <div style="font-size:15px;font-weight:900;color:#38bdf8;">+${res.gemsEarned}</div>
+            <div style="font-size:11px;color:#94a3b8;">高能晶核</div>
+            <div style="font-size:15px;font-weight:900;color:#38bdf8;">+${res.gems}</div>
           </div>
         </div>
       `);
     }
 
-    // 定向技能芯片
-    if (res.chipsAwarded > 0 && res.targetChipItem) {
+    // 战利品是一个 { 物品ID: 数量 } 的字典，名称与图标统一查 GAME_CONFIG.items
+    Object.entries(res.items || {}).forEach(([itemId, count]) => {
+      if (!count) return;
+      const cfg = GAME_CONFIG.items?.[itemId] || {};
+      const isRare = itemId === 'rare_weapon_shard';
       lootCards.push(`
-        <div class="sweep-loot-card">
-          <span style="font-size:24px;">🧩</span>
-          <div>
-            <div style="font-size:11px;color:#94a3b8;">${res.targetChipItem.name}</div>
-            <div style="font-size:15px;font-weight:900;color:#c084fc;">+${res.chipsAwarded} 碎片</div>
-          </div>
-        </div>
-      `);
-    }
-
-    // 基础枪械碎片
-    if (res.regularShards > 0) {
-      lootCards.push(`
-        <div class="sweep-loot-card">
-          <span style="font-size:24px;">🔧</span>
-          <div>
-            <div style="font-size:11px;color:#94a3b8;">基础枪械强化碎片</div>
-            <div style="font-size:15px;font-weight:900;color:#fb923c;">+${res.regularShards} 碎片</div>
-          </div>
-        </div>
-      `);
-    }
-
-    // 稀有军工枪械核心（精英专属）
-    if (res.rareShards > 0) {
-      lootCards.push(`
-        <div class="sweep-loot-card rare-highlight">
-          <span style="font-size:26px;">👑</span>
+        <div class="sweep-loot-card${isRare ? ' rare-highlight' : ''}">
+          ${this.formatItemIcon(cfg.icon || itemId, cfg.name || itemId, 'sweep-loot-icon', itemId)}
           <div style="flex:1;">
-            <div style="font-size:11px;color:#f43f5e;font-weight:900;display:flex;align-items:center;gap:4px;">
-              <span>💎 稀有军工枪械核心</span>
-              <span style="background:rgba(244,63,94,0.25);border:1px solid #f43f5e;font-size:9px;padding:1px 5px;border-radius:4px;color:#fff;">精英战区专属特产</span>
-            </div>
-            <div style="font-size:15px;font-weight:900;color:#fda4af;">+${res.rareShards} 核心 (可用于突破强化 6~1000 级)</div>
+            <div style="font-size:11px;color:${isRare ? '#f43f5e' : '#94a3b8'};font-weight:${isRare ? 900 : 400};">${cfg.name || itemId}</div>
+            <div style="font-size:15px;font-weight:900;color:${isRare ? '#fda4af' : '#c084fc'};">+${count} ${isRare ? '核心' : '碎片'}</div>
+            ${isRare ? '<div style="font-size:10px;color:#fda4af;">可用于枪械 6 级以上突破强化</div>' : ''}
           </div>
         </div>
       `);
-    }
+    });
 
     // 指挥官经验
     lootCards.push(`
@@ -1618,7 +1719,7 @@ export class HomeLobbyUI {
         <span style="font-size:24px;">🎖️</span>
         <div>
           <div style="font-size:11px;color:#94a3b8;">指挥官经验</div>
-          <div style="font-size:15px;font-weight:900;color:#4ade80;">+${res.expGained} EXP</div>
+          <div style="font-size:15px;font-weight:900;color:#4ade80;">+${res.exp || 0} EXP</div>
         </div>
       </div>
     `);
@@ -1630,7 +1731,7 @@ export class HomeLobbyUI {
             <span style="font-size:22px;">⚡</span>
             <div>
               <div style="font-size:16px;font-weight:900;color:${isElite ? '#f43f5e' : '#38bdf8'};">
-                第 ${stageId} 关 · ${isElite ? '💀 精英极限扫荡' : '🛡️ 战术极速扫荡'} 成功！
+                第 ${stageId} 关 · ${res.stageName || ''} ${isElite ? '💀 精英极限扫荡' : '🛡️ 战术极速扫荡'} 成功！
               </div>
               <div style="font-size:11px;color:#94a3b8;margin-top:2px;">
                 战线肃清完毕 · 消耗能量 5 点 (剩余: ${curEnergy} ⚡)
