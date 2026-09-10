@@ -6,5 +6,6 @@ dist/
 build/
 .gemini/
 .wrangler/
+tmp/
 *.tmp.*
 *.bak

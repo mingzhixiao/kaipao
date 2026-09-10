@@ -9,25 +9,27 @@ export class AssetManager {
     this.images = {};
     this.loaded = false;
     this.loadingPromise = null;
+    this._frameCache = new Map();
     // 发布版本统一改这里，避免每次请求都使用 Date.now() 造成无法命中浏览器缓存。
     this.assetVersion = '20260909_scifi_v1';
     _globalAssetInstance = this;
     globalThis.__STARCORE_ASSETS_INSTANCE__ = this;
     this.manifest = {
-      bg_highway: 'assets/environment/bg_highway.png',
+      bg_highway: 'assets/environment/bg_highway.jpg',
       fortress_wall: 'assets/environment/fortress_wall.png',
       hero: 'assets/characters/hero.png',
       runner: 'assets/characters/runner.png', runner_0: 'assets/characters/runner_0.png', runner_1: 'assets/characters/runner_1.png',
       charger: 'assets/characters/charger.png', charger_0: 'assets/characters/charger_0.png', charger_1: 'assets/characters/charger_1.png',
       behemoth: 'assets/characters/behemoth.png', behemoth_0: 'assets/characters/behemoth_0.png', behemoth_1: 'assets/characters/behemoth_1.png',
       boss_overlord: 'assets/characters/boss_overlord.png', boss_overlord_0: 'assets/characters/boss_overlord_0.png', boss_overlord_1: 'assets/characters/boss_overlord_1.png',
-      truck_0: 'assets/vehicles/truck_frame_0.png', truck_1: 'assets/vehicles/truck_frame_1.png', truck: 'assets/vehicles/truck.png',
+      truck: 'assets/vehicles/truck.png',
       bullet_normal: 'assets/projectiles/bullet_normal.png', bullet_crit: 'assets/projectiles/bullet_crit.png',
       icon_rocket: 'assets/cards/icon_rocket.png', icon_truck: 'assets/cards/icon_truck.png', icon_frost: 'assets/cards/icon_frost.png', icon_gem: 'assets/cards/icon_gem.png',
       icon_emp: 'assets/cards/icon_emp.png', icon_tesla: 'assets/cards/icon_tesla.png', icon_thermal: 'assets/cards/icon_thermal.png', icon_pierce: 'assets/cards/icon_pierce.png',
       icon_shield: 'assets/cards/icon_shield.png', icon_multishot: 'assets/cards/icon_multishot.png', icon_firerate: 'assets/cards/icon_firerate.png', icon_crit: 'assets/cards/icon_crit.png',
       icon_inferno: 'assets/cards/icon_inferno.png', icon_shatter: 'assets/cards/icon_shatter.png',
-      skill_tornado: 'assets/skills/tornado.png', skill_boomerang: 'assets/skills/boomerang.png', skill_laser: 'assets/skills/laser.png', skill_bomber: 'assets/skills/bomber.png',
+      skill_tornado: 'assets/skills/tornado.png', skill_boomerang: 'assets/skills/boomerang.png', skill_bomber: 'assets/skills/bomber.png',
+      skill_breath: 'assets/skills/breath.png', pet_bullet: 'assets/skills/pet-bullet.png',
       pet_fluffy: 'assets/pets/fluffy.png', pet_dragon: 'assets/pets/dragon.png',
       item_assault_part: 'assets/items/item_assault_part.png',
       item_gatling_part: 'assets/items/item_gatling_part.png',
@@ -115,6 +117,8 @@ export class AssetManager {
       if (onProgress) onProgress(loadedCount, total, key);
       if (!img) console.warn(`[AssetManager] final fail: ${src}, using procedural fallback`);
     })).then(() => {
+      // 加载完成后清一次帧缓存，防止加载前调用 getFrame 缓存住空帧
+      this._frameCache.clear();
       this.loaded = true;
       this.loadingPromise = null;
     }).catch(err => {
@@ -124,19 +128,28 @@ export class AssetManager {
     return this.loadingPromise;
   }
 
+  // 帧键在首次访问时展开为数组缓存，避免每实体每帧拼模板字符串
   getFrame(type, frameIdx) {
     const baseKey = (type === 'mutant_overlord' || type === 'boss_overlord') ? 'boss_overlord' : type;
     if (frameIdx !== undefined && frameIdx !== null) {
+      let frames = this._frameCache.get(baseKey);
+      if (!frames) {
+        const fallback = this.images[baseKey] || null;
+        frames = [
+          this.images[`${baseKey}_0`] || fallback,
+          this.images[`${baseKey}_1`] || fallback
+        ];
+        this._frameCache.set(baseKey, frames);
+      }
       const idx = Math.abs(Math.floor(frameIdx)) % 2;
-      const frameKey = `${baseKey}_${idx}`;
-      if (this.images[frameKey]) return this.images[frameKey];
+      if (frames[idx]) return frames[idx];
     }
     return this.images[baseKey] || this.images.runner || null;
   }
 
-  getTruck(frameIdx) {
-    const idx = Math.abs(Math.floor(frameIdx)) % 2;
-    return this.images[`truck_${idx}`] || this.images.truck || null;
+  // 扫荡舰只有单帧贴图（原 truck_frame_0/1 与 truck.png 字节相同，已删除冗余副本）
+  getTruck() {
+    return this.images.truck || null;
   }
 
   get(key) { return this.images[key] || null; }

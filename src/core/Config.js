@@ -94,9 +94,10 @@ export const GAME_CONFIG = {
   ],
 
   skills: {
-    rocket: { element: 'fire', cooldown: 5.5, minCooldown: 2.8, damage: 280, radius: 120, burnDuration: 4.5, burnDps: 45, flightDuration: 0.52 },
-    truck: { element: 'physical', cooldown: 8.0, minCooldown: 3.8, damage: 350, knockback: 180, speed: 480, width: 75, height: 105 },
-    freeze: { element: 'ice', cooldown: 7.0, minCooldown: 3.5, duration: 1.2, damagePerTick: 18, slowRatio: 0.2, range: 350, coneAngle: Math.PI * 0.45 },
+    // 注：这里曾经有 minCooldown（冷却下限），全项目无任何读取点，已删除。
+    rocket: { element: 'fire', cooldown: 5.5, damage: 280, radius: 120, burnDuration: 4.5, burnDps: 45, flightDuration: 0.52 },
+    truck: { element: 'physical', cooldown: 8.0, damage: 350, knockback: 180, speed: 480, width: 75, height: 105 },
+    freeze: { element: 'ice', cooldown: 7.0, duration: 1.2, damagePerTick: 18, slowRatio: 0.2, range: 350, coneAngle: Math.PI * 0.45 },
     tornado: { element: 'wind', cooldown: 8, duration: 4, radius: 200, damagePerSecond: 0.3, pullStrength: 0.03, particleCount: 30, maxPullSpeed: 50 },
     boomerang: { element: 'physical', cooldown: 5, speed: 400, maxRange: 600, damage: 1.0, width: 20, height: 20, critBonus: 0.35 },
     laser: { element: 'thunder', cooldown: 3, width: 10, damage: 1.5, burnDamage: 0.2, burnDuration: 2, displayDuration: 0.2 },
@@ -383,7 +384,8 @@ export const GAME_CONFIG = {
         name,
         clearWaves,
         scrapReward,
-        bossEvery: isChapterBoss ? 4 : (isMiniBoss ? 4 : 5),
+        // 精英关与战区霸主关同为每 4 波一个 Boss，其余每 5 波
+        bossEvery: (isChapterBoss || isMiniBoss) ? 4 : 5,
         isMiniBoss,
         isChapterBoss,
         difficulty,

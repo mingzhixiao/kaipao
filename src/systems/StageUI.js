@@ -1,5 +1,5 @@
 // ---------------- 关卡选择 / 通关结算 / 符文工坊 UI ----------------
-import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost } from './RuneSystem.js';
+import { runeSystem } from './RuneSystem.js';
 import { saveManager } from './SaveManager.js';
 import { GAME_CONFIG } from '../core/Config.js';
 import { uiStack } from '../ui/UIStack.js';
@@ -157,74 +157,3 @@ export function showStageClearModal(game) {
   };
 }
 
-export function showStageSelectModal(game) {
-  const modal = document.getElementById('stage-select-modal');
-  if (!modal) return;
-  const list = document.getElementById('stage-list');
-  const scrapLabel = document.getElementById('hub-scrap');
-  if (scrapLabel) scrapLabel.textContent = saveManager.getScrap();
-  const unlocked = saveManager.getUnlockedStage();
-  if (list) {
-    list.innerHTML = '';
-    (GAME_CONFIG.stages || []).forEach(st => {
-      const locked = st.id > unlocked;
-      const el = document.createElement('div');
-      el.className = 'stage-item' + (locked ? ' locked' : '');
-      const goal = st.endless ? '无尽模式' : `通关波次 ${st.clearWaves}`;
-      el.innerHTML = `<div class="stage-item-id">STAGE ${st.id}</div><div class="stage-item-name">${st.name}${locked ? ' 🔒' : ''}</div><div class="stage-item-goal">${goal} · 难度 x${st.difficulty}</div>`;
-      if (!locked) el.addEventListener('click', () => { modal.style.display = 'none'; game.isPaused = false; game.startStage(st.id); });
-      list.appendChild(el);
-    });
-  }
-  modal.style.display = 'flex';
-  game.isPaused = true;
-  const btnForge = document.getElementById('btn-hub-forge');
-  if (btnForge) {
-    btnForge.onclick = async () => {
-      modal.style.display = 'none';
-      const { homeLobbyUI } = await import('../ui/HomeLobbyUI.js');
-      homeLobbyUI.switchTab('runes');
-      homeLobbyUI.show();
-    };
-  }
-}
-
-export function showRuneForgeModal(game) {
-  import('../ui/HomeLobbyUI.js').then(({ homeLobbyUI }) => {
-    homeLobbyUI.switchTab('runes');
-    homeLobbyUI.show();
-  });
-}
-
-function renderRuneForgeList() {
-  const list = document.getElementById('rune-forge-list');
-  const scrapEl = document.getElementById('forge-scrap');
-  if (scrapEl) scrapEl.textContent = saveManager.getScrap();
-  if (!list) return;
-  list.innerHTML = '';
-  RUNE_CATALOG.forEach(rune => {
-    const lv = runeSystem.getLevel(rune.id);
-    const maxed = lv >= rune.maxLevel;
-    const cost = maxed ? 0 : getRuneUpgradeCost(rune, lv);
-    const el = document.createElement('div');
-    el.className = 'rune-forge-row' + (maxed ? ' maxed' : '');
-    el.innerHTML = `
-      <div class="rune-forge-icon cat-${rune.category}">
-        <img class="rune-icon-img" src="${rune.asset || `assets/runes/rune_${rune.id}.png`}" alt="${rune.name}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">
-        <span class="rune-icon-fallback" style="display:none;">${rune.icon}</span>
-      </div>
-      <div class="rune-forge-info">
-        <div class="rune-forge-name">${rune.name} <span class="rune-lv">Lv.${lv}/${rune.maxLevel}</span></div>
-        <div class="rune-forge-desc">${rune.desc}</div>
-      </div>
-      <button class="rune-upgrade-btn" ${maxed ? 'disabled' : ''}>${maxed ? 'MAX' : cost + ' 碎片'}</button>`;
-    const btn = el.querySelector('button');
-    if (!maxed) {
-      btn.addEventListener('click', () => {
-        if (runeSystem.tryUpgrade(rune.id)) renderRuneForgeList();
-        else { btn.textContent = '碎片不足'; setTimeout(() => { btn.textContent = cost + ' 碎片'; }, 800); }
-      });
-    }
-    list.appendChild(el);
-  });
-}

@@ -7,7 +7,7 @@ import { installSkillsPetsPolish } from './features/SkillsPetsPolish.js';
 import { installGameUIUX } from './ui/GameUIUX.js';
 import { homeLobbyUI } from './ui/HomeLobbyUI.js';
 import { GAME_CONFIG } from './core/Config.js';
-import { SKILL_CONFIG, PET_TYPES } from './features/SkillsPetsFeature.js';
+import { PET_TYPES } from './features/SkillsPetsFeature.js';
 import { installGameOptimization } from './systems/GameOptimization.js';
 import { installBuildIdentity } from './systems/BuildIdentitySystem.js';
 import { gameEvents } from './systems/EventBus.js';
@@ -62,48 +62,87 @@ function bindFeatureTarget(game) {
   game.canvas.addEventListener('touchstart', updateTarget, { passive: true });
 }
 
-function initCheatPanel(game) {
-  const params = new URLSearchParams(location.search);
-  const debug = params.get('debug') === '1' || params.get('cheat') === '1';
-  const toggleBtn = document.getElementById('cheat-panel-toggle');
-  const panel = document.getElementById('cheat-panel');
-  if (!debug) {
-    if (toggleBtn) toggleBtn.style.display = 'none';
-    if (panel) panel.style.display = 'none';
-    return;
-  }
-  if (toggleBtn) toggleBtn.style.display = '';
-  if (panel) panel.style.display = '';
-  if (toggleBtn && panel) {
-    toggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      panel.classList.toggle('open');
-      toggleBtn.textContent = panel.classList.contains('open') ? '关闭调试' : '调试';
-    });
-  }
-  const btnCheatLvl = document.getElementById('cheat-lvl');
-  if (btnCheatLvl) btnCheatLvl.addEventListener('click', () => game.triggerLevelUp());
-  const btnCheatHeal = document.getElementById('cheat-heal');
-  if (btnCheatHeal) btnCheatHeal.addEventListener('click', () => {
+// 调试面板的按钮：id -> [文案, 点击行为]
+const CHEAT_ACTIONS = [
+  ['cheat-lvl', '+ 升级', (game) => game.triggerLevelUp()],
+  ['cheat-heal', '+ 修复防线', (game) => {
     game.fortress.hp = game.fortress.maxHp;
     game.fortress.shield = game.fortress.maxShield;
     game.spawnDamageText(game.hero.x, game.hero.y - 30, 'REPAIRED!', '#39ff14', true);
     game.hud.updateHUD(game);
+  }],
+  ['cheat-skills', '+ 解锁全技能', (game) => {
+    // 全部技能的运行时状态统一存在 game.skills
+    for (const id of ['rocket', 'truck', 'freeze', 'laser', 'tornado', 'boomerang', 'bomber']) {
+      const s = game.skills[id];
+      if (s) s.level = Math.max(1, s.level + 1);
+    }
+  }],
+  ['cheat-boss', '⚠️ 召唤Boss', (game) => game.spawnBoss(180)],
+  ['cheat-fail', '测试失守', (game) => game.damageFortress(game.fortress.hp + game.fortress.shield + 1)],
+  ['cheat-clear', '测试通关', (game) => game.waveSystem.onStageClear()]
+];
+
+const CHEAT_STYLE = `
+  #cheat-panel-toggle {
+    position: absolute; top: 70px; right: 8px; z-index: 50; pointer-events: auto;
+    background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #94a3b8; border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer;
+  }
+  #cheat-panel {
+    position: absolute; top: 100px; right: 8px; z-index: 50; pointer-events: auto;
+    display: none; flex-direction: column; gap: 4px;
+  }
+  #cheat-panel.open { display: flex; }
+  .cheat-btn {
+    min-height: 44px; background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0;
+    border-radius: 6px; padding: 6px 10px; font-size: 11px; cursor: pointer;
+  }
+`;
+
+// 调试面板只在 ?debug=1（或旧别名 ?cheat=1）时才构建。
+// 这套按钮以前写死在 index.html 里、仅靠 display:none 藏起来——也就是说线上页面
+// 里始终躺着一份「升级 / 解锁全技能 / 直接通关」的作弊 UI，任何人加个参数就能用。
+// 改成按需生成后，正式包体的 DOM 与样式里都不再存在这些节点。
+function initCheatPanel(game) {
+  const params = new URLSearchParams(location.search);
+  if (params.get('debug') !== '1' && params.get('cheat') !== '1') return;
+
+  const style = document.createElement('style');
+  style.id = 'cheat-panel-style';
+  style.textContent = CHEAT_STYLE;
+  document.head.appendChild(style);
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.id = 'cheat-panel-toggle';
+  toggleBtn.type = 'button';
+  toggleBtn.title = '展开/收起调试菜单';
+  toggleBtn.textContent = '🛠️ 调试';
+
+  const panel = document.createElement('div');
+  panel.id = 'cheat-panel';
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    panel.classList.toggle('open');
+    toggleBtn.textContent = panel.classList.contains('open') ? '关闭调试' : '调试';
   });
-  const btnCheatSkills = document.getElementById('cheat-skills');
-  if (btnCheatSkills) btnCheatSkills.addEventListener('click', () => {
-    game.skills.rocket.level = Math.max(1, game.skills.rocket.level + 1);
-    game.skills.truck.level = Math.max(1, game.skills.truck.level + 1);
-    game.skills.freeze.level = Math.max(1, game.skills.freeze.level + 1);
-    if (game.feature) Object.keys(game.feature.skills).forEach(k => { game.feature.skills[k].level = Math.max(1, game.feature.skills[k].level); });
-    game.hud.updateSkillHUD(game);
-  });
-  const btnCheatBoss = document.getElementById('cheat-boss');
-  if (btnCheatBoss) btnCheatBoss.addEventListener('click', () => game.spawnBoss(180));
-  const btnCheatFail = document.getElementById('cheat-fail');
-  if (btnCheatFail) btnCheatFail.addEventListener('click', () => game.damageFortress(game.fortress.hp + game.fortress.shield + 1));
-  const btnCheatClear = document.getElementById('cheat-clear');
-  if (btnCheatClear) btnCheatClear.addEventListener('click', () => game.waveSystem.onStageClear());
+
+  for (const [id, label, run] of CHEAT_ACTIONS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cheat-btn';
+    btn.id = id;
+    btn.textContent = label;
+    btn.addEventListener('click', () => run(game));
+    panel.appendChild(btn);
+  }
+
+  const host = game.container || document.body;
+  host.appendChild(toggleBtn);
+  host.appendChild(panel);
+  console.log('[debug] 调试面板已启用');
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -127,8 +166,8 @@ window.addEventListener('DOMContentLoaded', () => {
       ]);
 
       if (skillsJson?.skills) {
+        // GAME_CONFIG.skills 是技能数值的唯一来源，SKILL_CONFIG 只是它的别名
         Object.assign(GAME_CONFIG.skills, skillsJson.skills);
-        Object.assign(SKILL_CONFIG, skillsJson.skills);
         console.log('[Config] Hot-reloaded skills.json successfully');
       }
       if (petsJson?.types) {

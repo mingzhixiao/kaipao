@@ -3,10 +3,10 @@
 [![Version](https://img.shields.io/badge/version-2.1.0-cyan.svg)](https://kp.420118.xyz)
 [![HTML5 Canvas](https://img.shields.io/badge/Render-Canvas%202D-orange.svg)]()
 [![Pure Vanilla JS](https://img.shields.io/badge/Tech-ES%20Modules-yellow.svg)]()
-[![WeChat Ready](https://img.shields.io/badge/Platform-WeChat%20Minigame%20Compliant-brightgreen.svg)]()
+[![Mobile Ready](https://img.shields.io/badge/Platform-PC%20%2B%20Mobile%20Browser-brightgreen.svg)]()
 [![Domain](https://img.shields.io/badge/Online-kp.420118.xyz-blue.svg)](https://kp.420118.xyz)
 
-一款基于原生 **HTML5 Canvas 2D + 原生 ES Module** 构建的原创**深空科幻要塞塔防 Roguelike 动作射击游戏**。零打包构建依赖，开箱即玩；完美适配 PC 键鼠微操、手机竖屏触控与微信小游戏环境。
+一款基于原生 **HTML5 Canvas 2D + 原生 ES Module** 构建的原创**深空科幻要塞塔防 Roguelike 动作射击游戏**。零打包构建依赖，开箱即玩；适配 PC 键鼠微操与手机竖屏触控。
 
 🌐 **线上直接试玩**：[https://kp.420118.xyz](https://kp.420118.xyz)
 
@@ -148,8 +148,9 @@
 
 - **纯原生零依赖构建**：纯 Canvas 2D + 现代标准 ES Module，极度轻量，极速冷启动。
 - **程序化音频引擎 (`SoundEngine`)**：利用 Web Audio API 动态实时合成射击、装填、爆炸与破盾音效。
-- **全生命周期对象池 (`ObjectPool`)**：子弹、弹道、敌对单位、浮字文本、粒子特效 100% 池化复用，杜绝 GC 丢帧。
-- **离屏 Canvas 预渲染**：复杂粒子特效在离屏缓冲中预绘制，确保低配设备与移动端 60FPS 满帧运行。
+- **全生命周期对象池 (`ObjectPool`)**：子弹、敌对单位、宝石、浮字文本、粒子与命中环均由对象池 `get()/release()` 复用，并在回收时按 `active` 标记做 O(n) 原地紧凑化，避免频繁 `splice` 与短命对象堆积。
+- **离屏 Canvas 背景层**：战场背景（地形、光效、装饰）预绘制到离屏 Canvas，按 `devicePixelRatio` 分配缓冲，每帧只做一次贴图，避免逐帧重绘静态图层；敌人接触阴影同样改为预烘焙贴图。
+- **高 DPR 成本封顶**：`devicePixelRatio` 统一封顶到 2，并对同尺寸 resize 直接短路，避免移动端地址栏收放时反复重新分配整块画布。
 - **数据持久化安全隔离**：`SaveManager` 支持向下迁移兼容，老用户数据无缝承接。
 
 ---

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npx serve -l 8099 .",
     "start": "npx serve -l 8099 .",
-    "deploy": "npx wrangler pages deploy . --project-name=kaipao-game --branch=main --commit-dirty=true",
+    "deploy": "node scripts/deploy.mjs",
     "qa": "node scripts/qa.mjs"
   },
   "keywords": [

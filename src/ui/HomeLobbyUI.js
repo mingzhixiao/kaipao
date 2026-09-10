@@ -2,6 +2,7 @@
 import { saveManager } from '../systems/SaveManager.js';
 import { GAME_CONFIG } from '../core/Config.js';
 import { runeSystem, RUNE_CATALOG, getRuneUpgradeCost, getRuneUpgradeShardCost } from '../systems/RuneSystem.js';
+import { showToast } from './Toast.js';
 
 export class HomeLobbyUI {
   constructor() {
@@ -373,11 +374,11 @@ export class HomeLobbyUI {
 
   switchTab(tabId) {
     if (tabId === 'runes' && !saveManager.isSystemUnlocked('runes')) {
-      alert('🔒【符文矩阵工坊】尚未解锁！\n通关第 3 关【环形山断层】后开放。');
+      showToast('🔒【符文矩阵工坊】尚未解锁！\n通关第 3 关【环形山断层】后开放。', { tone: 'warn' });
       return;
     }
     if (tabId === 'pets' && !saveManager.isSystemUnlocked('pets')) {
-      alert('🔒【伴飞僚机机库】尚未解锁！\n通关第 6 关【陨石风蚀巨壁】后开放。');
+      showToast('🔒【伴飞僚机机库】尚未解锁！\n通关第 6 关【陨石风蚀巨壁】后开放。', { tone: 'warn' });
       return;
     }
     this.activeTab = tabId;
@@ -553,7 +554,7 @@ export class HomeLobbyUI {
         const key = btn.dataset.key;
         const res = saveManager.upgradeFortification(key);
         if (!res.success) {
-          alert(res.message);
+          showToast(res.message, { tone: 'warn' });
         } else {
           this.render();
         }
@@ -775,19 +776,19 @@ export class HomeLobbyUI {
           if (saveManager.upgradeWeapon(id, scost, pcost)) this.render();
         } else if (action === 'upgrade-power') {
           const res = saveManager.upgradeWeaponPower(id);
-          if (!res.success) alert(res.message);
+          if (!res.success) showToast(res.message, { tone: 'warn' });
           else this.render();
         } else if (action === 'upgrade-bulletspeed') {
           const res = saveManager.upgradeWeaponBulletSpeed(id);
-          if (!res.success) alert(res.message);
+          if (!res.success) showToast(res.message, { tone: 'warn' });
           else this.render();
         } else if (action === 'upgrade-attackspeed') {
           const res = saveManager.upgradeWeaponAttackSpeed(id);
-          if (!res.success) alert(res.message);
+          if (!res.success) showToast(res.message, { tone: 'warn' });
           else this.render();
         } else if (action === 'upgrade-magazine') {
           const res = saveManager.upgradeWeaponMagazine(id);
-          if (!res.success) alert(res.message);
+          if (!res.success) showToast(res.message, { tone: 'warn' });
           else this.render();
         } else if (action === 'unlock-weapon') {
           const cost = parseInt(btn.dataset.cost, 10);
@@ -924,7 +925,7 @@ export class HomeLobbyUI {
       btn.onclick = () => {
         const id = btn.dataset.id;
         const res = saveManager.synthesizeSkill(id);
-        alert(res.message);
+        showToast(res.message, { tone: res.success ? 'success' : 'warn' });
         if (res.success) this.render();
       };
     });
@@ -934,7 +935,7 @@ export class HomeLobbyUI {
         const id = btn.dataset.id;
         const res = saveManager.toggleEquipSkill(id);
         if (!res.success) {
-          alert(res.message);
+          showToast(res.message, { tone: 'warn' });
         } else {
           this.render();
         }
@@ -1099,7 +1100,7 @@ export class HomeLobbyUI {
   handleOpenCrate() {
     const res = saveManager.openSupplyCrate();
     if (!res) {
-      alert('军备箱库存不足！可通过通关关卡或指挥官升级获得。');
+      showToast('军备箱库存不足！可通过通关关卡或指挥官升级获得。', { tone: 'warn' });
       return;
     }
     this.render();
@@ -1513,13 +1514,13 @@ export class HomeLobbyUI {
   handleSweepStage(stageId, mode = 'normal') {
     const energy = saveManager.getEnergy();
     if (energy < 5) {
-      alert('作战体能不足（扫荡需要 5 点能量）！请等待恢复或稍后再试。');
+      showToast('作战体能不足（扫荡需要 5 点能量）！请等待恢复或稍后再试。', { tone: 'warn' });
       return;
     }
 
     const res = saveManager.sweepStage(stageId, mode);
     if (!res.success) {
-      alert(res.message || '扫荡失败！');
+      showToast(res.message || '扫荡失败！', { tone: 'warn' });
       return;
     }
 
@@ -1673,7 +1674,7 @@ export class HomeLobbyUI {
   // 发起战斗
   launchBattle(stageId) {
     if (!saveManager.useEnergy(5)) {
-      alert('作战体能不足（需要 5 点能量）！请等待恢复或在背包中使用高能能量剂。');
+      showToast('作战体能不足（需要 5 点能量）！请等待恢复或在背包中使用高能能量剂。', { tone: 'warn' });
       return;
     }
     this.hide();
@@ -1705,18 +1706,11 @@ export class HomeLobbyUI {
     this.game.startStage(stageId);
 
     // 同步出战佩戴的技能（初始默认携带且均为 Lv.1）
+    // 全部技能状态都在 game.skills，无需再分别处理核心技能与特性技能
     const equippedSkills = saveManager.getEquippedSkills();
-    for (const id of ['rocket', 'truck', 'freeze']) {
-      if (this.game.skills[id]) {
-        this.game.skills[id].level = equippedSkills.includes(id) ? 1 : 0;
-      }
-    }
-    if (this.game.feature?.skills) {
-      for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
-        if (this.game.feature.skills[id]) {
-          this.game.feature.skills[id].level = equippedSkills.includes(id) ? 1 : 0;
-        }
-      }
+    for (const id of ['rocket', 'truck', 'freeze', 'laser', 'tornado', 'boomerang', 'bomber']) {
+      const state = this.game.skills[id];
+      if (state) state.level = equippedSkills.includes(id) ? 1 : 0;
     }
 
     if (this.game.feature?.syncPet) {

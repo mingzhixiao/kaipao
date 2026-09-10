@@ -53,62 +53,54 @@ export function buildUpgradeCardPool(game) {
     },
     {
       id: 'laser',
-      name: (game.feature?.skills?.laser?.level || 0) === 0 ? '粒子歼灭切割器 (解锁)' : '粒子歼灭切割器 (强化)',
-      desc: (game.feature?.skills?.laser?.level || 0) === 0 ? '贯穿全屏的高能聚焦粒子束，引发高频感电贯通与等离子超载！' : '粒子束威力+30%，持续时间增加，感电超载爆轰提升。',
+      name: (game.skills.laser?.level || 0) === 0 ? '粒子歼灭切割器 (解锁)' : '粒子歼灭切割器 (强化)',
+      desc: (game.skills.laser?.level || 0) === 0 ? '贯穿全屏的高能聚焦粒子束，引发高频感电贯通与等离子超载！' : '粒子束威力+30%，持续时间增加，感电超载爆轰提升。',
       img: 'assets/skills/laser.png',
       rarity: 'legendary',
       element: 'thunder',
       synergy: '[粒子 · 感电超载]',
       apply: () => {
-        if (game.feature?.skills?.laser) {
-          game.feature.skills.laser.level++;
-          game.feature.skills.laser.timer = 0;
-        }
+        const s = game.skills.laser;
+        if (s) { s.level++; s.timer = 0; }
       }
     },
     {
       id: 'tornado',
-      name: (game.feature?.skills?.tornado?.level || 0) === 0 ? '微型引力奇点 (解锁)' : '微型引力奇点 (强化)',
-      desc: (game.feature?.skills?.tornado?.level || 0) === 0 ? '持续微型引力奇点牵引约束敌群，并引发广域能量扩散！' : '奇点引力半径+25px，持续时间+0.8s，引力牵引威能增强。',
+      name: (game.skills.tornado?.level || 0) === 0 ? '微型引力奇点 (解锁)' : '微型引力奇点 (强化)',
+      desc: (game.skills.tornado?.level || 0) === 0 ? '持续微型引力奇点牵引约束敌群，并引发广域能量扩散！' : '奇点引力半径+25px，持续时间+0.8s，引力牵引威能增强。',
       img: 'assets/skills/tornado.png',
       rarity: 'epic',
       element: 'wind',
       synergy: '[引力 · 空间扩散]',
       apply: () => {
-        if (game.feature?.skills?.tornado) {
-          game.feature.skills.tornado.level++;
-          game.feature.skills.tornado.timer = 0;
-        }
+        const s = game.skills.tornado;
+        if (s) { s.level++; s.timer = 0; }
       }
     },
     {
       id: 'bomber',
-      name: (game.feature?.skills?.bomber?.level || 0) === 0 ? '天基动能天谴打击 (解锁)' : '天基动能天谴打击 (强化)',
-      desc: (game.feature?.skills?.bomber?.level || 0) === 0 ? '高空轨道战术信标定位，呼叫天基卫星投掷连续 3 发动能集束熔核弹！' : '打击伤害+35%，冲击击退+30px，冷却缩短。',
+      name: (game.skills.bomber?.level || 0) === 0 ? '天基动能天谴打击 (解锁)' : '天基动能天谴打击 (强化)',
+      desc: (game.skills.bomber?.level || 0) === 0 ? '高空轨道战术信标定位，呼叫天基卫星投掷连续 3 发动能集束熔核弹！' : '打击伤害+35%，冲击击退+30px，冷却缩短。',
       img: 'assets/skills/bomber.png',
       rarity: 'epic',
       element: 'fire',
       synergy: '[天基 · 动能天谴]',
       apply: () => {
-        if (game.feature?.skills?.bomber) {
-          game.feature.skills.bomber.level++;
-          game.feature.skills.bomber.timer = 0;
-        }
+        const s = game.skills.bomber;
+        if (s) { s.level++; s.timer = 0; }
       }
     },
     {
       id: 'boomerang',
-      name: (game.feature?.skills?.boomerang?.level || 0) === 0 ? '高周波磁旋刃 (解锁)' : '高周波磁旋刃 (强化)',
-      desc: (game.feature?.skills?.boomerang?.level || 0) === 0 ? '高频往返贯穿磁旋飞刃，双程撕裂切割，自带 35% 额外暴击率！' : '磁旋刃伤害+30%，飞行射程+80px，撕裂暴击提升。',
+      name: (game.skills.boomerang?.level || 0) === 0 ? '高周波磁旋刃 (解锁)' : '高周波磁旋刃 (强化)',
+      desc: (game.skills.boomerang?.level || 0) === 0 ? '高频往返贯穿磁旋飞刃，双程撕裂切割，自带 35% 额外暴击率！' : '磁旋刃伤害+30%，飞行射程+80px，撕裂暴击提升。',
       img: 'assets/skills/boomerang.png',
       rarity: 'rare',
       element: 'physical',
       synergy: '[磁旋 · 高周波撕裂]',
       apply: () => {
-        if (game.feature?.skills?.boomerang) {
-          game.feature.skills.boomerang.level++;
-          game.feature.skills.boomerang.timer = 0;
-        }
+        const s = game.skills.boomerang;
+        if (s) { s.level++; s.timer = 0; }
       }
     },
     {

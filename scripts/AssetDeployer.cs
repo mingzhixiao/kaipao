@@ -12,31 +12,30 @@ public class Program {
         string truckSrc = brainDir + @"\maglev_sweeper_vessel_1788942604399.jpg";
         string fluffySrc = brainDir + @"\tactical_drone_orb_1788942629390.jpg";
 
-        string bgDst = @"D:\test\kaipao\assets\environment\bg_highway.png";
+        // 背景整屏不透明，用 JPEG 编码避免 2MB+ 的 PNG（原 png 版 2291KB -> jpg 275KB）
+        string bgDst = @"D:\test\kaipao\assets\environment\bg_highway.jpg";
         string wallDst = @"D:\test\kaipao\assets\environment\fortress_wall.png";
+        // 扫荡舰只有单帧：原先 truck_frame_0/1 与 truck.png 用同一源图同参数生成，
+        // 三者字节完全相同，属于无效“动画帧”，已删除冗余副本。
         string truckDst = @"D:\test\kaipao\assets\vehicles\truck.png";
-        string truckF0Dst = @"D:\test\kaipao\assets\vehicles\truck_frame_0.png";
-        string truckF1Dst = @"D:\test\kaipao\assets\vehicles\truck_frame_1.png";
         string truckCardDst = @"D:\test\kaipao\assets\cards\icon_truck.png";
         string truckItemDst = @"D:\test\kaipao\assets\items\item_chip_truck.png";
         string fluffyDst = @"D:\test\kaipao\assets\pets\fluffy.png";
         string fluffyItemDst = @"D:\test\kaipao\assets\items\item_fluffy_shard.png";
 
         Console.WriteLine("[1/4] Processing Background...");
-        ResizeImage(bgSrc, bgDst, 768, 1376);
+        ResizeImageJpeg(bgSrc, bgDst, 768, 1376, 90);
 
         Console.WriteLine("[2/4] Processing Fortress Wall...");
-        ProcessFortressWall(wallSrc, wallDst, 1376, 660);
+        ProcessFortressWall(wallSrc, wallDst, 900, 432);
 
         Console.WriteLine("[3/4] Processing Maglev Sweeper Vessel (Rotating 90deg CW & Keying)...");
-        KeyBlackAndResize(truckSrc, truckDst, 1024, 1024, 18, 30, RotateFlipType.Rotate90FlipNone);
-        KeyBlackAndResize(truckSrc, truckF0Dst, 1024, 1024, 18, 30, RotateFlipType.Rotate90FlipNone);
-        KeyBlackAndResize(truckSrc, truckF1Dst, 1024, 1024, 18, 30, RotateFlipType.Rotate90FlipNone);
+        KeyBlackAndResize(truckSrc, truckDst, 256, 256, 18, 30, RotateFlipType.Rotate90FlipNone);
         KeyBlackAndResize(truckSrc, truckCardDst, 160, 160, 18, 30, RotateFlipType.Rotate90FlipNone);
         KeyBlackAndResize(truckSrc, truckItemDst, 136, 136, 18, 30, RotateFlipType.Rotate90FlipNone);
 
         Console.WriteLine("[4/4] Processing Tactical Drone Orb (Keying)...");
-        KeyBlackAndResize(fluffySrc, fluffyDst, 480, 480, 20, 32, RotateFlipType.RotateNoneFlipNone);
+        KeyBlackAndResize(fluffySrc, fluffyDst, 192, 192, 20, 32, RotateFlipType.RotateNoneFlipNone);
         KeyBlackAndResize(fluffySrc, fluffyItemDst, 136, 136, 20, 32, RotateFlipType.RotateNoneFlipNone);
 
         Console.WriteLine("All Starcore Defense visual assets processed and deployed successfully!");
@@ -51,6 +50,24 @@ public class Program {
             g.SmoothingMode = SmoothingMode.HighQuality;
             g.DrawImage(srcImg, 0, 0, targetW, targetH);
             outBmp.Save(dst, ImageFormat.Png);
+        }
+    }
+
+    public static void ResizeImageJpeg(string src, string dst, int targetW, int targetH, long quality) {
+        ImageCodecInfo jpegCodec = null;
+        foreach (ImageCodecInfo codec in ImageCodecInfo.GetImageEncoders()) {
+            if (codec.MimeType == "image/jpeg") { jpegCodec = codec; break; }
+        }
+        using (Image srcImg = Image.FromFile(src))
+        using (Bitmap outBmp = new Bitmap(targetW, targetH, PixelFormat.Format24bppRgb))
+        using (Graphics g = Graphics.FromImage(outBmp))
+        using (EncoderParameters eps = new EncoderParameters(1)) {
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            g.SmoothingMode = SmoothingMode.HighQuality;
+            g.DrawImage(srcImg, 0, 0, targetW, targetH);
+            eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, quality);
+            outBmp.Save(dst, jpegCodec, eps);
         }
     }
 

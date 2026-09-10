@@ -4,7 +4,6 @@ import * as StageUI from '../systems/StageUI.js';
 import { gameEvents } from '../core/GameEventBus.js';
 import { uiStack } from './UIStack.js';
 import { focusManager } from './FocusManager.js';
-import { tr } from '../core/I18n.js';
 import { GAME_CONFIG } from '../core/Config.js';
 
 // ---------------- 高性能 事件驱动 HUD 与 UI 管理器 ----------------
@@ -54,22 +53,12 @@ export class HUDManager {
       btnPause: document.getElementById('btn-pause'),
       settingsToggle: document.getElementById('btn-settings-toggle'),
       settingsMenu: document.getElementById('settings-dropdown-menu'),
-      settingsClose: document.getElementById('btn-settings-close'),
-      skills: {
-        rocket: { slot: document.getElementById('slot-skill-a'), mask: document.getElementById('mask-skill-a'), lvl: document.getElementById('lvl-skill-a') },
-        truck: { slot: document.getElementById('slot-skill-b'), mask: document.getElementById('mask-skill-b'), lvl: document.getElementById('lvl-skill-b') },
-        freeze: { slot: document.getElementById('slot-skill-c'), mask: document.getElementById('mask-skill-c'), lvl: document.getElementById('lvl-skill-c') }
-      }
+      settingsClose: document.getElementById('btn-settings-close')
     };
     this.cache = {
       level: -1, wave: -1, stageId: -1, kills: -1, scrap: -1, expRatio: -1,
       hpRatio: -1, hpText: '', criticalHp: false, shieldRatio: -1, shieldText: '',
-      bossVisible: false, bossHpRatio: -1, emergencyActive: false,
-      skills: {
-        rocket: { level: -1, cdPercent: -1 },
-        truck: { level: -1, cdPercent: -1 },
-        freeze: { level: -1, cdPercent: -1 }
-      }
+      bossVisible: false, bossHpRatio: -1, emergencyActive: false
     };
     this._animHpRaf = null;
     this._animShieldRaf = null;
@@ -333,33 +322,6 @@ export class HUDManager {
     }
   }
 
-  updateSkillHUD(game) {
-    const map = { rocket: 'rocket', truck: 'truck', freeze: 'freeze' };
-    for (const key of Object.keys(map)) {
-      const skill = game.skills[key];
-      const slotDom = this.dom.skills[key];
-      if (!slotDom || !skill) continue;
-      if (this.cache.skills[key].level !== skill.level) {
-        this.cache.skills[key].level = skill.level;
-        if (slotDom.lvl) slotDom.lvl.textContent = skill.level > 0 ? skill.level : '';
-        if (slotDom.slot) {
-          if (skill.level > 0) slotDom.slot.classList.add('unlocked');
-          else slotDom.slot.classList.remove('unlocked');
-        }
-      }
-      let cdPercent = 0;
-      if (skill.level > 0 && skill.cooldown > 0) {
-        cdPercent = Math.max(0, Math.min(100, 100 - (skill.timer / skill.cooldown) * 100));
-        if (key === 'freeze' && skill.activeTimer > 0) cdPercent = 0;
-      }
-      cdPercent = Math.round(cdPercent);
-      if (this.cache.skills[key].cdPercent !== cdPercent) {
-        this.cache.skills[key].cdPercent = cdPercent;
-        if (slotDom.mask) slotDom.mask.style.height = (skill.level > 0 ? cdPercent : 100) + '%';
-      }
-    }
-  }
-
   showLevelUpModal(game, onComplete = null) {
     this.onUpgradeComplete = onComplete;
     game.isUpgrading = true;
@@ -450,7 +412,6 @@ export class HUDManager {
       card.apply();
       uiStack.pop();
       game.isUpgrading = false;
-      this.updateSkillHUD(game);
       if (typeof this.onUpgradeComplete === 'function') {
         const cb = this.onUpgradeComplete;
         this.onUpgradeComplete = null;
@@ -489,7 +450,13 @@ export class HUDManager {
       if (card.id === 'cryo_shatter' && game.synergies.cryoShatter) return false;
       return true;
     });
-    const shuffled = availablePool.sort(() => 0.5 - Math.random());
+    // sort(() => 0.5 - Math.random()) 不是均匀洗牌（比较器本身随机，结果分布偏向原顺序），
+    // 用 Fisher-Yates 保证三选一卡池等概率。
+    const shuffled = availablePool.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     const selected = shuffled.slice(0, 3);
     this.currentUpgradeCards = selected;
     const container = this.dom.cardsContainer;
@@ -543,7 +510,7 @@ export class HUDManager {
       icon = '🔥';
       total = 3;
       if (game.skills?.rocket?.level > 0) count++;
-      if (game.feature?.skills?.bomber?.level > 0) count++;
+      if (game.skills?.bomber?.level > 0) count++;
       if (game.synergies?.truckInferno || game.synergies?.thermalEngine) count++;
     } else if (elem === 'ice') {
       name = '冰霜流派';
@@ -556,21 +523,21 @@ export class HUDManager {
       name = '雷电感电';
       icon = '⚡';
       total = 3;
-      if (game.feature?.skills?.laser?.level > 0) count++;
+      if (game.skills?.laser?.level > 0) count++;
       if (game.synergies?.teslaCoil) count++;
       if (game.synergies?.fortressEmp) count++;
     } else if (elem === 'wind') {
       name = '风暴扩散';
       icon = '🌪️';
       total = 2;
-      if (game.feature?.skills?.tornado?.level > 0) count++;
-      if (game.feature?.skills?.boomerang?.level > 0) count++;
+      if (game.skills?.tornado?.level > 0) count++;
+      if (game.skills?.boomerang?.level > 0) count++;
     } else if (elem === 'physical') {
       name = '重装碾压';
       icon = '🚚';
       total = 2;
       if (game.skills?.truck?.level > 0) count++;
-      if (game.feature?.skills?.boomerang?.level > 0) count++;
+      if (game.skills?.boomerang?.level > 0) count++;
     } else {
       return null;
     }
@@ -779,6 +746,4 @@ export class HUDManager {
     StageUI.showWaveBanner(waveNum, isBossWave, stageConfig, wavePlan);
   }
   showStageClearModal(game) { StageUI.showStageClearModal(game); }
-  showStageSelectModal(game) { StageUI.showStageSelectModal(game); }
-  showRuneForgeModal(game) { StageUI.showRuneForgeModal(game); }
 }

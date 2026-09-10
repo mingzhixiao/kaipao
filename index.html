@@ -99,12 +99,6 @@
       height: 18px;
       vertical-align: -3px;
     }
-    .hub-btn .ui-icon-inline {
-      width: 16px;
-      height: 16px;
-      vertical-align: -2px;
-    }
-
     #game-container {
       position: relative;
       width: 100%;
@@ -125,14 +119,6 @@
         max-height: 100%;
         border-radius: 0;
       }
-    }
-
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      cursor: crosshair;
-      touch-action: none;
     }
 
     canvas {
@@ -806,46 +792,6 @@
       transition: width 0.08s linear;
     }
 
-    #cheat-panel-toggle {
-      position: absolute;
-      top: 70px;
-      right: 8px;
-      z-index: 50;
-      pointer-events: auto;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid var(--panel-border);
-      color: #94a3b8;
-      border-radius: 6px;
-      padding: 4px 8px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    #cheat-panel {
-      position: absolute;
-      top: 100px;
-      right: 8px;
-      z-index: 50;
-      pointer-events: auto;
-      display: none;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    #cheat-panel.open {
-      display: flex;
-    }
-
-    .cheat-btn {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #e2e8f0;
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
     #loading-screen {
       position: absolute;
       inset: 0;
@@ -1292,9 +1238,7 @@
     }
 
     /* Stage / Rune UI */
-    #stage-select-modal,
-    #stage-clear-modal,
-    #rune-forge-modal {
+    #stage-clear-modal {
       position: absolute;
       inset: 0;
       background: rgba(5, 8, 16, 0.94);
@@ -1307,9 +1251,7 @@
       overflow-y: auto;
     }
 
-    .stage-hub-card,
-    .stage-clear-card,
-    .forge-card {
+    .stage-clear-card {
       width: 100%;
       max-width: 400px;
       background: linear-gradient(160deg, rgba(17, 24, 39, 0.98), rgba(10, 14, 24, 0.98));
@@ -1319,83 +1261,7 @@
       box-shadow: 0 0 40px rgba(0, 240, 255, 0.18);
     }
 
-    .hub-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-
-    .hub-title {
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 1px;
-      color: #fff;
-    }
-
-    .hub-scrap {
-      font-size: 13px;
-      color: var(--neon-gold);
-      font-weight: 700;
-    }
-
-    #stage-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 420px;
-      overflow-y: auto;
-      margin-bottom: 14px;
-    }
-
-    .stage-item {
-      background: rgba(30, 41, 59, 0.85);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      border-radius: 10px;
-      padding: 10px 12px;
-      cursor: pointer;
-      transition: transform 0.15s, border-color 0.15s;
-    }
-
-    .stage-item:hover:not(.locked) {
-      transform: translateY(-1px);
-      border-color: var(--neon-cyan);
-    }
-
-    .stage-item.locked {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .stage-item-id {
-      font-size: 10px;
-      letter-spacing: 2px;
-      color: var(--neon-cyan);
-      font-weight: 800;
-    }
-
-    .stage-item-name {
-      font-size: 15px;
-      font-weight: 800;
-      color: #f1f5f9;
-      margin: 2px 0;
-    }
-
-    .stage-item-goal {
-      font-size: 11px;
-      color: #94a3b8;
-    }
-
-    .hub-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    .hub-btn,
-    .stage-clear-btn,
-    .forge-close-btn,
-    .rune-upgrade-btn {
+    .stage-clear-btn {
       background: linear-gradient(135deg, rgba(0, 180, 200, 0.35), rgba(0, 100, 140, 0.5));
       border: 1px solid var(--neon-cyan);
       color: #e0f7fa;
@@ -1459,8 +1325,7 @@
       pointer-events: none;
     }
 
-    .rune-icon,
-    .rune-forge-icon {
+    .rune-icon {
       width: 44px;
       height: 44px;
       border-radius: 10px;
@@ -1475,26 +1340,22 @@
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
     }
 
-    .rune-icon.cat-gun,
-    .rune-forge-icon.cat-gun {
+    .rune-icon.cat-gun {
       border-color: rgba(249, 115, 22, 0.6);
       box-shadow: 0 2px 10px rgba(249, 115, 22, 0.25);
     }
 
-    .rune-icon.cat-defense,
-    .rune-forge-icon.cat-defense {
+    .rune-icon.cat-defense {
       border-color: rgba(16, 185, 129, 0.6);
       box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25);
     }
 
-    .rune-icon.cat-skill,
-    .rune-forge-icon.cat-skill {
+    .rune-icon.cat-skill {
       border-color: rgba(168, 85, 247, 0.6);
       box-shadow: 0 2px 10px rgba(168, 85, 247, 0.25);
     }
 
-    .rune-icon.cat-util,
-    .rune-forge-icon.cat-util {
+    .rune-icon.cat-util {
       border-color: rgba(6, 182, 212, 0.6);
       box-shadow: 0 2px 10px rgba(6, 182, 212, 0.25);
     }
@@ -1536,77 +1397,6 @@
       flex-wrap: wrap;
       gap: 8px;
       justify-content: center;
-    }
-
-    .forge-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .forge-title {
-      font-size: 18px;
-      font-weight: 900;
-      color: #fff;
-    }
-
-    #rune-forge-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 460px;
-      overflow-y: auto;
-      margin-bottom: 12px;
-    }
-
-    .rune-forge-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(30, 41, 59, 0.88);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      border-radius: 10px;
-      padding: 8px 10px;
-    }
-
-    .rune-forge-row.maxed {
-      opacity: 0.55;
-    }
-
-    .rune-forge-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .rune-forge-name {
-      font-size: 13px;
-      font-weight: 800;
-      color: #f1f5f9;
-    }
-
-    .rune-lv {
-      color: var(--neon-cyan);
-      font-weight: 600;
-      font-size: 11px;
-    }
-
-    .rune-forge-desc {
-      font-size: 11px;
-      color: #94a3b8;
-    }
-
-    .rune-upgrade-btn {
-      flex-shrink: 0;
-      padding: 6px 10px;
-      font-size: 12px;
-      background: linear-gradient(135deg, rgba(179, 75, 253, 0.4), rgba(100, 40, 180, 0.5));
-      border-color: var(--neon-purple);
-    }
-
-    .rune-upgrade-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
     }
 
     /* 战术弹匣与换弹指示条 */
@@ -1800,15 +1590,6 @@
           <div class="banner-subtext" id="banner-wave-sub">硅基异兽狂潮正在接近！</div>
         </div>
       </div>
-      <button id="cheat-panel-toggle" title="展开/收起调试菜单">🛠️ 调试</button>
-      <div id="cheat-panel">
-        <button class="cheat-btn" id="cheat-lvl">+ 升级</button>
-        <button class="cheat-btn" id="cheat-heal">+ 修复防线</button>
-        <button class="cheat-btn" id="cheat-skills">+ 解锁全技能</button>
-        <button class="cheat-btn" id="cheat-boss">⚠️ 召唤Boss</button>
-        <button class="cheat-btn" id="cheat-fail">测试失守</button>
-        <button class="cheat-btn" id="cheat-clear">测试通关</button>
-      </div>
       <div id="loading-screen">
         <div class="loading-logo">⚡ STARCORE DEFENSE</div>
         <div class="loading-sub">TACTICAL DEFENSE SYSTEM</div>
@@ -1880,18 +1661,6 @@
           </div>
         </div>
       </div>
-      <div id="stage-select-modal">
-        <div class="stage-hub-card">
-          <div class="hub-header">
-            <div class="hub-title">关卡选择</div>
-            <div class="hub-scrap">碎片 <span id="hub-scrap">0</span></div>
-          </div>
-          <div id="stage-list"></div>
-          <div class="hub-actions">
-            <button class="hub-btn" id="btn-hub-forge"><img class="ui-icon-inline" src="assets/icons/icon_settings.png" alt="Rune"> 符文工坊</button>
-          </div>
-        </div>
-      </div>
       <div id="stage-clear-modal">
         <div class="stage-clear-card">
           <div class="stage-clear-title" id="stage-clear-title">关卡通关成功</div>
@@ -1919,18 +1688,6 @@
             <button class="stage-clear-btn" id="btn-stage-next">下一关</button>
             <button class="stage-clear-btn" id="btn-open-forge">符文工坊</button>
             <button class="stage-clear-btn" id="btn-stage-menu">关卡列表</button>
-          </div>
-        </div>
-      </div>
-      <div id="rune-forge-modal">
-        <div class="forge-card">
-          <div class="forge-header">
-            <div class="forge-title">符文工坊</div>
-            <div class="hub-scrap">碎片 <span id="forge-scrap">0</span></div>
-          </div>
-          <div id="rune-forge-list"></div>
-          <div class="hub-actions">
-            <button class="forge-close-btn" id="btn-forge-close">返回关卡选择</button>
           </div>
         </div>
       </div>

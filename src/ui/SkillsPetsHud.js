@@ -274,6 +274,39 @@ export function installSkillsPetsHud(game) {
   let lastWaveBriefingKey = '';
   let briefingTimer = 0;
 
+  // 槽位内的子元素是静态结构，可以在首次挂载时一次性缓存。
+  // 原先每帧要做 4 次 getElementById + 约 20 次 querySelector，并且无条件回写
+  // className / textContent / conic-gradient，即使值完全没变也会触发样式重算。
+  // 现在改为「缓存引用 + 记录上次写入值」，只有真正变化时才碰 DOM。
+  const slotCache = [];
+  let slotCacheReady = false;
+
+  function buildSlotCache() {
+    slotCache.length = 0;
+    for (let i = 0; i < MAX_SKILL_SLOTS; i++) {
+      const el = document.getElementById(`kp-slot-${i}`);
+      if (!el) return false;
+      slotCache.push({
+        el,
+        img: el.querySelector('img'),
+        emptyMark: el.querySelector('.kp-empty-mark'),
+        elem: el.querySelector('.kp-skill-elem'),
+        cd: el.querySelector('.kp-skill-cd'),
+        time: el.querySelector('.kp-skill-time'),
+        level: el.querySelector('.kp-skill-level'),
+        dot: document.getElementById(`kp-skill-dot-${i}`),
+        skillId: el.querySelector('img').getAttribute('data-skill'),
+        className: el.className,
+        levelText: null,
+        timeKey: null,
+        angle: -1,
+        dotActive: null
+      });
+    }
+    slotCacheReady = true;
+    return true;
+  }
+
   const showWaveBriefing = (plan) => {
     const tactic = getWaveTactic(plan);
     if (!tactic) return;
@@ -316,10 +349,8 @@ export function installSkillsPetsHud(game) {
     if (this.skills.rocket?.level > 0) allActiveIds.push('rocket');
     if (this.skills.truck?.level > 0) allActiveIds.push('truck');
     if (this.skills.freeze?.level > 0) allActiveIds.push('freeze');
-    if (this.feature?.skills) {
-      for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
-        if (this.feature.skills[id]?.level > 0) allActiveIds.push(id);
-      }
+    for (const id of ['laser', 'tornado', 'boomerang', 'bomber']) {
+      if (this.skills[id]?.level > 0) allActiveIds.push(id);
     }
 
     for (let i = slotMapping.length - 1; i >= 0; i--) {
@@ -332,66 +363,110 @@ export function installSkillsPetsHud(game) {
       if (!slotMapping.includes(id) && slotMapping.length < MAX_SKILL_SLOTS) slotMapping.push(id);
     }
 
-    for (let i = 0; i < MAX_SKILL_SLOTS; i++) {
-      const dot = document.getElementById(`kp-skill-dot-${i}`);
-      if (dot) dot.classList.toggle('active', i < slotMapping.length);
+    if (!slotCacheReady || !slotCache[0].el.isConnected) {
+      if (!buildSlotCache()) return; // HUD 尚未挂载，下一帧再试
     }
 
     for (let i = 0; i < MAX_SKILL_SLOTS; i++) {
-      const slotEl = document.getElementById(`kp-slot-${i}`);
-      if (!slotEl) continue;
+      const st = slotCache[i];
+      const dotActive = i < slotMapping.length;
+      if (st.dot && st.dotActive !== dotActive) {
+        st.dotActive = dotActive;
+        st.dot.classList.toggle('active', dotActive);
+      }
+
       const skillId = slotMapping[i];
-      const elemEl = slotEl.querySelector('.kp-skill-elem');
       if (!skillId) {
-        if (!slotEl.classList.contains('empty')) {
-          slotEl.className = 'kp-skill-slot empty';
-          const img = slotEl.querySelector('img');
-          img.src = '';
-          img.removeAttribute('data-skill');
-          slotEl.querySelector('.kp-empty-mark').style.display = 'block';
-          if (elemEl) elemEl.textContent = '';
-          slotEl.querySelector('.kp-skill-level').textContent = '';
-          slotEl.querySelector('.kp-skill-time').textContent = '';
-          slotEl.querySelector('.kp-skill-cd').style.background = 'transparent';
-          slotEl.title = `战术槽位 ${i + 1} (待装配)`;
+        if (st.skillId !== null) {
+          st.skillId = null;
+          st.className = 'kp-skill-slot empty';
+          st.levelText = null;
+          st.timeKey = null;
+          st.angle = -1;
+          st.el.className = 'kp-skill-slot empty';
+          // 用 removeAttribute 而不是 src = ''：后者会被解析成当前页面地址并触发一次多余请求
+          st.img.removeAttribute('src');
+          st.img.removeAttribute('data-skill');
+          st.emptyMark.style.display = 'block';
+          if (st.elem) st.elem.textContent = '';
+          st.level.textContent = '';
+          st.time.textContent = '';
+          st.cd.style.background = 'transparent';
+          st.el.title = `战术槽位 ${i + 1} (待装配)`;
         }
         continue;
       }
 
       const meta = SKILL_META[skillId];
-      const state = meta.core ? this.skills[skillId] : this.feature.skills[skillId];
+      // 核心技能与战术技能的运行时状态现已统一存在 game.skills
+      const state = this.skills[skillId];
       if (!state) continue;
-      const imgEl = slotEl.querySelector('img');
-      if (imgEl.getAttribute('data-skill') !== skillId) {
-        imgEl.src = meta.asset;
-        imgEl.alt = meta.name;
-        imgEl.setAttribute('data-skill', skillId);
-        slotEl.title = `${meta.name}: ${meta.desc || ''}`;
-        slotEl.querySelector('.kp-empty-mark').style.display = 'none';
-        if (elemEl) elemEl.textContent = meta.icon || '⚡';
+
+      if (st.skillId !== skillId) {
+        st.skillId = skillId;
+        // 换技能时上一轮的等级/倒计时/扇形角度全部失效，置空以强制重写
+        st.levelText = null;
+        st.timeKey = null;
+        st.angle = -1;
+        st.img.src = meta.asset;
+        st.img.alt = meta.name;
+        st.img.setAttribute('data-skill', skillId);
+        st.el.title = `${meta.name}: ${meta.desc || ''}`;
+        st.emptyMark.style.display = 'none';
+        if (st.elem) st.elem.textContent = meta.icon || '⚡';
       }
 
       const unlocked = state.level > 0;
       const progress = getProgress(state);
       const casting = Number(state.activeTimer || 0) > 0;
       const ready = unlocked && !casting && state.timer >= state.cooldown;
-      slotEl.className = `kp-skill-slot equipped ${ready ? 'ready' : ''} ${casting ? 'casting' : ''}`;
-      slotEl.querySelector('.kp-skill-level').textContent = unlocked ? `Lv.${state.level}` : '';
+      const className = `kp-skill-slot equipped ${ready ? 'ready' : ''} ${casting ? 'casting' : ''}`;
+      if (st.className !== className) {
+        st.className = className;
+        st.el.className = className;
+      }
 
-      const cdEl = slotEl.querySelector('.kp-skill-cd');
-      const timeEl = slotEl.querySelector('.kp-skill-time');
+      const levelText = unlocked ? `Lv.${state.level}` : '';
+      if (st.levelText !== levelText) {
+        st.levelText = levelText;
+        st.level.textContent = levelText;
+      }
+
       if (unlocked && !casting && state.timer < state.cooldown) {
         const cooledAngle = Math.round(progress * 360);
-        // 外层：顺时针扫过的半透明黑色扇形，扫过的角度代表已冷却比例
-        cdEl.style.background = `conic-gradient(transparent 0deg, transparent ${cooledAngle}deg, rgba(3, 7, 18, 0.78) ${cooledAngle}deg, rgba(3, 7, 18, 0.78) 360deg)`;
+        if (st.angle !== cooledAngle) {
+          st.angle = cooledAngle;
+          // 外层：顺时针扫过的半透明黑色扇形，扫过的角度代表已冷却比例
+          st.cd.style.background = `conic-gradient(transparent 0deg, transparent ${cooledAngle}deg, rgba(3, 7, 18, 0.78) ${cooledAngle}deg, rgba(3, 7, 18, 0.78) 360deg)`;
+        }
         // 内层：中央剩余秒数（仅在剩余冷却 > 0.5s 时显示）
+        // 先把显示值量化成 key 再比较，避免每帧都跑一次 toFixed。
         const remaining = state.cooldown - state.timer;
-        if (timeEl) {
-          timeEl.textContent = remaining > 0.5 ? (remaining >= 10 ? Math.ceil(remaining) : remaining.toFixed(1)) : '';
+        let timeKey = '';
+        let timeText = '';
+        if (remaining > 0.5) {
+          if (remaining >= 10) {
+            timeKey = String(Math.ceil(remaining));
+            timeText = timeKey;
+          } else {
+            const tick = Math.round(remaining * 10);
+            timeKey = `t${tick}`;
+            timeText = (tick / 10).toFixed(1);
+          }
+        }
+        if (st.timeKey !== timeKey) {
+          st.timeKey = timeKey;
+          st.time.textContent = timeText;
         }
       } else {
-        cdEl.style.background = 'transparent';
-        if (timeEl) timeEl.textContent = '';
+        if (st.angle !== -1) {
+          st.angle = -1;
+          st.cd.style.background = 'transparent';
+        }
+        if (st.timeKey !== '') {
+          st.timeKey = '';
+          st.time.textContent = '';
+        }
       }
     }
   };

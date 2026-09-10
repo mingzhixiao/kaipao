@@ -5,7 +5,25 @@ const SAVE_KEY = 'starcore_vanguard_save_v6';
 const LEGACY_KEYS = ['kaipao_roguelike_save_v5', 'kaipao_roguelike_save_v4'];
 
 export class SaveManager {
-  constructor() { this.data = this.load(); }
+  constructor() {
+    this.data = this.load();
+    this._flushTimer = 0;
+    this._dirty = false;
+    this._lifecycleBound = false;
+    this._bindLifecycleFlush();
+  }
+
+  // 页面隐藏/卸载时立刻落盘，保证防抖窗口内的改动不会丢
+  _bindLifecycleFlush() {
+    if (this._lifecycleBound || typeof window === 'undefined') return;
+    this._lifecycleBound = true;
+    const flushNow = () => this.flush();
+    window.addEventListener('pagehide', flushNow);
+    window.addEventListener('beforeunload', flushNow);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => { if (document.hidden) flushNow(); });
+    }
+  }
 
   getDefaultData() {
     return {
@@ -106,7 +124,23 @@ export class SaveManager {
     return merged;
   }
 
+  // 写盘防抖：settleBattleLoot / openSupplyCrate 这类流程会在同一轮里连续调用
+  // addScrap / addGems / addItem，每次都把整份存档 JSON.stringify 一遍纯属浪费。
+  // 这里合并成 200ms 一次，并在页面隐藏/卸载时立即落盘。
   save() {
+    this._dirty = true;
+    if (this._flushTimer) return;
+    this._flushTimer = setTimeout(() => this.flush(), 200);
+  }
+
+  // 立即写盘（防抖窗口内也可主动调用）
+  flush() {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer);
+      this._flushTimer = 0;
+    }
+    if (!this._dirty) return;
+    this._dirty = false;
     try {
       this.data.lastPlayed = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
@@ -258,7 +292,9 @@ export class SaveManager {
     return true;
   }
   refillEnergy(amount = 25) {
-    this.data.energy = Math.min((this.data.maxEnergy || 50) + 50, (this.data.energy || 0) + amount);
+    // 上限就是 maxEnergy。原实现写成 maxEnergy + 50，会让体力变成 100/50，
+    // 且与 getEnergy() 按 maxEnergy 封顶的回复逻辑自相矛盾。
+    this.data.energy = Math.min(this.data.maxEnergy || 50, (this.data.energy || 0) + Math.max(0, amount));
     this.save();
     return this.data.energy;
   }
@@ -267,7 +303,8 @@ export class SaveManager {
   getInventory() { return this.data.inventory; }
   getItemCount(id) { return this.data.inventory[id] || 0; }
   addItem(id, amount = 1) {
-    this.data.inventory[id] = (this.data.inventory[id] || 0) + amount;
+    // 与 addScrap / addGems 保持一致：只接受非负增量，扣除请用 consumeItem
+    this.data.inventory[id] = (this.data.inventory[id] || 0) + Math.max(0, Math.round(amount));
     this.save();
     return this.data.inventory[id];
   }

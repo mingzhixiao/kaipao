@@ -21,6 +21,8 @@ export class Game {
     this.emergencyOverlay = document.getElementById('emergency-overlay');
     this.width = GAME_CONFIG.viewport.baseWidth;
     this.height = GAME_CONFIG.viewport.baseHeight;
+    this.dpr = 0; // 0 保证首次 resize() 一定会真正执行一次
+    this._lastReloadPct = -1; // 上一次派发 ammo_changed 时的换弹百分比
     this.scale = 1;
     this.isPaused = false;
     this.isGameOver = false;
@@ -131,10 +133,20 @@ export class Game {
 
   resize() {
     const rect = this.container.getBoundingClientRect();
-    this.width = rect.width; this.height = rect.height;
-    const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = this.width * dpr; this.canvas.height = this.height * dpr;
+    const width = Math.max(1, rect.width);
+    const height = Math.max(1, rect.height);
+    // 高 DPR 手机上 Canvas 像素量按 DPR² 增长，超过 2x 之后画面提升肉眼难辨，
+    // 却让填充率与显存占用成倍上涨，因此统一封顶到 2。
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // 移动端地址栏收放会重复触发同尺寸 resize，尺寸与像素比都没变时直接跳过，
+    // 避免整块 canvas 反复重新分配（高 DPR 下这块开销相当可观）。
+    if (width === this.width && height === this.height && dpr === this.dpr) return;
+
+    this.width = width; this.height = height; this.dpr = dpr;
+    this.canvas.width = Math.max(1, Math.round(width * dpr));
+    this.canvas.height = Math.max(1, Math.round(height * dpr));
     this.ctx.resetTransform(); this.ctx.scale(dpr, dpr);
+    this.renderer.setPixelRatio(dpr);
     const skillHudHeight = 68;
     this.fortress.height = 84;
     this.fortress.x = 0;
@@ -146,7 +158,16 @@ export class Game {
   }
 
   bindInputEvents() {
-    window.addEventListener('resize', () => this.resize());
+    // 移动端地址栏收放/转屏会在极短时间内连发多次 resize，合并到下一帧只处理一次，
+    // 真正的尺寸去重交给 resize() 内部的前置判断。
+    let resizeRaf = 0;
+    window.addEventListener('resize', () => {
+      if (resizeRaf) return;
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0;
+        this.resize();
+      });
+    });
     const unlockAudio = () => { if (typeof sound.unlock === 'function') sound.unlock(); };
     const onPointer = (e) => {
       unlockAudio();
@@ -244,13 +265,13 @@ export class Game {
       progress: 1.0,
       remainingTime: 0
     });
-    this.hud.updateSkillHUD(this);
   }
 
   reloadWeapon() {
     if (this.hero.isReloading || this.hero.currentAmmo >= this.hero.magazineCapacity) return;
     this.hero.isReloading = true;
     this.hero.reloadTimer = 0;
+    this._lastReloadPct = 0; // 与下面派发的 progress: 0 对应
     if (typeof sound.playReload === 'function') sound.playReload();
     this.spawnDamageText(this.hero.x, this.hero.y - 30, '🔄 换弹中...', '#f59e0b', false, true);
     gameEvents.emit('ammo_changed', {
@@ -390,7 +411,6 @@ export class Game {
         this.combatSystem.applyFreezeRay(dt);
       }
     }
-    this.hud.updateSkillHUD(this);
   }
 
   update(dt) {
@@ -425,13 +445,19 @@ export class Game {
     if (this.hero.isReloading) {
       this.hero.reloadTimer += dt;
       const progress = Math.min(1.0, this.hero.reloadTimer / this.hero.reloadTime);
-      gameEvents.emit('ammo_changed', {
-        ammo: 0,
-        maxAmmo: this.hero.magazineCapacity,
-        isReloading: true,
-        progress,
-        remainingTime: Math.max(0, this.hero.reloadTime - this.hero.reloadTimer)
-      });
+      // HUD 的换弹条按整数百分比绘制、倒计时按 0.1s 显示，逐帧派发只会让
+      // 订阅方反复写同样的 textContent / style.width。这里按 1% 步进派发。
+      const progressPct = Math.round(progress * 100);
+      if (progressPct !== this._lastReloadPct) {
+        this._lastReloadPct = progressPct;
+        gameEvents.emit('ammo_changed', {
+          ammo: 0,
+          maxAmmo: this.hero.magazineCapacity,
+          isReloading: true,
+          progress,
+          remainingTime: Math.max(0, this.hero.reloadTime - this.hero.reloadTimer)
+        });
+      }
       if (this.hero.reloadTimer >= this.hero.reloadTime) {
         this.hero.isReloading = false;
         this.hero.reloadTimer = 0;

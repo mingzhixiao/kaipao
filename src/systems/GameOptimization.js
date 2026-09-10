@@ -9,19 +9,8 @@ export function installGameOptimization(game) {
   if (!game || game.__optimizationInstalled) return;
   game.__optimizationInstalled = true;
 
-  // 高 DPR 手机上 Canvas 像素量会按 DPR² 增长。游戏是移动 H5，2x 已足够清晰，
-  // 避免 3x/4x 屏幕导致 fill/drawImage 成本暴涨。
-  const originalResize = game.resize.bind(game);
-  game.resize = function optimizedResize() {
-    originalResize();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.canvas.width = Math.max(1, Math.round(this.width * dpr));
-    this.canvas.height = Math.max(1, Math.round(this.height * dpr));
-    this.ctx.resetTransform();
-    this.ctx.scale(dpr, dpr);
-    this.__renderDpr = dpr;
-  };
-  game.resize();
+  // DPR 封顶（2x）已下沉到 Game.resize() 本体，这里不再包一层：
+  // 原来的包装会先按原始 DPR 分配一次再按 2x 重新分配，等于每次 resize 白分配一整块缓冲。
 
   // 统一清理无效效果，避免长期运行后短命对象堆积。
   game.compactTransientObjects = () => {
@@ -82,10 +71,4 @@ export function installGameOptimization(game) {
     }
   });
 
-  // 提供统一的低成本效果预算接口，后续技能/宠物可以直接复用。
-  game.effectBudget = {
-    particles: 220,
-    damageTexts: 28,
-    hitRings: 48
-  };
 }

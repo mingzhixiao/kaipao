@@ -16,7 +16,10 @@ export class BuildIdentitySystem {
 
   update() {
     const game = this.game;
-    const activeSkills = Object.entries(game.feature?.skills || {})
+    // 全部技能（核心 + 战术）的运行时状态都在 game.skills。
+    // 注意：这里曾读 game.feature.skills，只能看到 4 个战术技能，
+    // 导致下面 rocket/freeze/truck 的判定永远为假，流派标签被系统性低估。
+    const activeSkills = Object.entries(game.skills || {})
       .filter(([, skill]) => (skill?.level || 0) > 0)
       .map(([id]) => id);
     const activeSynergies = Object.entries(game.synergies || {})
@@ -61,7 +64,6 @@ export class BuildIdentitySystem {
       this.profile.primary = primary;
       this.profile.tags = tags;
       this.profile.score = score;
-      game.buildProfile = this.profile;
     }
 
     this.profile.kills = game.kills || 0;
@@ -73,9 +75,10 @@ export class BuildIdentitySystem {
 export function installBuildIdentity(game) {
   if (!game || game.buildIdentity) return;
   game.buildIdentity = new BuildIdentitySystem(game);
+  // 读不到 game.buildProfile 的地方请直接读 game.buildIdentity.profile
   game.buildProfile = game.buildIdentity.profile;
-  const timer = window.setInterval(() => {
-    if (!game.isGameOver) game.buildIdentity.update();
+  // 局内每 500ms 重算一次流派标签；战斗结束或回到大厅（isPaused）后不再空转。
+  game.__buildIdentityTimer = window.setInterval(() => {
+    if (!game.isGameOver && !game.isPaused) game.buildIdentity.update();
   }, 500);
-  game.__buildIdentityTimer = timer;
 }

@@ -75,7 +75,12 @@ export class RuneSystem {
   }
   rollRewardChoices(count = 3) {
     const pool = RUNE_CATALOG.filter(r => this.getLevel(r.id) < r.maxLevel);
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    // Fisher-Yates：sort(() => Math.random() - 0.5) 的分布并不均匀
+    const shuffled = pool.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     return shuffled.slice(0, count).map(r => ({
       id: r.id, name: r.name, icon: r.icon, asset: r.asset, desc: r.desc, category: r.category,
       level: this.getLevel(r.id), nextLevel: this.getLevel(r.id) + 1, maxLevel: r.maxLevel

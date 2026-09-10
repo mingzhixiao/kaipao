@@ -1,18 +1,7 @@
 import { GAME_CONFIG } from '../core/Config.js';
-import { Pet, SKILL_CONFIG, PET_TYPES } from './SkillsPetsFeature.js';
+import { Pet, PET_TYPES } from './SkillsPetsFeature.js';
 
 let prototypePatched = false;
-
-const EMOJI_REPLACEMENTS = [
-  [/🌪️/gu, '[WIND]'],
-  [/🛡️/gu, '[SHIELD]'],
-  [/✨/gu, '[ONLINE]'],
-  [/🔊/gu, 'SFX'],
-  [/🔇/gu, 'SFX'],
-  [/⏸️/gu, 'PAUSE'],
-  [/▶️/gu, 'RESUME'],
-  [/💀/gu, 'KILLS']
-];
 
 const VECTOR_SKILL_ASSETS = {
   tornado: 'assets/skills/tornado.png',
@@ -20,10 +9,6 @@ const VECTOR_SKILL_ASSETS = {
   laser: 'assets/skills/laser.png',
   bomber: 'assets/skills/bomber.png'
 };
-
-function sanitizeText(value) {
-  return value;
-}
 
 function patchPetPrototype() {
   if (prototypePatched) return;
@@ -96,18 +81,7 @@ function syncRuntimeConfig() {
   GAME_CONFIG.pets.statGrowthPerLevel = 0.1;
   if (GAME_CONFIG.pets) GAME_CONFIG.pets.recoveryTime = 10;
 
-  Object.assign(SKILL_CONFIG.tornado, {
-    cooldown: 8, duration: 4, radius: 200, damagePerSecond: 0.3, pullStrength: 0.03, maxPullSpeed: 50
-  });
-  Object.assign(SKILL_CONFIG.boomerang, {
-    cooldown: 5, speed: 400, maxRange: 600, damage: 1.0, width: 20, critBonus: 0.35
-  });
-  Object.assign(SKILL_CONFIG.laser, {
-    cooldown: 3, width: 10, damage: 1.5, burnDamage: 0.2, burnDuration: 2, displayDuration: 0.2
-  });
-  Object.assign(SKILL_CONFIG.bomber, {
-    cooldown: 12, radius: 250, bombCount: 3, bombInterval: 0.5, damage: 0.8, knockback: 100, maxAimDistance: 300
-  });
+  // 技能数值已统一由 GAME_CONFIG.skills 提供，此处不再需要把 SKILL_CONFIG 对齐回主配置。
 
   for (const id of Object.keys(PET_TYPES)) {
     const cfg = GAME_CONFIG.pets.types?.[id];
