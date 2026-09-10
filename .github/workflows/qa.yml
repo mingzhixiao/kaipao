@@ -21,11 +21,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+          node-version: 24
 
       - name: Run project QA
         run: npm run qa
