@@ -9,6 +9,8 @@ import { homeLobbyUI } from './ui/HomeLobbyUI.js';
 import { GAME_CONFIG } from './core/Config.js';
 import { SKILL_CONFIG, PET_TYPES } from './features/SkillsPetsFeature.js';
 import { installGameOptimization } from './systems/GameOptimization.js';
+import { installRenderOptimization } from './systems/RenderOptimization.js';
+import { installPersistenceOptimization } from './systems/PersistenceOptimization.js';
 import { installBuildIdentity } from './systems/BuildIdentitySystem.js';
 import { gameEvents } from './systems/EventBus.js';
 
@@ -155,7 +157,9 @@ window.addEventListener('DOMContentLoaded', () => {
       installSkillsPetsHud(gameInstance);
       installGameUIUX(gameInstance);
       installGameOptimization(gameInstance);
+      installRenderOptimization(gameInstance);
       installBuildIdentity(gameInstance);
+      installPersistenceOptimization(saveManagerForRuntime());
       bindFeatureTarget(gameInstance);
       window.gameInstance = gameInstance;
       window.gameEvents = gameEvents;
@@ -164,7 +168,11 @@ window.addEventListener('DOMContentLoaded', () => {
       homeLobbyUI.init(gameInstance);
       // HomeLobbyUI 在这里才真正创建底部导航，因此 UI/UX 导航增强必须随后执行。
       installGameUIUX(gameInstance);
-      console.log('[Kaipao] UI/UX + gameplay polish + performance optimization + build identity ready');
+      console.log('[Kaipao] UI/UX + gameplay polish + performance + rendering + persistence optimization + build identity ready');
     }, 280);
   });
 });
+
+function saveManagerForRuntime() {
+  return window.__kaipaoSaveManager || null;
+}
