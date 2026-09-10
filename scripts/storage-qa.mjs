@@ -24,10 +24,9 @@ for (const required of ['CREATE TABLE IF NOT EXISTS player_saves', 'player_id TE
 }
 
 const bridge = fs.readFileSync(path.join(root, 'src/systems/CloudStorageBridge.js'), 'utf8');
-for (const required of ["'?storage=local'", "'?storage=d1'", "'/api/save'"]) {
-  const normalized = required.replaceAll("'", '');
-  if (!bridge.includes(normalized)) {
-    throw new Error(`Cloud storage bridge missing required marker: ${normalized}`);
+for (const required of ["get('storage')", 'MODE_D1', "/api/save"]) {
+  if (!bridge.includes(required)) {
+    throw new Error(`Cloud storage bridge missing required marker: ${required}`);
   }
 }
 
