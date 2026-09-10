@@ -149,7 +149,7 @@ export async function onRequestPut({ request, env }) {
     }
 
     const nextRevision = currentRevision + 1;
-    await db.prepare(`
+    const updateResult = await db.prepare(`
       UPDATE player_saves
       SET revision = ?,
           client_updated_at = ?,
@@ -165,6 +165,24 @@ export async function onRequestPut({ request, env }) {
       deviceId,
       currentRevision
     ).run();
+
+    if (!Number(updateResult?.meta?.changes || 0)) {
+      const latest = await db.prepare(`
+        SELECT revision, client_updated_at, data
+        FROM player_saves
+        WHERE player_id = ?
+        LIMIT 1
+      `).bind(deviceId).first();
+      let remoteData = null;
+      try { remoteData = latest?.data ? JSON.parse(latest.data) : null; } catch (_) { /* ignore */ }
+      return json({
+        ok: false,
+        code: 'REVISION_CONFLICT',
+        revision: Number(latest?.revision || currentRevision),
+        clientUpdatedAt: Number(latest?.client_updated_at || 0),
+        data: remoteData
+      }, 409);
+    }
 
     return json({ ok: true, revision: nextRevision, clientUpdatedAt });
   } catch (error) {
