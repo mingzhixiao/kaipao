@@ -1,5 +1,6 @@
 // ---------------- 可复用空间哈希 ----------------
-// 避免 SynergySystem 在每次范围反应时重复创建 Map / 数组。
+// 用于战斗 broad-phase，避免范围技能对所有敌人做全量距离判定。
+// key 使用数值编码，避免每个实体/查询都创建 `${x},${y}` 字符串。
 export class SpatialHash {
   constructor(cellSize = 96) {
     this.cellSize = cellSize;
@@ -13,7 +14,9 @@ export class SpatialHash {
   }
 
   _key(cx, cy) {
-    return `${cx},${cy}`;
+    // 游戏战场远小于这个坐标范围；使用安全整数范围内的数值 key。
+    // 偏移后可同时覆盖正负 cell 坐标且不会产生 cx/cy 组合碰撞。
+    return (cx + 100000) * 200001 + (cy + 100000);
   }
 
   rebuild(items, token = null) {
