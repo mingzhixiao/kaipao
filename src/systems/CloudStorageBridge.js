@@ -7,6 +7,7 @@ const MODE_D1 = 'd1';
 const DEVICE_KEY = 'starcore_vanguard_device_id_v1';
 const STORAGE_STATUS_KEY = 'starcore_vanguard_storage_status_v1';
 const REMOTE_SAVE_DEBOUNCE_MS = 600;
+const MAX_RETRY_DELAY_MS = 30000;
 const REQUEST_TIMEOUT_MS = 8000;
 const MAX_SAVE_BYTES = 256 * 1024;
 
@@ -22,8 +23,8 @@ function getDeviceId() {
   if (typeof localStorage === 'undefined') return 'serverless-' + Math.random().toString(36).slice(2);
   let id = localStorage.getItem(DEVICE_KEY);
   if (id) return id;
-  id = typeof crypto?.randomUUID === 'function'
-    ? crypto.randomUUID()
+  id = typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.randomUUID === 'function'
+    ? globalThis.crypto.randomUUID()
     : `device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
   try { localStorage.setItem(DEVICE_KEY, id); } catch (_) { /* private mode / quota */ }
   return id;
@@ -49,17 +50,17 @@ function setRuntimeState(state) {
   } catch (_) { /* ignore */ }
 }
 
-function withTimeout(promise, ms = REQUEST_TIMEOUT_MS) {
-  if (typeof AbortController === 'undefined') return promise;
+function withTimeout(requestFactory, ms = REQUEST_TIMEOUT_MS) {
+  if (typeof AbortController === 'undefined') return requestFactory(undefined);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
-  return promise(controller.signal).finally(() => clearTimeout(timer));
+  return requestFactory(controller.signal).finally(() => clearTimeout(timer));
 }
 
 async function fetchJson(url, options = {}) {
   return withTimeout((signal) => fetch(url, {
     ...options,
-    signal,
+    ...(signal ? { signal } : {}),
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
@@ -94,6 +95,7 @@ export async function installCloudStorage(saveManager) {
   let savingRemote = false;
   let queuedAfterSave = false;
   let initialized = false;
+  let retryDelayMs = REMOTE_SAVE_DEBOUNCE_MS;
 
   const saveLocal = saveManager.save.bind(saveManager);
 
@@ -120,7 +122,7 @@ export async function installCloudStorage(saveManager) {
       data
     });
 
-    if (payload.length > MAX_SAVE_BYTES) {
+    if (new TextEncoder().encode(payload).byteLength > MAX_SAVE_BYTES) {
       savingRemote = false;
       console.warn('[Storage] D1 save skipped: payload too large');
       return null;
@@ -138,6 +140,7 @@ export async function installCloudStorage(saveManager) {
       if (response.ok && result.ok) {
         remoteRevision = Number(result.revision || remoteRevision + 1);
         remoteAvailable = true;
+        retryDelayMs = REMOTE_SAVE_DEBOUNCE_MS;
         setRuntimeState({ mode: MODE_D1, deviceId, status: 'online', remoteRevision });
       } else if (response.status === 409 && result.data) {
         // 冲突时保留本地快照，再以服务器版本为准，避免静默丢失本地数据。
@@ -146,15 +149,18 @@ export async function installCloudStorage(saveManager) {
         remoteRevision = Number(result.revision || remoteRevision);
         saveLocal(true);
         remoteAvailable = true;
+        retryDelayMs = REMOTE_SAVE_DEBOUNCE_MS;
         setRuntimeState({ mode: MODE_D1, deviceId, status: 'conflict-resolved', remoteRevision });
       } else {
         remoteDirty = true;
         setRuntimeState({ mode: MODE_D1, deviceId, status: 'offline', remoteRevision });
+        retryDelayMs = Math.min(MAX_RETRY_DELAY_MS, Math.max(REMOTE_SAVE_DEBOUNCE_MS, retryDelayMs * 2));
       }
       return result;
     } catch (error) {
       remoteDirty = true;
       setRuntimeState({ mode: MODE_D1, deviceId, status: 'offline', remoteRevision });
+      retryDelayMs = Math.min(MAX_RETRY_DELAY_MS, Math.max(REMOTE_SAVE_DEBOUNCE_MS, retryDelayMs * 2));
       console.warn('[Storage] D1 save failed, local cache remains active:', error);
       return null;
     } finally {
@@ -179,7 +185,7 @@ export async function installCloudStorage(saveManager) {
     remoteTimer = setTimeout(() => {
       remoteTimer = null;
       void requestSave();
-    }, REMOTE_SAVE_DEBOUNCE_MS);
+    }, retryDelayMs);
   };
 
   const originalSave = saveManager.save.bind(saveManager);
@@ -203,10 +209,11 @@ export async function installCloudStorage(saveManager) {
       });
       const result = await response.json().catch(() => ({}));
 
-      if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+      if (!response.ok) throw new Error(result.error || result.code || `HTTP ${response.status}`);
 
       remoteAvailable = Boolean(result.data);
       remoteRevision = Number(result.revision || 0);
+      retryDelayMs = REMOTE_SAVE_DEBOUNCE_MS;
       const localData = clone(saveManager.data);
       const remoteData = result.data ? saveManager.mergeDefaults(result.data) : null;
       const localUpdatedAt = Number(localData.lastPlayed || 0);
@@ -222,15 +229,11 @@ export async function installCloudStorage(saveManager) {
       }
 
       initialized = true;
-      setRuntimeState({
-        mode: MODE_D1,
-        deviceId,
-        status: 'online',
-        remoteRevision
-      });
+      setRuntimeState({ mode: MODE_D1, deviceId, status: 'online', remoteRevision });
       return { data: saveManager.data, remoteRevision };
     } catch (error) {
       initialized = true;
+      retryDelayMs = Math.min(MAX_RETRY_DELAY_MS, REMOTE_SAVE_DEBOUNCE_MS * 2);
       setRuntimeState({ mode: MODE_D1, deviceId, status: 'offline', remoteRevision });
       console.warn('[Storage] D1 unavailable, continuing with local cache:', error);
       return { data: saveManager.data, remoteRevision, remoteAvailable: false, error };
@@ -248,8 +251,14 @@ export async function installCloudStorage(saveManager) {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) flushOnExit();
   });
+  window.addEventListener('online', () => {
+    if (remoteDirty) {
+      retryDelayMs = REMOTE_SAVE_DEBOUNCE_MS;
+      scheduleRemoteSave(true);
+    }
+  }, { passive: true });
 
-  // 首次加载若网络稍慢，确保后续 save 不被初始化过程遗漏。
+  // 预留初始化结束后的保险调度；正常情况下 loadRemote 已经处理首次同步。
   if (!initialized) scheduleRemoteSave();
 
   return {
