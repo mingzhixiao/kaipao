@@ -9,8 +9,21 @@ import { homeLobbyUI } from './ui/HomeLobbyUI.js';
 import { GAME_CONFIG } from './core/Config.js';
 import { PET_TYPES } from './features/SkillsPetsFeature.js';
 import { installGameOptimization } from './systems/GameOptimization.js';
+import { installRenderOptimization } from './systems/RenderOptimization.js';
+import { installFeatureRuntimeOptimization } from './systems/FeatureRuntimeOptimization.js';
 import { installBuildIdentity } from './systems/BuildIdentitySystem.js';
+import { installCloudStorage } from './systems/CloudStorageBridge.js';
+import { saveManager } from './systems/SaveManager.js';
 import { gameEvents } from './systems/EventBus.js';
+
+// 注：写盘防抖已经内建在 SaveManager 本体（200ms + 页面隐藏/卸载同步落盘），
+// 因此不再需要 PersistenceOptimization 那层 400ms 的 save() 包装——两层叠加会把
+// 落盘延迟拉到 600ms，而且它的 flush 调用的仍是被防抖的 save()，页面卸载时
+// 最后 400ms 的进度会直接丢掉。saveManager.flushSave() 现由 SaveManager 自己提供。
+
+// 存储模式由 URL 参数决定：?storage=local | ?storage=d1
+// local 为兼容现有单机玩法的默认模式；d1 模式连接 Cloudflare Pages Function + D1。
+const storageReady = installCloudStorage(saveManager);
 
 function wireStageAndRunes(game) {
   game.startStage = function(stageId) {
@@ -185,6 +198,13 @@ window.addEventListener('DOMContentLoaded', () => {
       installSkillsPetsPolish();
     }
 
+    // 云端存档先完成一次拉取，再创建 Game，避免游戏先读到旧本地档后被云档异步覆盖。
+    try {
+      await storageReady;
+    } catch (storageErr) {
+      console.warn('[Storage] storage initialization failed, continue with local save:', storageErr);
+    }
+
     setTimeout(() => {
       if (loadingScreen) loadingScreen.classList.add('fade-out');
       const gameInstance = new Game();
@@ -194,6 +214,8 @@ window.addEventListener('DOMContentLoaded', () => {
       installSkillsPetsHud(gameInstance);
       installGameUIUX(gameInstance);
       installGameOptimization(gameInstance);
+      installRenderOptimization(gameInstance);
+      installFeatureRuntimeOptimization(gameInstance);
       installBuildIdentity(gameInstance);
       bindFeatureTarget(gameInstance);
       window.gameInstance = gameInstance;
@@ -203,7 +225,7 @@ window.addEventListener('DOMContentLoaded', () => {
       homeLobbyUI.init(gameInstance);
       // HomeLobbyUI 在这里才真正创建底部导航，因此 UI/UX 导航增强必须随后执行。
       installGameUIUX(gameInstance);
-      console.log('[Starcore] UI/UX + gameplay polish + performance optimization + build identity ready');
+      console.log('[Starcore] UI/UX + gameplay polish + performance + rendering + persistence + storage + feature runtime optimization + build identity ready');
     }, 280);
   });
 });

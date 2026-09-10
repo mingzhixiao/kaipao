@@ -133,6 +133,12 @@ export class SaveManager {
     this._flushTimer = setTimeout(() => this.flush(), 200);
   }
 
+  // CloudStorageBridge 会包裹 flushSave 把本地落盘和云端同步串起来，
+  // 这里提供同义方法，避免还需要外部模块来挂载它。
+  flushSave() {
+    this.flush();
+  }
+
   // 立即写盘（防抖窗口内也可主动调用）
   flush() {
     if (this._flushTimer) {

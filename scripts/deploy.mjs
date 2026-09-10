@@ -13,8 +13,10 @@ import { spawnSync } from 'node:child_process';
 const root = path.resolve(import.meta.dirname, '..');
 const outDir = path.join(root, 'dist');
 
-// 运行时会加载的全部内容：入口页、缓存头、ES 模块、热更新 JSON 配置、美术资源
-const INCLUDE = ['index.html', '_headers', 'src', 'assets', 'config'];
+// 运行时会加载的全部内容：入口页、缓存头、ES 模块、热更新 JSON 配置、美术资源。
+// functions/ 是 Cloudflare Pages Functions（D1 云存档的 /api/save 端点）——Pages 只从
+// 被部署目录根部的 functions/ 里识别函数，漏掉它线上就会 404。
+const INCLUDE = ['index.html', '_headers', 'src', 'assets', 'config', 'functions'];
 
 // 扫描引用的源码范围（与 INCLUDE 保持一致）
 const SCAN_DIRS = ['src', 'config'];

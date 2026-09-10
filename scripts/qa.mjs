@@ -6,6 +6,7 @@ import { buildRetreatLoot, buildStageClearReward, getFortressStarRating } from '
 import { LevelDesignSystem } from '../src/systems/LevelDesignSystem.js';
 import { GAME_CONFIG } from '../src/core/Config.js';
 import { calculateDamageAfterResistance, getEnemyPhysicalResistance } from '../src/systems/PhysicalResistanceSystem.js';
+import { SpatialHash } from '../src/systems/SpatialHash.js';
 
 const root = process.cwd();
 const files = [];
@@ -48,6 +49,24 @@ assert.ok(beginnerAssists.every(Boolean), '普通模式前 3 关必须配置新�
 assert.ok(beginnerAssists[0].hpMult < beginnerAssists[1].hpMult && beginnerAssists[1].hpMult < beginnerAssists[2].hpMult, '前 3 关怪物生命压力必须逐关平滑增加');
 assert.ok(beginnerAssists.every(assist => assist.countMult <= 0.8 && assist.atkMult <= 0.5 && assist.bossHpMult <= 0.22), '前 3 关普通模式必须保持低数量、低攻击和低首领生命');
 assert.equal(GAME_CONFIG.stages.find(stage => stage.id === 4)?.normalAssist, null, '第 4 关起必须恢复标准难度曲线');
+
+// SpatialHash regression：同一 cell、邻近 cell 可查到；远距离和 inactive 对象不可查到。
+const hash = new SpatialHash(100);
+const spatialItems = [
+  { active: true, x: 50, y: 50, id: 'center' },
+  { active: true, x: 149, y: 50, id: 'edge' },
+  { active: true, x: 251, y: 50, id: 'near' },
+  { active: true, x: 1200, y: 1200, id: 'far' },
+  { active: false, x: 55, y: 55, id: 'inactive' }
+];
+hash.rebuild(spatialItems, 1);
+const found = [];
+hash.forEachInRadius(50, 50, 110, item => found.push(item.id));
+assert.ok(found.includes('center'), 'SpatialHash 应命中同格对象');
+assert.ok(found.includes('edge'), 'SpatialHash 应命中邻近 cell 对象');
+assert.ok(!found.includes('far'), 'SpatialHash 不应命中远距离对象');
+assert.ok(!found.includes('inactive'), 'SpatialHash 不应返回 inactive 对象');
+
 const levelDesign = new LevelDesignSystem({});
 const originalRandom = Math.random;
 try {
@@ -61,4 +80,4 @@ try {
   Math.random = originalRandom;
 }
 
-console.log(`QA PASS: ${files.length} JavaScript modules parsed; gameplay JSON configs and battle outcome rules are valid.`);
+console.log(`QA PASS: ${files.length} JavaScript modules parsed; gameplay rules and SpatialHash collision pruning are valid.`);

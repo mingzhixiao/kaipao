@@ -17,14 +17,12 @@ export class ObjectPool {
   get() {
     let obj;
     if (this.pool.length > 0) {
+      // release() 已经完成 reset，这里无需再次执行相同的 resetFn。
       obj = this.pool.pop();
     } else {
       obj = this.createFn();
     }
     obj.active = true;
-    if (this.resetFn) {
-      this.resetFn(obj);
-    }
     return obj;
   }
 
@@ -62,4 +60,3 @@ export class ObjectPool {
     return arr;
   }
 }
-
