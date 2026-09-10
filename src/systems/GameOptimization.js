@@ -1,6 +1,6 @@
 // ---------------- 运行时性能与战斗表现优化 ----------------
-// 这一层只做“无业务侵入”的运行时优化：不改变数值配置、不修改资源图片，
-// 通过减少重复扫描、Canvas 像素量和 UI 高频刷新降低 H5 长局卡顿。
+// 这一层负责“无业务侵入”的运行时优化：不修改图片资源，不主动改变战斗数值，
+// 优先减少 O(bullets * enemies) 等热路径、重复 DOM 更新和高 DPR 像素成本。
 import { ObjectPool } from './ObjectPool.js';
 import { SpatialHash } from './SpatialHash.js';
 import { sound } from './SoundEngine.js';
@@ -12,6 +12,7 @@ const EFFECT_ARRAYS = [
 
 const ENEMY_ENTRY_Y = 64;
 const TAU = Math.PI * 2;
+const TARGET_STEP = 1 / 30;
 
 function normalizeAngleDiff(diff) {
   while (diff < -Math.PI) diff += TAU;
@@ -24,14 +25,14 @@ export function installGameOptimization(game) {
   game.__optimizationInstalled = true;
 
   // ---------------------------------------------------------------------------
-  // 1. Canvas resize：原逻辑会先按真实 DPR 写一次像素尺寸，再被优化层写第二次。
-  //    这里直接接管 resize，避免 3x/4x 手机在 resize 时发生双倍大画布分配。
+  // 1. Canvas resize：直接接管 DPR，避免 Game.resize 先分配一次再被二次覆盖。
   // ---------------------------------------------------------------------------
   game.resize = function optimizedResize() {
     const rect = this.container.getBoundingClientRect();
     this.width = Math.max(1, rect.width);
     this.height = Math.max(1, rect.height);
 
+    // H5 游戏把 DPR 封顶到 2，避免 3x/4x 设备让 Canvas 像素量按 DPR² 激增。
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.max(1, Math.round(this.width * dpr));
     this.canvas.height = Math.max(1, Math.round(this.height * dpr));
@@ -51,39 +52,37 @@ export function installGameOptimization(game) {
   game.resize();
 
   // ---------------------------------------------------------------------------
-  // 2. 空间索引：范围技能不再每次都扫描整个 enemies 数组。
-  //    以 96px cell 建立稀疏空间哈希；移动实体每个战斗 tick 重建一次。
+  // 2. 敌人空间索引。
+  //    注意：索引 token 跟“战斗 update tick”绑定，而不是跟独立 RAF 绑定，
+  //    因此不会出现 Game.update 已移动敌人但 hash 还是上一帧位置的问题。
   // ---------------------------------------------------------------------------
   const enemyHash = new SpatialHash(96);
   game.enemySpatialHash = enemyHash;
-  game.__enemyHashFrame = -1;
-  game.__enemyHashDirty = true;
-  game.markEnemySpatialHashDirty = () => { game.__enemyHashDirty = true; };
+  let enemyHashToken = 0;
 
   const rebuildEnemyHash = () => {
-    const frame = game.__optimizationFrame || 0;
-    if (!game.__enemyHashDirty && game.__enemyHashFrame === frame) return;
-    enemyHash.rebuild(game.enemies, frame);
-    game.__enemyHashFrame = frame;
-    game.__enemyHashDirty = false;
+    enemyHashToken++;
+    enemyHash.rebuild(game.enemies, enemyHashToken);
+  };
+
+  const forEachEnemyNear = (x, y, radius, fn) => {
+    enemyHash.forEachInRadius(x, y, radius, fn);
   };
 
   // ---------------------------------------------------------------------------
-  // 3. 自动瞄准：保持原权重算法，但减少无效对象访问，并限制极端长局下
-  //    的目标计算频率。30Hz 对自动瞄准已经足够，角度仍保持连续插值。
+  // 3. 自动瞄准降频：30Hz 足够保持连续跟枪效果。
   // ---------------------------------------------------------------------------
   const originalUpdateAutoTarget = game.combatSystem.updateAutoTarget.bind(game.combatSystem);
   let targetAccumulator = 0;
-  const targetStep = 1 / 30;
   game.combatSystem.updateAutoTarget = function optimizedAutoTarget(dt = 1 / 60) {
     targetAccumulator += Math.min(dt, 0.1);
-    if (targetAccumulator < targetStep) return;
-    targetAccumulator %= targetStep;
+    if (targetAccumulator < TARGET_STEP) return;
+    targetAccumulator %= TARGET_STEP;
     originalUpdateAutoTarget();
   };
 
   // ---------------------------------------------------------------------------
-  // 4. 火箭爆炸：使用空间哈希做 broad-phase，保持原伤害、掉落和特效完全不变。
+  // 4. 范围技能使用空间哈希 broad-phase。
   // ---------------------------------------------------------------------------
   game.combatSystem.detonateRocket = function optimizedDetonateRocket(x, y) {
     const combat = this;
@@ -96,7 +95,7 @@ export function installGameOptimization(game) {
     sound.playExplosion();
 
     rebuildEnemyHash();
-    enemyHash.forEachInRadius(x, y, rad + 32, (e) => {
+    forEachEnemyNear(x, y, rad + 32, (e) => {
       if (!e.active || e.y - e.radius < ENEMY_ENTRY_Y) return;
       const dx = e.x - x;
       const dy = e.y - y;
@@ -120,9 +119,6 @@ export function installGameOptimization(game) {
     });
   };
 
-  // ---------------------------------------------------------------------------
-  // 5. 冰冻射线：同样改成空间查询。粒子数量、伤害 tick、角度规则保持原值。
-  // ---------------------------------------------------------------------------
   game.combatSystem.applyFreezeRay = function optimizedFreezeRay(dt) {
     const combat = this;
     const freezeCfg = game.skills.freeze;
@@ -139,15 +135,14 @@ export function installGameOptimization(game) {
     }
 
     rebuildEnemyHash();
-    enemyHash.forEachInRadius(game.hero.x, game.hero.y, range + 32, (e) => {
+    forEachEnemyNear(game.hero.x, game.hero.y, range + 32, (e) => {
       if (!e.active) return;
       const dx = e.x - game.hero.x;
       const dy = e.y - game.hero.y;
       const dist2 = dx * dx + dy * dy;
       if (dist2 > range * range) return;
 
-      const angleToEnemy = Math.atan2(dy, dx);
-      const diff = Math.abs(normalizeAngleDiff(angleToEnemy - heroAngle));
+      const diff = Math.abs(normalizeAngleDiff(Math.atan2(dy, dx) - heroAngle));
       if (diff <= cone / 2) {
         e.freezeTimer = 2.2;
         e.freezeFactor = freezeCfg.slowRatio;
@@ -157,22 +152,191 @@ export function installGameOptimization(game) {
   };
 
   // ---------------------------------------------------------------------------
-  // 6. 高频 HUD 更新降频到 15Hz。
-  //    战斗数值仍按原 dt 更新，只有 DOM 刷新降频，避免每帧触发 layout/style。
+  // 5. 核心战斗 update：消除 bullets × enemies、iceSpikes × enemies、
+  //    burnZones × enemies、trucks × enemies 的全量嵌套扫描。
   // ---------------------------------------------------------------------------
-  const originalUpdateSkills = game.updateSkills.bind(game);
-  let hudAccumulator = 0;
-  game.updateSkills = function optimizedUpdateSkills(dt) {
-    originalUpdateSkills(dt);
-    hudAccumulator += dt;
-    if (hudAccumulator >= 1 / 15) {
-      hudAccumulator %= 1 / 15;
-      this.hud.updateSkillHUD(this);
+  game.combatSystem.update = function optimizedCombatUpdate(dt) {
+    const combat = this;
+
+    // 战斗 update 开始时统一建立一次最新敌人索引；以下所有碰撞查询复用。
+    rebuildEnemyHash();
+
+    // 火箭
+    for (let i = 0; i < this.activeRockets.length; i++) {
+      const r = this.activeRockets[i];
+      if (!r.active) continue;
+
+      r.progress += dt / r.duration;
+      const t = Math.min(1, r.progress);
+      const cx = r.sx + (r.tx - r.sx) * t;
+      const cy = r.sy + (r.ty - r.sy) * t - Math.sin(t * Math.PI) * 80;
+      game.spawnParticles(cx, cy, '#ff7700', 2, 'fire');
+
+      if (t >= 1) {
+        r.active = false;
+        combat.detonateRocket(r.tx, r.ty);
+      }
     }
+    ObjectPool.compact(this.activeRockets);
+
+    // 子弹：先做点位置所在 cell 查询，再进行精确圆碰撞。
+    for (let i = 0; i < game.bullets.length; i++) {
+      const b = game.bullets[i];
+      if (!b.active) continue;
+
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.life -= dt;
+
+      if (b.x < 0 || b.x > game.width || b.y < 0 || b.y > game.height || b.life <= 0) {
+        b.active = false;
+        game.bulletPool.release(b);
+        continue;
+      }
+
+      const queryRadius = b.radius + 32;
+      enemyHash.forEachInRadius(b.x, b.y, queryRadius, (e) => {
+        if (!b.active || !e.active || e.y - e.radius < ENEMY_ENTRY_Y) return;
+
+        const hitR = b.radius + e.radius;
+        const dx = b.x - e.x;
+        const dy = b.y - e.y;
+        if (Math.abs(dy) > hitR || Math.abs(dx) > hitR) return;
+        if (dx * dx + dy * dy >= hitR * hitR) return;
+
+        combat.onHit(e, b.damage, b.isCrit, 'normal', b.vx, b.vy);
+        game.spawnParticles(b.x, b.y, b.isCrit ? '#ffcc00' : '#00f0ff', 4, 'spark');
+
+        b.pierceLeft--;
+        if (b.pierceLeft <= 0) {
+          b.active = false;
+          game.bulletPool.release(b);
+        }
+      });
+    }
+    ObjectPool.compact(game.bullets);
+
+    // 冰刺：同样走空间查询。
+    for (let i = 0; i < game.iceSpikes.length; i++) {
+      const spike = game.iceSpikes[i];
+      if (!spike.active) continue;
+
+      spike.x += spike.vx * dt;
+      spike.y += spike.vy * dt;
+      spike.life -= dt;
+
+      if (spike.life <= 0 || spike.y < -50 || spike.x < 0 || spike.x > game.width) {
+        spike.active = false;
+        continue;
+      }
+
+      enemyHash.forEachInRadius(spike.x, spike.y, 40, (e) => {
+        if (!spike.active || !e.active) return;
+        const hitR = e.radius + 8;
+        const dx = e.x - spike.x;
+        const dy = e.y - spike.y;
+        if (Math.abs(dy) > hitR + 4 || Math.abs(dx) > hitR + 4) return;
+        if (dx * dx + dy * dy >= hitR * hitR) return;
+
+        combat.onHit(e, spike.damage, false, 'freeze', spike.vx, spike.vy);
+        game.spawnParticles(spike.x, spike.y, '#00f0ff', 3, 'spark');
+        spike.pierce--;
+        if (spike.pierce <= 0) spike.active = false;
+      });
+    }
+    ObjectPool.compact(game.iceSpikes);
+
+    // 灼烧区：只查询覆盖范围内的敌人。
+    for (let i = 0; i < game.burnZones.length; i++) {
+      const bz = game.burnZones[i];
+      if (!bz.active) continue;
+
+      bz.life -= dt;
+      bz.tickTimer += dt;
+
+      if (Math.random() < 0.35) {
+        const pAngle = Math.random() * TAU;
+        const pDist = Math.random() * bz.radius;
+        game.spawnParticles(
+          bz.x + Math.cos(pAngle) * pDist,
+          bz.y + Math.sin(pAngle) * pDist,
+          '#ff5722',
+          1,
+          'fire'
+        );
+      }
+
+      if (bz.tickTimer >= 0.3) {
+        bz.tickTimer = 0;
+        const dpsTick = game.skills.rocket.burnDps * 0.3;
+        enemyHash.forEachInRadius(bz.x, bz.y, bz.radius + 32, (e) => {
+          if (!e.active) return;
+          const hitR = bz.radius + e.radius;
+          const dx = e.x - bz.x;
+          const dy = e.y - bz.y;
+          if (Math.abs(dy) > hitR || Math.abs(dx) > hitR) return;
+          if (dx * dx + dy * dy <= bz.radius * bz.radius) {
+            combat.onHit(e, dpsTick, false, 'fire');
+          }
+        });
+      }
+
+      if (bz.life <= 0) bz.active = false;
+    }
+    ObjectPool.compact(game.burnZones);
+
+    // 战车：空间查询 + hitEnemies Set 保持原有一次命中机制。
+    for (let i = 0; i < game.activeTrucks.length; i++) {
+      const truck = game.activeTrucks[i];
+      if (!truck.active) continue;
+
+      truck.y -= truck.speed * dt;
+
+      if (game.synergies.truckInferno) {
+        truck.infernoTimer = (truck.infernoTimer || 0) + dt;
+        if (truck.infernoTimer >= 0.16) {
+          truck.infernoTimer = 0;
+          game.burnZones.push({
+            active: true,
+            x: truck.x + (Math.random() * 20 - 10),
+            y: truck.y + 45,
+            radius: 40,
+            life: 2.8,
+            maxLife: 2.8,
+            tickTimer: 0
+          });
+        }
+      }
+
+      const tRoad = game.getRoadBounds(truck.y);
+      const targetTruckX = tRoad.left + tRoad.roadWidth * (truck.laneRatio || 0.5);
+      truck.x += (targetTruckX - truck.x) * Math.min(1, dt * 4.5);
+
+      game.spawnParticles(truck.x + (Math.random() * 30 - 15), truck.y + 40, '#94a3b8', 2, 'smoke');
+
+      const halfW = truck.width / 2;
+      const halfH = truck.height / 2;
+      enemyHash.forEachInRadius(truck.x, truck.y, Math.max(halfW, halfH) + 40, (e) => {
+        if (!e.active || truck.hitEnemies.has(e)) return;
+        if (
+          Math.abs(e.y - truck.y) < halfH + e.radius &&
+          Math.abs(e.x - truck.x) < halfW + e.radius
+        ) {
+          truck.hitEnemies.add(e);
+          e.y -= game.skills.truck.knockback;
+          combat.onHit(e, truck.damage, true, 'truck');
+          game.spawnParticles(e.x, e.y, '#e11d48', 10, 'spark');
+        }
+      });
+
+      if (truck.y < -150) truck.active = false;
+    }
+    ObjectPool.compact(game.activeTrucks);
   };
 
-  // 原 updateSkills 内部仍然会刷新一次 HUD；把真正的 HUD 方法做节流，
-  // 这样其他系统主动调用 updateSkillHUD 时也不会破坏体验。
+  // ---------------------------------------------------------------------------
+  // 6. 高频 HUD：战斗数值照常每帧计算，DOM 更新限制在约 15Hz。
+  // ---------------------------------------------------------------------------
   const originalHudUpdate = game.hud.updateSkillHUD?.bind(game.hud);
   if (originalHudUpdate) {
     let lastHudUpdate = -Infinity;
@@ -185,8 +349,7 @@ export function installGameOptimization(game) {
   }
 
   // ---------------------------------------------------------------------------
-  // 7. 粒子自适应预算：正常设备仍使用原 220；当 FPS 持续下降时逐级降预算，
-  //    避免粒子雪崩拖垮主循环。不会修改战斗伤害或敌人数量。
+  // 7. 粒子自适应预算：优先削减视觉对象，不改变敌人数和伤害。
   // ---------------------------------------------------------------------------
   const originalSpawnParticles = game.spawnParticles.bind(game);
   game.spawnParticles = function optimizedSpawnParticles(x, y, color, count, type = 'spark') {
@@ -203,7 +366,7 @@ export function installGameOptimization(game) {
   };
 
   // ---------------------------------------------------------------------------
-  // 8. 统一清理无效效果，避免长局中 inactive 项长期留在数组里。
+  // 8. 长局临时对象整理。
   // ---------------------------------------------------------------------------
   game.compactTransientObjects = () => {
     for (const name of EFFECT_ARRAYS) {
@@ -217,7 +380,7 @@ export function installGameOptimization(game) {
   };
 
   // ---------------------------------------------------------------------------
-  // 9. 轻量可观测性：不创建 DOM，只提供 window.gamePerformance 给 QA/DevTools。
+  // 9. 轻量性能指标，不创建 DOM。
   // ---------------------------------------------------------------------------
   const perf = {
     fps: 60,
@@ -240,8 +403,6 @@ export function installGameOptimization(game) {
     const now = performance.now();
     frames++;
     optimizationFrame++;
-    game.__optimizationFrame = optimizationFrame;
-    game.__enemyHashDirty = true;
 
     const elapsed = now - lastSample;
     if (elapsed >= 500) {
@@ -265,7 +426,7 @@ export function installGameOptimization(game) {
   };
   requestAnimationFrame(sample);
 
-  // 页面切后台时暂停；回来后重置时间基准，避免积累长 dt 导致瞬移/爆发伤害。
+  // 页面切后台自动暂停并重置时间基准，避免回来瞬移。
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       game.__wasPausedByVisibility = !game.isPaused;
