@@ -4,6 +4,8 @@
 
 const MODE_LOCAL = 'local';
 const MODE_D1 = 'd1';
+const SAVE_KEY = 'starcore_vanguard_save_v6';
+const LEGACY_KEYS = ['kaipao_roguelike_save_v5', 'kaipao_roguelike_save_v4'];
 const DEVICE_KEY = 'starcore_vanguard_device_id_v1';
 const STORAGE_STATUS_KEY = 'starcore_vanguard_storage_status_v1';
 const REMOTE_SAVE_DEBOUNCE_MS = 600;
@@ -28,6 +30,15 @@ function getDeviceId() {
     : `device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
   try { localStorage.setItem(DEVICE_KEY, id); } catch (_) { /* private mode / quota */ }
   return id;
+}
+
+function hasLocalSave() {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    return Boolean(localStorage.getItem(SAVE_KEY) || LEGACY_KEYS.some((key) => localStorage.getItem(key)));
+  } catch (_) {
+    return false;
+  }
 }
 
 function clone(value) {
@@ -203,6 +214,7 @@ export async function installCloudStorage(saveManager) {
 
   const loadRemote = async () => {
     try {
+      const localSaveExists = hasLocalSave();
       const response = await fetchJson(`/api/save?deviceId=${encodeURIComponent(deviceId)}`, {
         method: 'GET',
         headers: { 'X-Device-Id': deviceId }
@@ -219,7 +231,8 @@ export async function installCloudStorage(saveManager) {
       const localUpdatedAt = Number(localData.lastPlayed || 0);
       const remoteUpdatedAt = Number(result.clientUpdatedAt || remoteData?.lastPlayed || 0);
 
-      if (remoteData && remoteUpdatedAt >= localUpdatedAt) {
+      if (remoteData && (!localSaveExists || remoteUpdatedAt >= localUpdatedAt)) {
+        if (localSaveExists && remoteUpdatedAt > localUpdatedAt) backupLocalSnapshot('remote-sync', localData);
         saveManager.data = remoteData;
         saveLocal(true);
       } else if (remoteData && localUpdatedAt > remoteUpdatedAt) {
