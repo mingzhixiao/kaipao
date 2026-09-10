@@ -11,6 +11,7 @@ export class AssetManager {
     this.loadingPromise = null;
     // 发布版本统一改这里，避免每次请求都使用 Date.now() 造成无法命中浏览器缓存。
     this.assetVersion = '20260908';
+    this.maxConcurrentLoads = 6;
     _globalAssetInstance = this;
     globalThis.__KAIPAO_ASSETS_INSTANCE__ = this;
     this.manifest = {
@@ -68,10 +69,15 @@ export class AssetManager {
           else resolve(null);
         }, timeoutMs);
         img.decoding = 'async';
-        img.onload = () => {
+        img.onload = async () => {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
+          try {
+            if (typeof img.decode === 'function') await img.decode();
+          } catch (_) {
+            // 某些浏览器在已完成加载的图片上可能拒绝 decode；不影响继续使用。
+          }
           resolve(img);
         };
         img.onerror = () => {
@@ -100,21 +106,32 @@ export class AssetManager {
 
   loadAll(onProgress = null) {
     if (this.loaded) {
-      if (onProgress) onProgress(Object.keys(this.manifest).length, Object.keys(this.manifest).length, 'cached');
+      const total = Object.keys(this.manifest).length;
+      if (onProgress) onProgress(total, total, 'cached');
       return Promise.resolve();
     }
     if (this.loadingPromise) return this.loadingPromise;
 
     const entries = Object.entries(this.manifest);
     const total = entries.length;
+    let nextIndex = 0;
     let loadedCount = 0;
-    this.loadingPromise = Promise.all(entries.map(async ([key, src]) => {
-      const img = await this._loadImage(src);
-      this.images[key] = img;
-      loadedCount++;
-      if (onProgress) onProgress(loadedCount, total, key);
-      if (!img) console.warn(`[AssetManager] final fail: ${src}, using procedural fallback`);
-    })).then(() => {
+    const concurrency = Math.max(1, Math.min(this.maxConcurrentLoads, total));
+
+    const worker = async () => {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= total) return;
+        const [key, src] = entries[index];
+        const img = await this._loadImage(src);
+        this.images[key] = img;
+        loadedCount++;
+        if (onProgress) onProgress(loadedCount, total, key);
+        if (!img) console.warn(`[AssetManager] final fail: ${src}, using procedural fallback`);
+      }
+    };
+
+    this.loadingPromise = Promise.all(Array.from({ length: concurrency }, worker)).then(() => {
       this.loaded = true;
       this.loadingPromise = null;
     }).catch(err => {
